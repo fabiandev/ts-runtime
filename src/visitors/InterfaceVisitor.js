@@ -22,7 +22,7 @@ const visitor = {
         }
       });
     }
-    console.log(exportKeyword);
+
     let replace = [
         exportKeyword ? 'export' : '',
         defaultKeyword ? 'default' : '',

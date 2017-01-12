@@ -23,6 +23,8 @@ function transform(files, options) {
   options = !options ? defaultOptions : Object.assign({}, defaultOptions, options);
 
   for (let file of files) {
+    console.log('Read: ', file);
+
     let result = doTransform(file, options);
 
     results.push(result);
@@ -74,6 +76,8 @@ function write(result, options) {
   fs.writeFile(location, result.transpiler.code, {
     encoding: options.encoding
   });
+
+  console.log('Write:', location);
 }
 
 module.exports = transform;
