@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const ts = require('typescript');
-const tspoon = require("tspoon");
+const tspoon = require('tspoon');
 
 const ImplementsReplacer = require('../replacers/ImplementsReplacer');
 const defaultOptions = require('./options');
