@@ -7,7 +7,7 @@ export const DEFAULT_OPTIONS: TsRuntimeOptions = {
     allowJs: true,
     emitDecoratorMetadata: true,
     experimentalDecorators: true,
-    module: ts.ModuleKind.System,
+    // module: ts.ModuleKind.System,
     removeComments: false,
     sourceMap: false,
     target: ts.ScriptTarget.ES2015,

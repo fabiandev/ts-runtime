@@ -14,39 +14,44 @@ export class Transformer {
   }
 
   public process(): Promise<TransformerResult> {
-    return new Promise((resolve, reject) => {
-      const fileResults: FileResult[] = [];
+    const toTransform: Array<Promise<FileResult>> = [];
 
-      for (const file of this.config.files) {
-        fileResults.push(this.transformFile(file));
-      }
+    for (const file of this.config.files) {
+      toTransform.push(this.transformFile(file));
+    }
 
-      for (const result of fileResults) {
-        this.reportFile(result.transpiler);
-      }
-
-      resolve(Object.assign({}, {
-        config: this.config,
-        fileResults,
-      }));
-    });
+    return Promise.all(toTransform)
+      .then(results => {
+        return {
+          config: this.config,
+          fileResults: results,
+        };
+      });
   }
 
-  private transformFile(file: string): FileResult {
-    const source = fs.readFileSync(file, this.config.options.encoding);
+  private transformFile(file: string): Promise<FileResult> {
+    return new Promise((resolve, reject) => {
+      fs.readFile(file, this.config.options.encoding, (err, source) => {
+        if (err) {
+          return reject(`Error reading file ${file}`);
+        }
 
-    const transpiler = transpile(source, {
-      compilerOptions: this.config.options.compilerOptions,
-      sourceFileName: path.basename(file),
-      visitors: Object.keys(visitors).map((key: string) => {
-        return (visitors as any)[key];
-      }),
+        const transpiler = transpile(source, {
+          compilerOptions: this.config.options.compilerOptions,
+          sourceFileName: path.basename(file),
+          visitors: Object.keys(visitors).map((key: string) => {
+            return (visitors as any)[key];
+          }),
+        });
+
+        this.reportFile(transpiler);
+
+        resolve({
+          transpiler,
+          file,
+        });
+      });
     });
-
-    return {
-      transpiler,
-      file,
-    };
   }
 
   private reportFile(transpiler: TranspilerOutput): boolean {

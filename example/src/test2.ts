@@ -1,4 +1,5 @@
 /* tslint:disable */
+
 export interface CanSpeak {
   firstname: string;
 }
