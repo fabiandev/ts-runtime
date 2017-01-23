@@ -1,5 +1,3 @@
-'use strict';
-
 function replacer(haystack) {
   return haystack.replace(
     /if\s*\((\s*([^)]+?)\s*(implements)\s*([^)]+?)\s*)(\))/g,
@@ -7,4 +5,4 @@ function replacer(haystack) {
   );
 }
 
-module.exports = replacer;
+export default replacer;

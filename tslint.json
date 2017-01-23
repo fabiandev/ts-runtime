@@ -1,0 +1,17 @@
+{
+
+  "extends": "tslint:latest",
+  "rules": {
+    "quotemark": [true, "single"],
+    "no-console": false,
+    "arrow-parens": false,
+    "interface-name": false,
+    "ordered-imports": false,
+    "no-empty": false,
+    "curly": false
+  },
+  "jsRules": {
+
+  },
+  "rulesDirectory": []
+}

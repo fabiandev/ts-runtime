@@ -1,5 +1,3 @@
-'use strict';
-
 const ts = require('typescript');
 
 const visitor = {
