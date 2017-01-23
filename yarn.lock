@@ -2,13 +2,13 @@
 # yarn lockfile v1
 
 
-"@types/lodash@4.14.48":
-  version "4.14.48"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.48.tgz#d4d7747c28c63581e803bb2d03d0f0f36d2ac624"
+"@types/lodash@4.14.50":
+  version "4.14.50"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.50.tgz#2227da4d65fafe249bccd59c7b9396e27674c8f7"
 
 "@types/node@^7.0.2":
-  version "7.0.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.2.tgz#f318fcda63543ac076316cb91653d8e89aa7bfce"
+  version "7.0.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.3.tgz#6bc1d23929bd426eabd409b5898537076bbbdeff"
 
 "@types/source-map@0.5.0":
   version "0.5.0"
@@ -36,9 +36,9 @@ os-tmpdir@~1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/os-tmpdir/-/os-tmpdir-1.0.2.tgz#bbe67406c79aa85c5cfec766fe5734555dfa1274"
 
-source-map-support@0.4.8:
-  version "0.4.8"
-  resolved "https://registry.yarnpkg.com/source-map-support/-/source-map-support-0.4.8.tgz#4871918d8a3af07289182e974e32844327b2e98b"
+source-map-support@0.4.10:
+  version "0.4.10"
+  resolved "https://registry.yarnpkg.com/source-map-support/-/source-map-support-0.4.10.tgz#d7b19038040a14c0837a18e630a196453952b378"
   dependencies:
     source-map "^0.5.3"
 
@@ -65,15 +65,15 @@ ts-type-info@^6.2.2:
     typescript "^2.1.4"
 
 tspoon@^1.0.254:
-  version "1.0.254"
-  resolved "https://registry.yarnpkg.com/tspoon/-/tspoon-1.0.254.tgz#4e9097f645732dcab24563b1de3ee4845ac5467f"
+  version "1.0.266"
+  resolved "https://registry.yarnpkg.com/tspoon/-/tspoon-1.0.266.tgz#bfa654e011ac2497b314105c5be74177145dd5c9"
   dependencies:
-    "@types/lodash" "4.14.48"
+    "@types/lodash" "4.14.50"
     "@types/source-map" "0.5.0"
     lodash "4.17.4"
     magic-string "0.19.0"
     source-map "0.5.6"
-    source-map-support "0.4.8"
+    source-map-support "0.4.10"
     typescript "2.1.5"
 
 typescript@2.1.5, typescript@^2.1.4, typescript@^2.1.5:
