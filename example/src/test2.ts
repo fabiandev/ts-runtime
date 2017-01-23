@@ -11,6 +11,10 @@ class Human {
 
 }
 
+function something(hi: string, two: boolean) {
+
+}
+
 class Person extends Human implements CanSpeak, CanWalk {
 	private _name: string;
   firstname = 'hi';
@@ -25,6 +29,9 @@ class Test extends Person {
 
 }
 
-let p = new Person();
+let p: Person | Test = new Person();
 let t = new Test();
+
+p = new Person();
+
 /* tslint:enable */
