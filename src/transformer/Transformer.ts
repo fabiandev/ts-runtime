@@ -69,7 +69,7 @@ export class Transformer {
     }
 
     if (transpiler.halted) {
-      console.error('Transpiler halted. Exiting now.')
+      console.error('Transpiler halted. Exiting now.');
       process.exit(1);
     }
 
