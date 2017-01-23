@@ -9,11 +9,7 @@
     "preserveConstEnums": true,
     "removeComments": false,
     "typeRoots": [
-      "../node_modules/@types",
-      "./typings/globals"
-    ],
-    "types": [
-      "node"
+      "node_modules/@types"
     ]
   },
   "include": [
