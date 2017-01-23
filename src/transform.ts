@@ -30,6 +30,5 @@ function getFiles(files: string | string[]): string[] {
 }
 
 function finish(transformerResult?: TransformerResult): void {
-  console.log('--------');
-  console.log('Finished.');
+  console.log('--> Finished.');
 }
