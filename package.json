@@ -2,7 +2,7 @@
   "name": "ts-runtime",
   "version": "0.0.1",
   "description": "Runtime type checks for TypeScript",
-  "main": "index.js",
+  "main": "bin/index.js",
   "repository": "https://github.com/fabiandev/ts-runtime.git",
   "author": "Fabian Pirklbauer <hi@fabiandev.io>",
   "license": "MIT",
