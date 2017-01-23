@@ -3,6 +3,8 @@ import { Transformer, TransformerResult } from './transformer';
 import { TsRuntimeOptions, DEFAULT_OPTIONS } from './options';
 
 export function transform(files: string | string[], options: TsRuntimeOptions = {}): Promise<TransformerResult> {
+  console.log('--> Starting');
+  
   options = getOptions(options);
   files = getFiles(files);
 
