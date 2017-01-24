@@ -2,18 +2,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TranspilerOutput, Visitor, transpile } from 'tspoon';
 import { TsRuntimeOptions } from '../options';
-import { TransformerResult } from './TransformerResult';
-import { TransformerConfig } from './TransformerConfig';
+import { CompilerResult } from './CompilerResult';
+import { CompilerConfig } from './CompilerConfig';
 import { FileResult } from './FileResult';
-import * as DEFAULT_VISITORS from '../visitors/default_visitors';
+import * as DEFAULT_VISITORS from './visitors/default_visitors';
 
-export class Transformer {
+export class Compiler {
 
-  constructor(protected config: TransformerConfig) {
+  constructor(protected config: CompilerConfig) {
 
   }
 
-  public process(): Promise<TransformerResult> {
+  public process(): Promise<CompilerResult> {
     const toTransform: Array<Promise<FileResult>> = [];
 
     for (const file of this.config.files) {

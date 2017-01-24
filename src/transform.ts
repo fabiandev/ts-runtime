@@ -1,14 +1,14 @@
 import * as ts from 'typescript';
-import { Transformer, TransformerResult } from './transformer';
+import { Compiler, CompilerResult } from './compiler';
 import { TsRuntimeOptions, DEFAULT_OPTIONS } from './options';
 
-export function transform(files: string | string[], options: TsRuntimeOptions = {}): Promise<TransformerResult> {
+export function transform(files: string | string[], options: TsRuntimeOptions = {}): Promise<CompilerResult> {
   console.log('--> Starting');
 
   options = getOptions(options);
   files = getFiles(files);
 
-  return new Transformer({ files, options })
+  return new Compiler({ files, options })
     .process()
     .then(transformerResult => {
       finish(transformerResult);
@@ -32,6 +32,8 @@ function getFiles(files: string | string[]): string[] {
   return files as string[];
 }
 
-function finish(transformerResult?: TransformerResult): void {
+function finish(transformerResult?: CompilerResult): void {
   console.log('--> Finished.');
 }
+
+export default transform;

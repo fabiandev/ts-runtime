@@ -1,0 +1,1 @@
+export { VariableDeclarationVisitor } from './VariableDeclarationVisitor';

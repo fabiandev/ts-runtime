@@ -1,2 +1,2 @@
-import * as t from 'tcomb';
+import t from 'flow-runtime';
 export default t;
