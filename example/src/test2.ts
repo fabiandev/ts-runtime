@@ -1,38 +1,18 @@
 /* tslint:disable */
 
-export interface CanSpeak {
-  firstname: string;
-}
+let a: number = 10,
+  b: string;
 
-interface CanWalk {
-  theName: string;
-}
+const c: boolean[] = [];
 
-class Human {
+let d: Array<boolean>;
 
-}
+b = 'hi', a = 5;
 
-function something(hi: string, two: boolean) {
-
-}
-
-class Person extends Human implements CanSpeak, CanWalk {
-	private _name: string;
-  firstname = 'hi';
-  theName = 'how';
-  get name() {
-    return this._name;
-  }
-
-}
-
-class Test extends Person {
-
-}
-
-let p: Person | Test = new Person();
-let t = new Test();
-
-p = new Person();
+d = [
+  true,
+  false,
+  true
+];
 
 /* tslint:enable */
