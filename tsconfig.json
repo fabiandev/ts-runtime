@@ -10,7 +10,7 @@
     "removeComments": false,
     "typeRoots": [
       "../node_modules/@types",
-      "../src/dts"
+      "../src/definitions"
     ],
     "types": [
       "node"
