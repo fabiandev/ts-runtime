@@ -1,6 +1,7 @@
 root = true
 
 [*]
+end_of_line = lf
 insert_final_newline = true
 charset = utf-8
 trim_trailing_whitespace = true
@@ -9,5 +10,11 @@ indent_style = space
 [*.{js,jsx,ts,tsx}]
 indent_size = 2
 
-[*.json]
+[*.ts]
+max_line_length = 125
+
+[*.{json,yml}]
 indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
