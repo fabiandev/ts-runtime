@@ -1,0 +1,1 @@
+export { TypeParameterVisitor } from './TypeParameterVisitor';

@@ -5,7 +5,7 @@ import { TsRuntimeOptions } from '../options';
 import { TransformerResult } from './TransformerResult';
 import { TransformerConfig } from './TransformerConfig';
 import { FileResult } from './FileResult';
-import * as visitors from '../visitors';
+import * as DEFAULT_VISITORS from '../visitors/default_visitors';
 
 export class Transformer {
 
@@ -36,12 +36,14 @@ export class Transformer {
           return reject(`Error reading file ${file}`);
         }
 
+        const visitors = Object.keys(DEFAULT_VISITORS).map((key: string) => {
+          return new (DEFAULT_VISITORS as any)[key]();
+        });
+
         const transpiler = transpile(source, {
           compilerOptions: this.config.options.compilerOptions,
           sourceFileName: path.basename(file),
-          visitors: Object.keys(visitors).map((key: string) => {
-            return new (visitors as any)[key]();
-          }),
+          visitors,
         });
 
         this.reportFile(transpiler);
