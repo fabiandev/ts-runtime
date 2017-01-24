@@ -1,9 +1,9 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "allowJs": true,
     "declaration": true,
-    "lib": ["es2015", "dom"],
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es6"],
     "moduleResolution": "node",
     "noImplicitAny": true,
     "preserveConstEnums": true,
@@ -17,6 +17,6 @@
   ],
   "exclude": [
     "node_modules",
-    "typings"
+    "dist"
   ]
 }
