@@ -40,7 +40,7 @@ export class Transformer {
           compilerOptions: this.config.options.compilerOptions,
           sourceFileName: path.basename(file),
           visitors: Object.keys(visitors).map((key: string) => {
-            return (visitors as any)[key];
+            return new (visitors as any)[key]();
           }),
         });
 
