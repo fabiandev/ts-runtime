@@ -9,7 +9,8 @@
     "preserveConstEnums": true,
     "removeComments": false,
     "typeRoots": [
-      "../node_modules/@types"
+      "../node_modules/@types",
+      "../src/dts"
     ],
     "types": [
       "node"
