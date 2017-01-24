@@ -8,7 +8,8 @@
     "interface-name": false,
     "ordered-imports": false,
     "no-empty": false,
-    "curly": false
+    "curly": false,
+    "max-line-length": 125
   },
   "jsRules": {
 
