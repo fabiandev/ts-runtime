@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import { TsRuntimeOptions } from './TsRuntimeOptions';
 
 export const DEFAULT_OPTIONS: TsRuntimeOptions = {
-  base: false,
+  basePath: false,
   compilerOptions: {
     allowJs: true,
     emitDecoratorMetadata: true,
@@ -13,5 +13,5 @@ export const DEFAULT_OPTIONS: TsRuntimeOptions = {
     target: ts.ScriptTarget.ES2015,
   },
   encoding: 'utf8',
-  write: false,
+  writePath: false,
 };

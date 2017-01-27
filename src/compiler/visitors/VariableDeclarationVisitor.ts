@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import { Visitor, VisitorContext } from 'tspoon';
-import { VariableDeclarationTransformer } from '../transformers/VariableDeclarationTransformer';
+import * as generate from '../generators';
+import * as utils from '../utils';
 
 export class VariableDeclarationVisitor implements Visitor {
 
@@ -9,8 +10,16 @@ export class VariableDeclarationVisitor implements Visitor {
   }
 
   public visit(node: ts.VariableDeclaration, context: VisitorContext, traverse: (...visitors: Visitor[]) => void): void {
-    const replacer = new VariableDeclarationTransformer(node, context);
-    replacer.replace();
+    const typeDefinition = generate.typeDefinition(node.type, node.name.getText());
+
+    if (typeDefinition !== null) {
+      context.insertLine(node.parent.getStart(), utils.ast.toString(typeDefinition));
+    }
+
+    if (node.initializer !== undefined) {
+      const assignment = generate.variableAssignment(node.name.getText(), node.initializer);
+      context.replace(node.getStart(), node.getEnd(), utils.ast.toString(assignment));
+    }
   }
 
 }

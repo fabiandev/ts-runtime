@@ -9,7 +9,11 @@
     "ordered-imports": false,
     "no-empty": false,
     "curly": false,
-    "max-line-length": 125
+    "max-line-length": 125,
+    "object-literal-sort-keys": false,
+    "object-literal-shorthand": false,
+    "no-empty-interface": false,
+    "member-ordering": false
   },
   "jsRules": {
 

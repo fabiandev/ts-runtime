@@ -2,7 +2,7 @@ import * as path from 'path';
 import { transform } from '../src/index';
 import { Writer } from '../src/writer';
 
-const file = path.join(__dirname, 'src/test2.ts');
+const file = path.join(__dirname, 'src/test3.ts');
 const basePath = path.join(__dirname, 'src');
 const writePath = path.join(__dirname, 'dest');
 

@@ -2,13 +2,27 @@
 # yarn lockfile v1
 
 
+"@types/escodegen@^0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@types/escodegen/-/escodegen-0.0.6.tgz#5230a9ce796e042cda6f086dbf19f22ea330659c"
+
+"@types/esprima@^2.1.33":
+  version "2.1.33"
+  resolved "https://registry.yarnpkg.com/@types/esprima/-/esprima-2.1.33.tgz#c132313f0d19733e5ddb2054b6853deafe7af63d"
+  dependencies:
+    "@types/estree" "*"
+
+"@types/estree@*":
+  version "0.0.34"
+  resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.34.tgz#aa7af69a3a91922171ee411b3c9d8f6beb4af321"
+
 "@types/lodash@4.14.50":
   version "4.14.50"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.50.tgz#2227da4d65fafe249bccd59c7b9396e27674c8f7"
 
 "@types/node@^7.0.2":
-  version "7.0.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.3.tgz#6bc1d23929bd426eabd409b5898537076bbbdeff"
+  version "7.0.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.4.tgz#9aabc135979ded383325749f508894c662948c8b"
 
 "@types/source-map@0.5.0":
   version "0.5.0"
@@ -44,6 +58,10 @@ escodegen@^1.8.1:
 esprima@^2.7.1:
   version "2.7.3"
   resolved "https://registry.yarnpkg.com/esprima/-/esprima-2.7.3.tgz#96e3b70d5779f6ad49cd032673d1c312767ba581"
+
+esprima@^3.1.3:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/esprima/-/esprima-3.1.3.tgz#fdca51cee6133895e3c88d535ce49dbff62a4633"
 
 estraverse@^1.9.1:
   version "1.9.3"
@@ -132,8 +150,8 @@ ts-type-info@^6.2.2:
     typescript "^2.1.4"
 
 tspoon@^1.0.254:
-  version "1.0.266"
-  resolved "https://registry.yarnpkg.com/tspoon/-/tspoon-1.0.266.tgz#bfa654e011ac2497b314105c5be74177145dd5c9"
+  version "1.0.267"
+  resolved "https://registry.yarnpkg.com/tspoon/-/tspoon-1.0.267.tgz#bcfa86a7dcfc1069ed5e273575921dc73c513069"
   dependencies:
     "@types/lodash" "4.14.50"
     "@types/source-map" "0.5.0"

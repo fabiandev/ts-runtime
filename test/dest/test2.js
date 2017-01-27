@@ -1,4 +1,6 @@
 /* tslint:disable */
+undefined;
+_nType = t.number();
 let a = 10, b;
 const c = [];
 let d;
