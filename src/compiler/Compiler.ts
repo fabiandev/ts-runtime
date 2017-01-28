@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { TranspilerOutput, Visitor, transpile } from 'tspoon';
+import { TranspilerOutput, Visitor, transpile } from '../../../tspoon';
 import { TsRuntimeOptions } from '../options';
 import { CompilerResult } from './CompilerResult';
 import { CompilerConfig } from './CompilerConfig';

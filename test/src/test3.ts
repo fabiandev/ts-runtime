@@ -9,3 +9,7 @@ x = 'str';
 y = [];
 y = [true, false, true];
 y = [true, 'hi', false];
+
+const fun = () => {
+ const another: boolean = true;
+}

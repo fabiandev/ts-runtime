@@ -96,6 +96,10 @@ magic-string@0.19.0:
   dependencies:
     vlq "^0.2.1"
 
+node-require-fallback@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/node-require-fallback/-/node-require-fallback-0.1.2.tgz#ac2a752024272c011bf8feb1da316d23fdd0d808"
+
 optionator@^0.8.1:
   version "0.8.2"
   resolved "https://registry.yarnpkg.com/optionator/-/optionator-0.8.2.tgz#364c5e409d3f4d6301d6c0b4c05bba50180aeb64"
@@ -167,9 +171,13 @@ type-check@~0.3.2:
   dependencies:
     prelude-ls "~1.1.2"
 
-typescript@2.1.5, typescript@^2.1.4, typescript@^2.1.5:
+typescript@2.1.5, typescript@^2.1.4:
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.1.5.tgz#6fe9479e00e01855247cea216e7561bafcdbcd4a"
+
+typescript@next:
+  version "2.2.0-dev.20170127"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.2.0-dev.20170127.tgz#94191ea34e6f53d64a4d0291cc76f7c14417dd54"
 
 vlq@^0.2.1:
   version "0.2.1"
