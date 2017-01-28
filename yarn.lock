@@ -175,9 +175,9 @@ typescript@2.1.5, typescript@^2.1.4:
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.1.5.tgz#6fe9479e00e01855247cea216e7561bafcdbcd4a"
 
-typescript@next:
-  version "2.2.0-dev.20170127"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.2.0-dev.20170127.tgz#94191ea34e6f53d64a4d0291cc76f7c14417dd54"
+typescript@Microsoft/TypeScript#6c122bcf16c329a21da04d7b5256f20ecc0bbd1d:
+  version "2.1.0"
+  resolved "https://codeload.github.com/Microsoft/TypeScript/tar.gz/6c122bcf16c329a21da04d7b5256f20ecc0bbd1d"
 
 vlq@^0.2.1:
   version "0.2.1"

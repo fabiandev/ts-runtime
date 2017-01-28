@@ -1,6 +1,5 @@
-import { TranspilerOutput } from 'tspoon';
-
 export interface FileResult {
-  transpiler: TranspilerOutput;
-  file: string;
+  result: string;
+  filePath: string;
+  fileName: string
 }

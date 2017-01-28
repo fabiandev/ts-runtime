@@ -1,11 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { TranspilerOutput, Visitor, transpile } from '../../../tspoon';
+import * as ts from 'typescript/built/local/typescript';
 import { TsRuntimeOptions } from '../options';
 import { CompilerResult } from './CompilerResult';
 import { CompilerConfig } from './CompilerConfig';
 import { FileResult } from './FileResult';
-import * as DEFAULT_VISITORS from './visitors/default_visitors';
+import { Transformer } from './transformers';
+import * as TRANSFORMERS from './transformers/default_transformers';
 
 export class Compiler {
 
@@ -16,8 +17,21 @@ export class Compiler {
   public process(): Promise<CompilerResult> {
     const toTransform: Array<Promise<FileResult>> = [];
 
+    const transformers: ts.Transformer[] = Object.keys(TRANSFORMERS).map((key: string) => {
+      const transformer = new (TRANSFORMERS as any)[key]();
+
+      const transform: ts.Transformer = (context) => (f) => {
+        for (const substitution of transformer.getSubstitutions()) {
+          context.enableSubstitution(substitution);
+        }
+        context.onSubstituteNode = transformer.process.bind(transformer);
+        return f;
+      };
+      return transform;
+    });
+
     for (const file of this.config.files) {
-      toTransform.push(this.transformFile(file));
+      toTransform.push(this.transformFile(file, transformers));
     }
 
     return Promise.all(toTransform)
@@ -26,56 +40,38 @@ export class Compiler {
           config: this.config,
           fileResults: results,
         };
+      })
+      .catch(err => {
+        console.error(err);
       });
   }
 
-  private transformFile(file: string): Promise<FileResult> {
+  private transformFile(filePath: string, transformers: ts.Transformer[]): Promise<FileResult> {
     return new Promise((resolve, reject) => {
-      fs.readFile(file, this.config.options.encoding, (err, source) => {
+      fs.readFile(filePath, this.config.options.encoding, (err, source) => {
         if (err) {
-          return reject(`Error reading file ${file}`);
+          return reject(`Error reading file ${filePath}`);
         }
 
-        const visitors = Object.keys(DEFAULT_VISITORS).map((key: string) => {
-          return new (DEFAULT_VISITORS as any)[key]();
-        });
+        const fileName = path.basename(filePath);
 
-        const transpiler = transpile(source, {
-          compilerOptions: this.config.options.compilerOptions,
-          sourceFileName: path.basename(file),
-          visitors,
-        });
+        const f = ts.createSourceFile(
+          fileName,
+          source,
+          ts.ScriptTarget.Latest,
+          true,
+          ts.ScriptKind.TS,
+        );
 
-        this.reportFile(transpiler);
+        const result = ts.emit(f, transformers).result;
 
         resolve({
-          transpiler,
-          file,
+          fileName,
+          filePath,
+          result,
         });
       });
     });
-  }
-
-  private reportFile(transpiler: TranspilerOutput): boolean {
-    if (transpiler.diags) {
-      for (const d of transpiler.diags) {
-        const position = d.file.getLineAndCharacterOfPosition(d.start);
-
-        const name = d.file.fileName;
-        const line = position.line + 1;
-        const character = position.character;
-        const text = d.messageText;
-
-        console.error(`-> ${name}:${line}:${character}:${text}`);
-      }
-    }
-
-    if (transpiler.halted) {
-      console.error('Transpiler halted. Exiting now.');
-      process.exit(1);
-    }
-
-    return !!transpiler.diags;
   }
 
 }

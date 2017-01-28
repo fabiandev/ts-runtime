@@ -24,7 +24,7 @@ export class Writer {
   public writeFile(fileResult: FileResult, config?: WriterConfig): Promise<WriterResult> {
     return new Promise((resolve, reject) => {
       const options: WriterConfig | TsRuntimeOptions = config || this.transformerResult.config.options;
-      const file = fileResult.file.replace(new RegExp(`^${options.basePath}`), '');
+      const file = fileResult.filePath.replace(new RegExp(`^${options.basePath}`), '');
       let location = path.join(options.writePath as string, file);
 
       location = path.join(
@@ -32,7 +32,7 @@ export class Writer {
         `${path.basename(location, '.ts')}.js`,
       );
 
-      fs.writeFile(location, fileResult.transpiler.code, {
+      fs.writeFile(location, fileResult.result, {
         encoding: options.encoding,
       }, err => {
         if (err) {
@@ -43,7 +43,7 @@ export class Writer {
 
         resolve({
           fileResult,
-          originalPath: fileResult.file,
+          originalPath: fileResult.fileName,
           writePath: location,
         });
       });

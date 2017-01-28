@@ -1,0 +1,1 @@
+export { VariableDeclarationTransformer } from './VariableDeclarationTransformer';

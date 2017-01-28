@@ -1,36 +1,16 @@
-import * as ts from '../../../../../Local/TypeScript/built/local/typescript';
+import * as path from 'path';
+import { transform } from '../transform';
+import { Writer } from '../writer';
 
-const input = `
-function foo(x) {
-  if (x === undefined) {
-    x = 2;
-  }
+const file = path.join(__dirname, 'test.ts');
 
-  return x * 3;
-}
-`;
-
-const file = ts.createSourceFile('test.ts', input, ts.ScriptTarget.Latest, true);
-
-const file1 = visit(file) as ts.SourceFile;
-
-console.log(ts.emit(file1).result);
-
-function visit(node: ts.Node): ts.Node {
-    if (node.kind === ts.SyntaxKind.Identifier && (node as ts.Identifier).text === 'undefined') {
-        return ts.factory.createVoidZero();
-    }
-    return ts.visitEachChild(node, visit);
-}
-
-const transform: ts.Transformer = context => f => {
-    context.enableSubstitution(ts.SyntaxKind.Identifier);
-    context.onSubstituteNode = (emitContext, node) => {
-        if (node.kind === ts.SyntaxKind.Identifier && (node as ts.Identifier).text === 'undefined') {
-            return ts.factory.createVoidZero();
-        }
-    };
-    return f;
+const writerConfig = {
+  basePath: __dirname,
+  writePath: __dirname,
 };
 
-console.log(ts.emit(file, [transform]).result);
+transform(file)
+.then(transformerResult => {
+  const writer = new Writer(transformerResult);
+  writer.writeAll(writerConfig);
+});

@@ -21,6 +21,6 @@
     "tcomb": "^3.2.16",
     "ts-type-info": "^6.2.2",
     "tspoon": "^1.0.254",
-    "typescript": "next"
+    "typescript": "Microsoft/TypeScript#6c122bcf16c329a21da04d7b5256f20ecc0bbd1d"
   }
 }

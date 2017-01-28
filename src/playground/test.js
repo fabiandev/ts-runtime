@@ -1,0 +1,1 @@
+const xType = t.number;
