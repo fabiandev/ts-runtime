@@ -1,2 +1,2 @@
-import * as astUtil from './utils/ast';
-export const ast = astUtil;
+import * as generator from './utils/generator';
+export { generator };

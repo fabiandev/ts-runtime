@@ -1,8 +1,8 @@
 import * as ts from 'typescript';
 import { Compiler, CompilerResult } from './compiler';
-import { TsRuntimeOptions, DEFAULT_OPTIONS } from './options';
+import { Options, DEFAULT_OPTIONS } from './options';
 
-export function transform(files: string | string[], options: TsRuntimeOptions = {}): Promise<CompilerResult> {
+export function transform(files: string | string[], options: Options = {}): Promise<CompilerResult> {
   console.log('--> Starting');
 
   options = getOptions(options);
@@ -16,7 +16,7 @@ export function transform(files: string | string[], options: TsRuntimeOptions = 
     });
 }
 
-function getOptions(options: TsRuntimeOptions = {}): TsRuntimeOptions {
+function getOptions(options: Options = {}): Options {
   return Object.assign({}, DEFAULT_OPTIONS, options);
 }
 

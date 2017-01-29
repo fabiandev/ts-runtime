@@ -62,6 +62,10 @@ export function typeCalls(type: ts.TypeNode): null | any {
         return callExpression;
       }
     default:
-      throw new Error('Node Type not supported.');
+      {
+        const callExpression = utils.ast.getCallExpression('any');
+        return callExpression;
+      }
+    // throw new Error('Node Type not supported.');
   }
 }
