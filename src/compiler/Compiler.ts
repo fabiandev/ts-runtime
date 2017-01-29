@@ -1,14 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript/built/local/typescript';
-import { TsRuntimeOptions } from '../options';
-import { CompilerResult } from './CompilerResult';
-import { CompilerConfig } from './CompilerConfig';
-import { FileResult } from './FileResult';
-import { Transformer } from './transformers';
-import { Visitor } from './visitors/Visitor';
-import * as TRANSFORMERS from './transformers/default_transformers';
-import * as VISITORS from './visitors/default_visitors';
+import CompilerResult from './CompilerResult';
+import CompilerConfig from './CompilerConfig';
+import FileResult from './FileResult';
+import { Transformer, DEFAULT_TRANSFORMERS } from './transformers';
 
 export class Compiler {
 
@@ -19,8 +15,8 @@ export class Compiler {
   public process(): Promise<CompilerResult> {
     const toTransform: Array<Promise<FileResult>> = [];
 
-    const transformers: ts.Transformer[] = Object.keys(TRANSFORMERS).map((key: string) => {
-      const transformer = new (TRANSFORMERS as any)[key]();
+    const transformers: ts.Transformer[] = Object.keys(DEFAULT_TRANSFORMERS).map((key: string) => {
+      const transformer = new (DEFAULT_TRANSFORMERS as any)[key]();
 
       const transform: ts.Transformer = (context) => (f) => {
         for (const substitution of transformer.getSubstitutions()) {
@@ -48,33 +44,6 @@ export class Compiler {
       });
   }
 
-  // public processVisitors(): Promise<CompilerResult> {
-  //   const toVisit: Array<Promise<FileResult>> = [];
-  //
-  //   const visitors: Visitor[] = Object.keys(VISITORS).map((key: string) => {
-  //     return new (VISITORS as any)[key]();
-  //   });
-  //
-  //   for (const file of this.config.files) {
-  //     toVisit.push(this.visitFile(file, visitors));
-  //   }
-  //
-  //   return Promise.all(toVisit)
-  //     .then(results => {
-  //       return {
-  //         config: this.config,
-  //         fileResults: results,
-  //       };
-  //     })
-  //     .catch(err => {
-  //       console.error(err);
-  //     });
-  // }
-  //
-  // private visitFile(filePath: string, visitors: Visitor[]): Promise<FileResult> {
-  //
-  // }
-
   private transformFile(filePath: string, transformers: ts.Transformer[]): Promise<FileResult> {
     return new Promise((resolve, reject) => {
       fs.readFile(filePath, this.config.options.encoding, (err, source) => {
@@ -87,7 +56,7 @@ export class Compiler {
         const f = ts.createSourceFile(
           fileName,
           source,
-          ts.ScriptTarget.Latest,
+          this.config.options.compilerOptions.target || ts.ScriptTarget.Latest,
           true,
           ts.ScriptKind.TS,
         );
@@ -104,3 +73,5 @@ export class Compiler {
   }
 
 }
+
+export default Compiler;

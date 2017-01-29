@@ -3,3 +3,5 @@ export interface FileResult {
   filePath: string;
   fileName: string
 }
+
+export default FileResult;

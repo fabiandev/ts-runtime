@@ -30,9 +30,8 @@ export function createTypeCalls(type: ts.TypeNode): ts.CallExpression {
       {
         const typeRef = type as ts.TypeReferenceNode;
         const typeName = typeRef.typeName.getText();
-        let callExpression: ts.CallExpression;
-
         const args: ts.CallExpression[] = [];
+        let callExpression: ts.CallExpression;
 
         if (typeRef.typeArguments) {
           for (const arg of typeRef.typeArguments) {

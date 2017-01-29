@@ -1,7 +1,9 @@
-import * as path from 'path';
-import { WriterConfig } from './WriterConfig';
+import WriterConfig from './WriterConfig';
 
-export const config: WriterConfig = {
-  basePath: path.join(__dirname, 'src'),
-  writePath: path.join(__dirname, 'dist'),
+export const DEFAULT_CONFIG: WriterConfig = {
+  basePath: __dirname,
+  writePath: __dirname,
+  encoding: 'utf8',
 };
+
+export default DEFAULT_CONFIG;

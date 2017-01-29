@@ -1,9 +1,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { CompilerResult, FileResult } from '../compiler';
-import { TsRuntimeOptions } from '../options/TsRuntimeOptions';
-import { WriterConfig } from './WriterConfig';
-import { WriterResult } from './WriterResult';
+import Options from '../options/Options';
+import WriterConfig from './WriterConfig';
+import WriterResult from './WriterResult';
+import DEFAULT_CONFIG from './default_config';
 
 export class Writer {
 
@@ -23,7 +24,7 @@ export class Writer {
 
   public writeFile(fileResult: FileResult, config?: WriterConfig): Promise<WriterResult> {
     return new Promise((resolve, reject) => {
-      const options: WriterConfig | TsRuntimeOptions = config || this.transformerResult.config.options;
+      const options: WriterConfig = config ? Object.assign({}, DEFAULT_CONFIG, config) : DEFAULT_CONFIG;
       const file = fileResult.filePath.replace(new RegExp(`^${options.basePath}`), '');
       let location = path.join(options.writePath as string, file);
 
@@ -53,3 +54,5 @@ export class Writer {
   }
 
 }
+
+export default Writer;

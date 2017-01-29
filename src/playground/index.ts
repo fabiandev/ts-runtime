@@ -1,16 +1,15 @@
 import * as path from 'path';
-import { transform } from '../transform';
-import { Writer } from '../writer';
+import * as tsr from '../index';
+import { Writer, WriterConfig } from '../writer';
 
 const file = path.join(__dirname, 'test.ts');
 
-const writerConfig = {
+const writerConfig: WriterConfig = {
   basePath: __dirname,
   writePath: __dirname,
 };
 
-transform(file)
-.then(transformerResult => {
+tsr.transform(file).then(transformerResult => {
   const writer = new Writer(transformerResult);
   writer.writeAll(writerConfig);
 });

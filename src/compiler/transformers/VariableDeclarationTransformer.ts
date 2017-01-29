@@ -1,12 +1,10 @@
 import * as ts from 'typescript/built/local/typescript';
 import { Transformer } from './Transformer';
-import * as generator from '../generator';
+import { generator } from '../utils';
 
 export class VariableDeclarationTransformer extends Transformer {
 
   protected substitution = ts.SyntaxKind.VariableDeclarationList;
-
-  protected visited: ts.Node[] = [];
 
   public onSubstituteNode(context: ts.EmitContext, node: ts.VariableDeclarationList): ts.Node {
     const declarations: ts.VariableDeclaration[] = [];
@@ -46,12 +44,10 @@ export class VariableDeclarationTransformer extends Transformer {
 
   private processConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = node.name.getText();
-    const typeDefinition = generator.createTypeDefinition(node.type, nodeName);
+    const typeCalls = generator.createTypeCalls(node.type);
 
     const initializer = ts.factory.createCall(
-      ts.factory.createPropertyAccess(ts.factory.createCall(
-        ts.factory.createPropertyAccess(ts.factory.createIdentifier('t'), 'number'), [], [],
-      ), 'assert'), [], [node.initializer],
+      ts.factory.createPropertyAccess(typeCalls, 'assert'), [], [node.initializer],
     );
 
     const assignment = ts.factory.updateVariableDeclaration(node, node.name, node.type, initializer);

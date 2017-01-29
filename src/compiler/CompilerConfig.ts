@@ -1,7 +1,9 @@
-import { TsRuntimeOptions } from '../options/TsRuntimeOptions';
-import { FileResult } from './FileResult';
+import Options from '../options/Options';
+import FileResult from './FileResult';
 
 export interface CompilerConfig {
   files: string[];
-  options: TsRuntimeOptions;
+  options: Options;
 }
+
+export default CompilerConfig;

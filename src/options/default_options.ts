@@ -1,7 +1,7 @@
 import * as ts from 'typescript';
-import { TsRuntimeOptions } from './TsRuntimeOptions';
+import Options from './Options';
 
-export const DEFAULT_OPTIONS: TsRuntimeOptions = {
+export const DEFAULT_OPTIONS: Options = {
   basePath: false,
   compilerOptions: {
     allowJs: true,
@@ -15,3 +15,5 @@ export const DEFAULT_OPTIONS: TsRuntimeOptions = {
   encoding: 'utf8',
   writePath: false,
 };
+
+export default DEFAULT_OPTIONS;

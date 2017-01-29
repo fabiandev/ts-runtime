@@ -1,6 +1,6 @@
 const f = () => {
 
-  let x: Function = () => {
+  let x: ComplexType = () => {
     const a: boolean = true;
     return a;
   };
@@ -9,5 +9,9 @@ const f = () => {
   let c: string;
   let d: boolean[] = [true, false]
 
+  const e: Array<Array<Array<number>>> = [false];
+
   c = 'hi';
+
+  let f: [one, two];
 };

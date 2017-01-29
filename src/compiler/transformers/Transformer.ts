@@ -12,16 +12,20 @@ export abstract class Transformer {
     return !Array.isArray(this.substitution) ? [this.substitution] : this.substitution;
   }
 
+  public getVisited() {
+    return this.visited;
+  }
+
   public process(context: ts.EmitContext, node: ts.Node): ts.Node {
-    // if (this.visited.indexOf(node.parent) !== -1) {
-    //   return node;
-    // }
-
-    // this.visited.push(node.parent);
-
-    if (this.getSubstitutions().indexOf(node.kind) === -1) {
+    if (this.visited.indexOf(node) !== -1) {
       return node;
     }
+
+    this.visited.push(node);
+
+    // if (this.getSubstitutions().indexOf(node.kind) === -1) {
+    //   return node;
+    // }
 
     return this.onSubstituteNode(context, node);
   }

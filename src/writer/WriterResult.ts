@@ -5,3 +5,5 @@ export interface WriterResult {
   originalPath: string;
   writePath: string;
 }
+
+export default WriterResult;
