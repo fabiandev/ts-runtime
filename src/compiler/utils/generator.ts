@@ -17,6 +17,7 @@ export function createTypeCalls(type: ts.TypeNode): ts.CallExpression {
     case ts.SyntaxKind.BooleanKeyword:
     case ts.SyntaxKind.NumberKeyword:
     case ts.SyntaxKind.StringKeyword:
+    case ts.SyntaxKind.AnyKeyword:
       {
         return createTypeCall('t', type.getText());
       }
