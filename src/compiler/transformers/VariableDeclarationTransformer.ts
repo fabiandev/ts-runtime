@@ -15,6 +15,7 @@ export class VariableDeclarationTransformer extends Transformer {
     }
 
     for (const declaration of node.declarations) {
+      if (declaration.initializer)
       if (declaration.kind === ts.SyntaxKind.VariableDeclaration) {
         declarations.push(...this.transformDeclaration(declaration));
         continue;
@@ -27,8 +28,16 @@ export class VariableDeclarationTransformer extends Transformer {
   }
 
   private transformDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    if (!node.type) {
+    if (this.wasGenerated(node)) {
       return [node];
+    }
+
+    if (!node.type) {
+      if (node.parent.flags === ts.NodeFlags.Const) {
+        return this.transformUntypedConstDeclaration(node);
+      }
+
+      return this.transformUntypedLetDeclaration(node);
     }
 
     if (node.parent.flags === ts.NodeFlags.Const) {
@@ -55,6 +64,37 @@ export class VariableDeclarationTransformer extends Transformer {
   private transformConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = node.name.getText();
     const typeCalls = generator.createTypeCalls(node.type);
+
+    const initializer = ts.factory.createCall(
+      ts.factory.createPropertyAccess(typeCalls, 'assert'), [], [node.initializer],
+    );
+
+    const assignment = ts.factory.updateVariableDeclaration(node, node.name, node.type, initializer);
+
+    return [assignment];
+  }
+
+  private transformUntypedLetDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
+    const nodeName = node.name.getText();
+    const typeDefinition = generator.createTypeDefinition(
+      'any',
+      `_${nodeName}Type`,
+    );
+
+    if (!node.initializer) {
+      return [typeDefinition, node];
+    }
+
+    const initializer = generator.createTypeCall(`_${nodeName}Type`, 'assert', [node.initializer]);
+    const assignment = ts.factory.updateVariableDeclaration(node, node.name, node.type, initializer);
+
+    return [typeDefinition, assignment];
+  }
+
+  private transformUntypedConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
+    // return [node];
+    const nodeName = node.name.getText();
+    const typeCalls = generator.createTypeCall('t', 'any');
 
     const initializer = ts.factory.createCall(
       ts.factory.createPropertyAccess(typeCalls, 'assert'), [], [node.initializer],

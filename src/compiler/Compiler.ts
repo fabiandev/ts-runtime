@@ -56,6 +56,7 @@ export class Compiler {
 
   protected onSubstituteNode(context: ts.EmitContext, node: ts.Node): ts.Node {
     let substitutedNode = node;
+    let parent = node.parent;
 
     for (const transformer of this.transformers) {
       substitutedNode = transformer.process(substitutedNode, context);

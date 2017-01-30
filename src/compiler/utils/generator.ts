@@ -1,6 +1,6 @@
 import * as ts from 'typescript/built/local/typescript';
 
-export function createTypeDefinition(type: ts.TypeNode, name: string): ts.VariableDeclaration {
+export function createTypeDefinition(type: ts.TypeNode | string, name: string): ts.VariableDeclaration {
   return ts.factory.createVariableDeclaration(
     name,
     undefined,
@@ -8,10 +8,16 @@ export function createTypeDefinition(type: ts.TypeNode, name: string): ts.Variab
   );
 }
 
-export function createTypeCalls(type: ts.TypeNode): ts.CallExpression {
+export function createTypeCalls(type: ts.TypeNode | string): ts.CallExpression {
   if (!type) {
     return null;
   }
+
+  if (typeof type === 'string') {
+    return createTypeCall('t', type as string);
+  }
+
+  type = type as ts.TypeNode;
 
   switch (type.kind) {
     case ts.SyntaxKind.BooleanKeyword:

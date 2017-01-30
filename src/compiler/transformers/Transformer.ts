@@ -25,8 +25,12 @@ export abstract class Transformer {
   }
 
   public process(node: ts.Node, context?: ts.EmitContext): ts.Node {
+    if (this.config.skipGenerated && this.wasGenerated(node)) {
+      return node;
+    }
+
     if (this.config.skipVisited) {
-      if (this.visited.indexOf(node) !== -1) {
+      if (this.wasVisited(node)) {
         return node;
       }
 
@@ -38,6 +42,14 @@ export abstract class Transformer {
     }
 
     return this.transform(node, context);
+  }
+
+  protected wasGenerated(node: ts.Node): boolean {
+    return !node.parent;
+  }
+
+  protected wasVisited(node: ts.Node): boolean {
+    return this.visited.indexOf(node) !== -1;
   }
 
 }

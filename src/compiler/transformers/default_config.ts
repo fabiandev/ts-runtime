@@ -1,7 +1,8 @@
 import TransformerConfig from './TransformerConfig';
 
 export const DEFAULT_CONFIG: TransformerConfig = {
-  skipVisited: true,
+  skipVisited: false,
+  skipGenerated: false,
 };
 
 export default DEFAULT_CONFIG;
