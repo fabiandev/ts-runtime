@@ -13,6 +13,8 @@ export class Compiler {
   constructor(protected config: Config, transformers?: Transformer[]) {
     const transformersToEnable = transformers || DEFAULT_TRANSFORMERS;
 
+    Transformer.DEFAULT_CONFIG = config;
+
     const enabledTtransformers = Object.keys(transformersToEnable)
       .map((key: string) => {
         return transformers ?

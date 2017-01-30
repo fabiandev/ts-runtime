@@ -1,10 +1,11 @@
 import * as ts from 'typescript/built/local/typescript';
-import TransformerConfig from './TransformerConfig';
-import DEFAULT_CONFIG from './default_config';
+import { Config, DEFAULT_CONFIG } from '../../config';
 
 export abstract class Transformer {
 
-  protected config: TransformerConfig;
+  public static DEFAULT_CONFIG: Config = DEFAULT_CONFIG;
+
+  protected config: Config;
 
   protected visited: ts.Node[] = [];
 
@@ -12,8 +13,8 @@ export abstract class Transformer {
 
   protected abstract transform(node: ts.Node, context?: ts.EmitContext): ts.Node;
 
-  constructor(config?: TransformerConfig) {
-    this.config = config ? config : DEFAULT_CONFIG;
+  constructor(config?: Config) {
+    this.config = config ? config : Transformer.DEFAULT_CONFIG;
   }
 
   public getSubstitutions(): ts.SyntaxKind[] {
