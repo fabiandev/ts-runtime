@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as tsr from '../index';
 import { Writer, WriterConfig } from '../writer';
 
-const file = path.join(__dirname, 'test.ts');
+const file = path.join(__dirname, 'test1.ts');
 
 const writerConfig: WriterConfig = {
   basePath: __dirname,

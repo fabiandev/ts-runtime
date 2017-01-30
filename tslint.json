@@ -14,7 +14,10 @@
     "object-literal-shorthand": false,
     "no-empty-interface": false,
     "member-ordering": false,
-    "no-trailing-whitespace": false
+    "no-trailing-whitespace": false,
+    "no-consecutive-blank-lines": false,
+    "interface-over-type-literal": false,
+    "prefer-const": false
   },
   "jsRules": {
 

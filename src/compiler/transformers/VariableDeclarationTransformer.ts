@@ -6,8 +6,13 @@ export class VariableDeclarationTransformer extends Transformer {
 
   protected substitution = ts.SyntaxKind.VariableDeclarationList;
 
-  public onSubstituteNode(context: ts.EmitContext, node: ts.VariableDeclarationList): ts.Node {
+  protected transform(node: ts.VariableDeclarationList): ts.Node {
+    console.log('var transform');
     const declarations: ts.VariableDeclaration[] = [];
+
+    if (!node.declarations) {
+      return node;
+    }
 
     for (const declaration of node.declarations) {
       declarations.push(...this.processDeclaration(declaration));
@@ -56,3 +61,5 @@ export class VariableDeclarationTransformer extends Transformer {
   }
 
 }
+
+export default VariableDeclarationTransformer;
