@@ -1,5 +1,8 @@
 export { Transformer } from './transformers/Transformer';
+
 export { VariableDeclarationTransformer } from './transformers/VariableDeclarationTransformer';
+export { FunctionDeclarationTransformer } from './transformers/FunctionDeclarationTransformer';
+export { HasStatementsTransformer } from './transformers/HasStatementsTransformer';
 
 export { TransformerConfig } from './transformers/TransformerConfig';
 

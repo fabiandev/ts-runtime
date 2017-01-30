@@ -15,25 +15,30 @@ export class VariableDeclarationTransformer extends Transformer {
     }
 
     for (const declaration of node.declarations) {
-      declarations.push(...this.processDeclaration(declaration));
+      if (declaration.kind === ts.SyntaxKind.VariableDeclaration) {
+        declarations.push(...this.transformDeclaration(declaration));
+        continue;
+      }
+
+      declarations.push(declaration);
     }
 
     return ts.factory.updateVariableDeclarationList(node, declarations);
   }
 
-  private processDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
+  private transformDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     if (!node.type) {
       return [node];
     }
 
     if (node.parent.flags === ts.NodeFlags.Const) {
-      return this.processConstDeclaration(node);
+      return this.transformConstDeclaration(node);
     }
 
-    return this.processLetDeclaration(node);
+    return this.transformLetDeclaration(node);
   }
 
-  private processLetDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
+  private transformLetDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = node.name.getText();
     const typeDefinition = generator.createTypeDefinition(node.type, `_${nodeName}Type`);
 
@@ -47,7 +52,7 @@ export class VariableDeclarationTransformer extends Transformer {
     return [typeDefinition, assignment];
   }
 
-  private processConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
+  private transformConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = node.name.getText();
     const typeCalls = generator.createTypeCalls(node.type);
 

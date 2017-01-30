@@ -24,7 +24,7 @@ export abstract class Transformer {
     return this.visited;
   }
 
-  public process(context: ts.EmitContext, node: ts.Node): ts.Node {
+  public process(node: ts.Node, context?: ts.EmitContext): ts.Node {
     if (this.config.skipVisited) {
       if (this.visited.indexOf(node) !== -1) {
         return node;
