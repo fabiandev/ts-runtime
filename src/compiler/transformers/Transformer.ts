@@ -1,4 +1,4 @@
-import * as ts from 'typescript/built/local/typescript';
+import * as ts from 'typescript';
 import { Config, DEFAULT_CONFIG } from '../../config';
 
 export abstract class Transformer {

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ts from 'typescript/built/local/typescript';
+import * as ts from 'typescript';
 import { Config } from '../config';
 import { Transformer, DEFAULT_TRANSFORMERS } from './transformers';
 import CompilerMode from './CompilerMode';

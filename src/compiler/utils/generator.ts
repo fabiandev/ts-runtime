@@ -1,4 +1,4 @@
-import * as ts from 'typescript/built/local/typescript';
+import * as ts from 'typescript';
 
 export function createTypeDefinition(type: ts.TypeNode | string, name: string): ts.VariableDeclaration {
   return ts.factory.createVariableDeclaration(

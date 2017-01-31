@@ -1,4 +1,4 @@
-import * as ts from 'typescript/built/local/typescript';
+import * as ts from 'typescript';
 import { Transformer } from './Transformer';
 import { generator } from '../utils';
 

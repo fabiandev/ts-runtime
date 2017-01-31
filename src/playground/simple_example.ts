@@ -1,5 +1,4 @@
-import * as ts from 'typescript/built/local/typescript';
-import * as t from 'typescript';
+import * as ts from 'typescript';
 
 const input = `
 const fun = () => {
@@ -20,16 +19,16 @@ function visit(node: ts.Node): ts.Node {
   // return ts.visitEachChild(node, visit);
   //
   if (node.getChildCount() > 0) {
-    ts.visitEachChild(node, visit)
+    ts.visitEachChild(node, visit);
   }
 
-  console.log('-->\n', node.getText(), '\n<--')
+  console.log('-->\n', node.getText(), '\n<--');
   console.log('');
 
   if (node.kind === ts.SyntaxKind.Identifier && (node as ts.Identifier).text === 'undefined') {
     return ts.factory.createVoidZero();
   } else {
-    return node
+    return node;
   }
 
 }

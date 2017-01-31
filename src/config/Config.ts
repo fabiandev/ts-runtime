@@ -1,4 +1,4 @@
-import * as ts from 'typescript/built/local/typescript';
+import * as ts from 'typescript';
 import { ScriptTarget, ScriptKind } from 'typescript';
 import { CompilerConfig } from '../compiler/CompilerConfig';
 

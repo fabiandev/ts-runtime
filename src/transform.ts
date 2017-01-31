@@ -1,4 +1,4 @@
-import * as ts from 'typescript/built/local/typescript';
+import * as ts from 'typescript';
 import { Compiler, CompilerResult, CompilerConfig } from './compiler';
 import { Config, DEFAULT_CONFIG } from './config';
 
@@ -33,6 +33,7 @@ function getFiles(files: string | string[]): string[] {
 }
 
 function finish(transformerResult?: CompilerResult): void {
+  process.emit('done');
   console.log('--> Finished.');
 }
 
