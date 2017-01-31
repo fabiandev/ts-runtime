@@ -1,19 +1,12 @@
-import * as ts from 'typescript';
-import Config from './Config';
-import { DEFAULT_CONFIG as DEFAULT_COMPILER_CONFIG } from '../compiler';
+import * as ts from 'typescript/built/local/typescript';
+import { Config, ScriptTarget, ScriptKind } from './Config';
+import DEFAULT_COMPILER_CONFIG from '../compiler/default_config';
 
 export const DEFAULT_CONFIG: Config = Object.assign({},
   {
-    compilerOptions: {
-      allowJs: false,
-      emitDecoratorMetadata: true,
-      experimentalDecorators: true,
-      // module: ts.ModuleKind.System,
-      removeComments: false,
-      sourceMap: false,
-      target: ts.ScriptTarget.ES6,
-    },
-    encoding: 'utf8',
+    languageVersion: ScriptTarget.ES6,
+    scriptKind: ScriptKind.TS,
+    setParentNodes: true,
   }, DEFAULT_COMPILER_CONFIG);
 
 export default DEFAULT_CONFIG;

@@ -1,8 +1,8 @@
 import FileResult from './FileResult';
-import CompilerConfig from './CompilerConfig';
+import { Config } from '../config';
 
 export interface CompilerResult {
-  config: CompilerConfig;
+  config: Config;
   fileResults: FileResult[];
 }
 

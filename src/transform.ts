@@ -1,12 +1,12 @@
 import * as ts from 'typescript/built/local/typescript';
-import { Compiler, CompilerResult, CompilerConfig, DEFAULT_CONFIG as DEFAULT_COMPILER_CONFIG } from './compiler';
+import { Compiler, CompilerResult, CompilerConfig } from './compiler';
 import { Config, DEFAULT_CONFIG } from './config';
 
-export function transform(files: string | string[], config: Config = {}): Promise<CompilerResult> {
+export function transform(files?: string | string[], config: Config = {}): Promise<CompilerResult> {
   console.log('--> Starting');
 
   config = getConfig(config);
-  config.files = getFiles(files);
+  config.files = getFiles(files || config.files);
 
   return new Compiler(config)
     .process()
@@ -17,7 +17,7 @@ export function transform(files: string | string[], config: Config = {}): Promis
 }
 
 function getConfig(config: Config = {}): Config {
-  return Object.assign({}, DEFAULT_CONFIG, DEFAULT_COMPILER_CONFIG, config);
+  return Object.assign({}, DEFAULT_CONFIG, config);
 }
 
 function getFiles(files: string | string[]): string[] {

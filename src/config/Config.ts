@@ -1,9 +1,13 @@
-import * as ts from 'typescript';
+import * as ts from 'typescript/built/local/typescript';
+import { ScriptTarget, ScriptKind } from 'typescript';
 import { CompilerConfig } from '../compiler/CompilerConfig';
 
+
 export interface Config extends CompilerConfig {
-  compilerOptions?: ts.CompilerOptions;
-  encoding?: string;
+  languageVersion?: ScriptTarget;
+  scriptKind?: ScriptKind;
+  setParentNodes?: boolean;
 }
 
+export { ScriptTarget, ScriptKind };
 export default Config;

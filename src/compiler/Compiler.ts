@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as ts from 'typescript/built/local/typescript';
 import { Config } from '../config';
 import { Transformer, DEFAULT_TRANSFORMERS } from './transformers';
+import CompilerMode from './CompilerMode';
 import CompilerResult from './CompilerResult';
 import FileResult from './FileResult';
 
@@ -79,12 +80,12 @@ export class Compiler {
         let sourceFile = ts.createSourceFile(
           fileName,
           source,
-          this.config.compilerOptions.target || ts.ScriptTarget.Latest,
-          true,
-          ts.ScriptKind.TS,
+          this.config.languageVersion || ts.ScriptTarget.Latest,
+          this.config.setParentNodes || true,
+          this.config.scriptKind || ts.ScriptKind.TS,
         );
 
-        if (this.config.mode === 'visit') {
+        if (this.config.mode === CompilerMode.Visit) {
           transformers = [];
           sourceFile = this.visit(sourceFile) as ts.SourceFile;
         }

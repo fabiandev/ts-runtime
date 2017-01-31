@@ -92,7 +92,10 @@ export class VariableDeclarationTransformer extends Transformer {
   }
 
   private transformUntypedConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    // return [node];
+    if (!this.config.assertConst) {
+      return [node];
+    }
+
     const nodeName = node.name.getText();
     const typeCalls = generator.createTypeCall('t', 'any');
 
