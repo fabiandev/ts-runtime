@@ -7,8 +7,6 @@ export class FunctionDeclarationTransformer extends Transformer {
   protected substitution = ts.SyntaxKind.FunctionDeclaration;
 
   protected transform(node: ts.FunctionDeclaration, context: ts.EmitContext): ts.Node {
-    console.log('function transform');
-
     const typeDefinitions: ts.VariableDeclaration[] = [];
     const typeChecks: ts.ExpressionStatement[] = [];
 

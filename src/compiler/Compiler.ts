@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as ts from 'typescript';
 import { Config } from '../config';
 import { Transformer, DEFAULT_TRANSFORMERS } from './transformers';
+import { bus } from '../bus';
 import CompilerMode from './CompilerMode';
 import CompilerResult from './CompilerResult';
 import FileResult from './FileResult';
@@ -27,6 +28,8 @@ export class Compiler {
   }
 
   public process(): Promise<CompilerResult> {
+    bus.emit('compiler.start', this.config);
+
     const toTransform: Array<Promise<FileResult>> = [];
 
     const transform: ts.Transformer = (context) => (sourceFile) => {
@@ -45,16 +48,27 @@ export class Compiler {
       toTransform.push(this.transformFile(file, [transform]));
     }
 
-    return Promise.all(toTransform)
+    // Do not reject this promise, if individual files fail
+    return Promise.all(toTransform.map(p => p.catch(e => e)))
       .then(results => {
+        bus.emit('compiler.done', this.config);
+
         return {
           config: this.config,
           fileResults: results,
         };
       })
-      .catch(err => {
-        console.error(err);
-      });
+      .catch(e => {});
+
+    // return Promise.all(toTransform)
+    //   .then(results => {
+    //     bus.emit('compiler.done', this.config);
+    //
+    //     return {
+    //       config: this.config,
+    //       fileResults: results,
+    //     };
+    //   });
   }
 
   protected onSubstituteNode(context: ts.EmitContext, node: ts.Node): ts.Node {
@@ -69,34 +83,40 @@ export class Compiler {
   }
 
   private transformFile(filePath: string, transformers: ts.Transformer[]): Promise<FileResult> {
+    bus.emit('transform.file.start', filePath);
+
     return new Promise((resolve, reject) => {
-      fs.readFile(filePath, this.config.encoding, (err, source) => {
-        if (err) {
-          return reject(`Error reading file ${filePath}`);
-        }
 
-        const fileName = path.basename(filePath);
+      const fileName = path.basename(filePath);
 
-        let sourceFile = ts.createSourceFile(
-          fileName,
-          source,
-          this.config.languageVersion || ts.ScriptTarget.Latest,
-          this.config.setParentNodes || true,
-          this.config.scriptKind || ts.ScriptKind.TS,
-        );
+      const source = ts.sys.readFile(filePath, this.config.encoding);
 
-        if (this.config.mode === CompilerMode.Visit) {
-          transformers = [];
-          sourceFile = this.visit(sourceFile) as ts.SourceFile;
-        }
+      if (source === undefined) {
+        bus.emit('transform.file.readError', filePath);
+        return reject(`Error reading ${filePath}`);
+      }
 
-        const result = ts.emit(sourceFile, transformers).result;
+      let sourceFile = ts.createSourceFile(
+        fileName,
+        source,
+        this.config.languageVersion || ts.ScriptTarget.Latest,
+        this.config.setParentNodes || true,
+        this.config.scriptKind || ts.ScriptKind.TS,
+      );
 
-        resolve({
-          fileName,
-          filePath,
-          result,
-        });
+      if (this.config.mode === CompilerMode.Visit) {
+        transformers = [];
+        sourceFile = this.visit(sourceFile) as ts.SourceFile;
+      }
+
+      const result = ts.emit(sourceFile, transformers).result;
+
+      bus.emit('transform.file.done', filePath);
+
+      resolve({
+        fileName,
+        filePath,
+        result,
       });
     });
   }

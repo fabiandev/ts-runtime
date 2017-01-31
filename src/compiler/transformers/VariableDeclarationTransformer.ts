@@ -7,7 +7,6 @@ export class VariableDeclarationTransformer extends Transformer {
   protected substitution = ts.SyntaxKind.VariableDeclarationList;
 
   protected transform(node: ts.VariableDeclarationList): ts.Node {
-    console.log('var transform');
     const declarations: ts.VariableDeclaration[] = [];
 
     if (!node.declarations) {

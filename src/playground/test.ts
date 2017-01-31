@@ -1,6 +1,6 @@
-type ComplexType = {};
-type one = {};
-type two = {};
+class A {
+
+}
 
 function f(param1: boolean, param2?: string[]): string {
 

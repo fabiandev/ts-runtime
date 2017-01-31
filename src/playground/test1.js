@@ -13,7 +13,6 @@ function test(param1: string, param2?: boolean[]): [number, string] {
     x = 1; // TODO: check reassignments
     return [num, str]; // TODO: check return value
 }
-t.annotate(test, t.function(t.param("param1", t.string()), t.param("param2", t.array(t.boolean())), t.return(t.tuple(t.number(), t.string()))));
 let g;
 let _eType = t.any(), e = _eType.assert(g = 10);
 g = 'hi';

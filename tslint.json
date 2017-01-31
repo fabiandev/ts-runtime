@@ -17,7 +17,8 @@
     "no-trailing-whitespace": false,
     "no-consecutive-blank-lines": false,
     "interface-over-type-literal": false,
-    "prefer-const": false
+    "prefer-const": false,
+    "no-var-requires": false
   },
   "jsRules": {
 

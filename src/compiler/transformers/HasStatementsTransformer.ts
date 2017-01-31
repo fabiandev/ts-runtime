@@ -2,9 +2,9 @@ import * as ts from 'typescript';
 import Transformer from './Transformer';
 import { generator } from '../utils';
 
-// type HasStatementsNode = ts.SourceFile | ts.Block | ts.ModuleBlock | ts.CaseClause | ts.DefaultClause;
-// export { HasStatementsNode };
-//
+type HasStatementsNode = ts.SourceFile | ts.Block | ts.ModuleBlock | ts.CaseClause | ts.DefaultClause;
+export { HasStatementsNode };
+
 export class HasStatementsTransformer extends Transformer {
 
   protected substitution: ts.SyntaxKind[] = [
@@ -15,7 +15,7 @@ export class HasStatementsTransformer extends Transformer {
     ts.SyntaxKind.DefaultClause,
   ];
 
-  protected transform(node: ts.SourceFile | ts.Block | ts.ModuleBlock | ts.CaseClause | ts.DefaultClause): ts.Node {
+  protected transform(node: HasStatementsNode): ts.Node {
     if (!Array.isArray(node.statements)) {
       return node;
     }
@@ -85,7 +85,7 @@ export class HasStatementsTransformer extends Transformer {
               ts.factory.createIdentifier('function'),
             ),
             [],
-            args, // <-- [ t.param('paramName', t.type()) ]
+            args,
           ),
         ],
       ),
