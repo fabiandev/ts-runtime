@@ -43,7 +43,7 @@ status.init = () => {
 
 status.start = (num: number) => {
   fileCount = num;
-  spinner.text = chalk.bold.underline(`Got ${num} file${num === 1 ? '' : 's'} to process`);
+  spinner.text = chalk.bold(`Got ${num} file${num === 1 ? '' : 's'} to process:`);
   spinner.stopAndPersist();
   spinner.text = `${processed}/${fileCount}`;
   spinner.start();

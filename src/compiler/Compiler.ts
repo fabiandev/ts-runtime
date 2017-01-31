@@ -57,18 +57,7 @@ export class Compiler {
           config: this.config,
           fileResults: results,
         };
-      })
-      .catch(e => {});
-
-    // return Promise.all(toTransform)
-    //   .then(results => {
-    //     bus.emit('compiler.done', this.config);
-    //
-    //     return {
-    //       config: this.config,
-    //       fileResults: results,
-    //     };
-    //   });
+      });
   }
 
   protected onSubstituteNode(context: ts.EmitContext, node: ts.Node): ts.Node {
@@ -93,7 +82,11 @@ export class Compiler {
 
       if (source === undefined) {
         bus.emit('transform.file.readError', filePath);
-        return reject(`Error reading ${filePath}`);
+        return reject({
+          fileName,
+          filePath,
+          result: undefined,
+        });
       }
 
       let sourceFile = ts.createSourceFile(
