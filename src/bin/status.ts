@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as ora from 'ora';
 import * as chalk from 'chalk';
+import * as symbols from 'log-symbols';
 
 let spinner: any;
 let fileCount: number = 0;
@@ -52,7 +53,7 @@ status.start = (num: number) => {
 
 status.end = () => {
   if (errors > 0) {
-    spinner.fail(chalk.red(`There ${errors === 1 ? 'was' : 'were'} ${errors} error${errors === 1 ? '' : 's'}`));
+    spinner.stopAndPersist({symbol: symbols.warning, text: chalk.yellow(`All processing finished, but there ${errors === 1 ? 'was' : 'were'} ${errors} error${errors === 1 ? '' : 's'}`)});
   } else {
     spinner.succeed(chalk.green('All files have been processed'));
   }
@@ -66,24 +67,27 @@ status.term = () => {
 
 status.fileStart = (filePath: string) => {
   processed++;
-  spinner.text = `Processing ${filePath} (${processed}/${fileCount})`;
+  const countStr = chalk.gray(`[${processed}/${fileCount}]`);
+  spinner.text = `${countStr} Processing ${filePath}`;
 };
 
 status.fileEnd = (filePath: string) => {
-  // spinner.text = `${processed}/${fileCount}`;
-  spinner.succeed(`Done processing ${filePath}`);
+  const countStr = chalk.gray(`[${processed}/${fileCount}]`);
+  spinner.succeed(`${countStr} Done processing ${filePath}`);
   spinner.start();
 };
 
 status.fileFail = (filePath: string) => {
   errors++;
-  spinner.fail(`Error processing ${filePath}`);
+  const countStr = chalk.gray(`[${processed}/${fileCount}]`);
+  spinner.fail(`${countStr} Error processing ${filePath}`);
   spinner.start();
 };
 
 status.fileReadError = (filePath: string) => {
   errors++;
-  spinner.fail(`Could not read ${filePath}`);
+  const countStr = chalk.gray(`[${processed}/${fileCount}]`);
+  spinner.fail(`${countStr} Could not read ${filePath}`);
   spinner.start();
 };
 
