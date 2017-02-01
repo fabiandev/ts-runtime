@@ -7,6 +7,8 @@ let spinner: any;
 let fileCount: number = 0;
 let processed: number = 0;
 let errors: number = 0;
+let startWrite: number = 0;
+let written: number = 0;
 
 process.on('uncaughtException', (error: Error) => {
   status.error(error);
@@ -39,6 +41,8 @@ status.init = () => {
   fileCount = 0;
   processed = 0;
   errors = 0;
+  startWrite = 0;
+  written = 0;
   spinner = ora();
 };
 
@@ -53,9 +57,18 @@ status.start = (num: number) => {
 
 status.end = () => {
   if (errors > 0) {
-    spinner.stopAndPersist({symbol: symbols.warning, text: chalk.yellow(`All processing finished, but there ${errors === 1 ? 'was' : 'were'} ${errors} error${errors === 1 ? '' : 's'}`)});
+    const text = chalk.yellow(`Processing finished, but there ${errors === 1 ? 'was' : 'were'} ${errors} error${errors === 1 ? '' : 's'}`);
+    spinner.stopAndPersist({ symbol: symbols.warning, text });
   } else {
     spinner.succeed(chalk.green('All files have been processed'));
+  }
+
+  if (written < startWrite) {
+    const noFinish = startWrite - written;
+    const text = chalk.yellow(`${written} file${written === 1 ? '' : 's'} ${written === 1 ? 'has' : 'have'} been written, ${noFinish} did not finish`);
+    spinner.stopAndPersist({ symbol: symbols.warning, text });
+  } else if (written > 0) {
+    spinner.succeed(chalk.green(`${written} file${written === 1 ? '' : 's'} ${written === 1 ? 'has' : 'have'} been written`));
   }
 
   process.exit(0);
@@ -100,11 +113,11 @@ status.writeEnd = (num: number) => {
 };
 
 status.fileWriteStart = (filePath: string) => {
-
+  startWrite++;
 };
 
 status.fileWriteEnd = (filePath: string) => {
-
+  written++;
 };
 
 status.error = (err: any) => {
