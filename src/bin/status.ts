@@ -68,27 +68,43 @@ status.term = () => {
 status.fileStart = (filePath: string) => {
   processed++;
   const countStr = chalk.gray(`[${processed}/${fileCount}]`);
-  spinner.text = `${countStr} Processing ${filePath}`;
+  spinner.text = `${countStr} Processing ${path.basename(filePath)}`;
 };
 
 status.fileEnd = (filePath: string) => {
   const countStr = chalk.gray(`[${processed}/${fileCount}]`);
-  spinner.succeed(`${countStr} Done processing ${filePath}`);
+  spinner.succeed(`${countStr} Done processing ${path.basename(filePath)}`);
   spinner.start();
 };
 
 status.fileFail = (filePath: string) => {
   errors++;
   const countStr = chalk.gray(`[${processed}/${fileCount}]`);
-  spinner.fail(`${countStr} Error processing ${filePath}`);
+  spinner.fail(`${countStr} Error processing ${path.basename(filePath)}`);
   spinner.start();
 };
 
 status.fileReadError = (filePath: string) => {
   errors++;
   const countStr = chalk.gray(`[${processed}/${fileCount}]`);
-  spinner.fail(`${countStr} Could not read ${filePath}`);
+  spinner.fail(`${countStr} Could not read ${path.basename(filePath)}`);
   spinner.start();
+};
+
+status.writeStart = (num: number) => {
+  spinner.text = `Writing files`;
+};
+
+status.writeEnd = (num: number) => {
+  spinner.succeed(`Wrote ${num} files`);
+};
+
+status.fileWriteStart = (filePath: string) => {
+
+};
+
+status.fileWriteEnd = (filePath: string) => {
+
 };
 
 status.error = (err: any) => {

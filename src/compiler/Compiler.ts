@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+// import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 import { Config } from '../config';
@@ -76,17 +76,15 @@ export class Compiler {
 
     return new Promise((resolve, reject) => {
 
+      filePath = path.normalize(path.join(process.cwd(), filePath));
+
       const fileName = path.basename(filePath);
 
       const source = ts.sys.readFile(filePath, this.config.encoding);
 
       if (source === undefined) {
         bus.emit('transform.file.readError', filePath);
-        return reject({
-          fileName,
-          filePath,
-          result: undefined,
-        });
+        return reject(`Error reading ${filePath}`);
       }
 
       let sourceFile = ts.createSourceFile(

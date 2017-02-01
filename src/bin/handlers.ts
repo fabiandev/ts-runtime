@@ -37,6 +37,22 @@ bus.on('transform.file.done', (filePath: string) => {
   child.send({message: 'fileEnd', payload: filePath});
 });
 
+bus.on('write.start', (num: number) => {
+  child.send({message: 'writeStart', payload: num});
+});
+
+bus.on('write.end', (num: number) => {
+  child.send({message: 'writeEnd', payload: num});
+});
+
+bus.on('write.file.start', (filePath: string) => {
+  child.send({message: 'fileWriteStart', payload: filePath});
+});
+
+bus.on('transform.file.done', (filePath: string) => {
+  child.send({message: 'fileWriteEnd', payload: filePath});
+});
+
 // process.on('SIGINT', () => {
 //   child.send({message: 'term'});
 // });

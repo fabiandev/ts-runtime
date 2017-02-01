@@ -1,8 +1,8 @@
 import WriterConfig from './WriterConfig';
 
 export const DEFAULT_CONFIG: WriterConfig = {
-  basePath: __dirname,
-  writePath: __dirname,
+  basePath: process.cwd(),
+  writePath: process.cwd(),
   encoding: 'utf8',
 };
 

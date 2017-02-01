@@ -1,9 +1,11 @@
 import * as path from 'path';
-import * as fs from 'fs';
+// import * as fs from 'fs';
+import * as ts from 'typescript';
 import { CompilerResult, FileResult } from '../compiler';
 import WriterConfig from './WriterConfig';
 import WriterResult from './WriterResult';
 import DEFAULT_CONFIG from './default_config';
+import { bus } from '../bus';
 
 export class Writer {
 
@@ -32,23 +34,17 @@ export class Writer {
         `${path.basename(location, '.ts')}.js`,
       );
 
-      fs.writeFile(location, fileResult.result, {
-        encoding: config.encoding,
-      }, err => {
-        if (err) {
-          return reject(`Error writing ${location}`);
-        }
+      ts.sys.writeFile(location, fileResult.result);
 
-        console.log('--> Written:', location);
+      bus.emit('write.file.done', fileResult.filePath);
 
-        resolve({
-          fileResult,
-          originalPath: fileResult.fileName,
-          writePath: location,
-        });
+      resolve({
+        fileResult,
+        originalPath: fileResult.fileName,
+        writePath: location,
       });
 
-      console.log('--> Writing:', location);
+      bus.emit('write.file.start', fileResult.filePath);
     });
   }
 
