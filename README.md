@@ -89,3 +89,22 @@ function doSomething(name: string, persons?: Person[]) {
 }
 
 ```
+
+## Add custom transformers
+
+Adding custom transformers is simple:
+
+```ts
+import * as ts from 'typescript';
+import { Transformer } ts-runtime;
+
+export class InterfaceDeclarationTransformer {
+
+  protected substitution = ts.SyntaxKind.ts.SyntaxKind.InterfaceDeclaration;
+  
+  protected transform(node: ts.InterfaceDeclaration): ts.Node {
+    // perform transformations
+    return node;
+  }
+}
+```
