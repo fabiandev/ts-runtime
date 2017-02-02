@@ -96,7 +96,7 @@ Adding custom transformers is simple:
 
 ```ts
 import * as ts from 'typescript';
-import { Transformer } ts-runtime;
+import { Transformer } from 'ts-runtime';
 
 export class InterfaceDeclarationTransformer {
 
