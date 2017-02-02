@@ -106,5 +106,6 @@ export class InterfaceDeclarationTransformer {
     // perform transformations
     return node;
   }
+  
 }
 ```
