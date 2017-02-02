@@ -90,7 +90,7 @@ function doSomething(name: string, persons?: Person[]) {
 
 ```
 
-## Add custom transformers
+## Custom Transformers
 
 Adding custom transformers is simple:
 
