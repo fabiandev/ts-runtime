@@ -98,7 +98,7 @@ Adding custom transformers is simple:
 import * as ts from 'typescript';
 import { Transformer } from 'ts-runtime';
 
-export class InterfaceDeclarationTransformer {
+export class InterfaceDeclarationTransformer extends Transformer {
 
   protected substitution = ts.SyntaxKind.ts.SyntaxKind.InterfaceDeclaration;
   
