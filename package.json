@@ -21,13 +21,15 @@
     "log-symbols": "^1.0.2",
     "node-status": "^1.0.0",
     "ora": "^1.1.0",
+    "rimraf": "^2.6.1",
     "ts-type-info": "^6.2.2",
-    "typescript": "Microsoft/TypeScript#6c122bcf16c329a21da04d7b5256f20ecc0bbd1d"
+    "typescript": "next"
   },
   "devDependencies": {
     "@types/commander": "^2.3.31",
     "@types/escodegen": "^0.0.6",
     "@types/esprima": "^2.1.33",
-    "@types/node": "^7.0.2"
+    "@types/node": "^7.0.2",
+    "@types/rimraf": "^0.0.28"
   }
 }
