@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import * as util from './util';
 
 export type Scope = ts.SourceFile | ts.Block | ts.ModuleBlock | ts.CaseBlock;
 
@@ -83,7 +84,7 @@ export class MutationContext {
         this._scope = node as Scope;
         break;
       default:
-      // throw new Error(`Scope must be SourceFile, Block, ModuleBlock or CaseBlock, got ${ts.SyntaxKind[node.kind]}.`);
+      throw new Error(`Scope must be SourceFile, Block, ModuleBlock or CaseBlock, got ${ts.SyntaxKind[node.kind]}.`);
     }
   }
 
@@ -92,9 +93,11 @@ export class MutationContext {
   }
 
   set sourceFile(sourceFile: ts.SourceFile) {
-    if (sourceFile.kind === ts.SyntaxKind.SourceFile) {
-      this._sourceFile = sourceFile;
+    if (!util.isKind(sourceFile, ts.SyntaxKind.SourceFile)) {
+      throw new Error(`Attemt to set invalid node as SourceFile, got ${ts.SyntaxKind[sourceFile.kind]}.`);
     }
+
+    this._sourceFile = sourceFile;
   }
 
 }
