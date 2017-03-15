@@ -9,11 +9,18 @@ export abstract class Mutator {
   protected abstract mutate(node: ts.Node, context?: MutationContext): ts.Node;
 
   public mutateNode(node: ts.Node, context: MutationContext): ts.Node {
-    if (!this.shouldMutate(node.kind)) {
+    if (this.getKind().indexOf(node.kind) === -1) {
       return node;
     }
 
-    return this.mutate(node, context);
+    if (context.wasVisited(node)) {
+      return node;
+    }
+
+    const substitution = this.mutate(node, context);
+    context.addVisited(substitution);
+
+    return substitution;
   }
 
   public getKind(): ts.SyntaxKind[] {
@@ -22,14 +29,6 @@ export abstract class Mutator {
     }
 
     return [this.kind];
-  }
-
-  public shouldMutate(kind: ts.SyntaxKind): boolean {
-    if (this.getKind().indexOf(kind) !== -1) {
-      return true;
-    }
-
-    return false;
   }
 
 }

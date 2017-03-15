@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 import { Mutator } from './Mutator';
-import { MutationContext } from '../context'
+import { MutationContext } from '../context';
 
 export class InterfaceDeclarationMutator extends Mutator {
 
