@@ -143,7 +143,7 @@ function transformer(context: ts.TransformationContext): ts.Transformer<ts.Sourc
 
     if (DEBUG) {
       const scope = mutationContext.scope ? ts.SyntaxKind[mutationContext.scope.kind] : 'undefined';
-      console.log(`Visited: ${mutationContext.wasVisited(node) ? 'Yes' : 'No'}`)
+      console.log(`Visited: ${mutationContext.wasVisited(node) ? 'Yes' : 'No'}`);
       console.log(`Scope: ${scope}`);
       console.log(`Kind:  ${ts.SyntaxKind[node.kind]} (${node.kind})`);
       console.log(`File:  ${mutationContext.sourceFile.fileName}`);
