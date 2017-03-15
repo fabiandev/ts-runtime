@@ -21,7 +21,8 @@
     "no-var-requires": false,
     "array-type": false,
     "trailing-comma": false,
-    "variable-name": false
+    "variable-name": false,
+    "no-conditional-assignment": false
   },
   "jsRules": {
 
