@@ -20,6 +20,10 @@ export function getScope(node: ts.Node): ts.Node {
   return getScope(node.parent);
 }
 
+export function isAnyOrLiteralKind(kind: ts.SyntaxKind): boolean {
+  return kind === ts.SyntaxKind.AnyKeyword || kind === ts.SyntaxKind.LiteralType;
+}
+
 // TODO: test
 export function identifierExistsUp(node: ts.Node, id: string | ts.Identifier) {
   if (typeof id !== 'string') id = id.text;

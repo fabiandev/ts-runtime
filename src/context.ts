@@ -67,7 +67,7 @@ export class MutationContext {
     return '';
   }
 
-  // TODO: primitive types fail sometimes
+  // TODO: handle LastTypeNode (and FirstTypeNode)
   public getImplicitTypeNode(node: ts.Node): ts.TypeNode {
     let type = this.checker.getTypeAtLocation(node);
     let typeString = this.checker.typeToString(type);

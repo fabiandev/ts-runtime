@@ -22,7 +22,7 @@ export function typeAssertion(id: string | ts.Expression, args: ts.Expression | 
   return propertyAccessCall(id, 'assert', args, types);
 }
 
-// TODO: Add ParenthesizedType (among others)
+// TODO: Add ParenthesizedType, LiteralType,...
 export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
   if (!type) {
     return null;
@@ -82,7 +82,7 @@ export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
       }
     default:
       {
-        return propertyAccessCall(LIB, 'any');
+        return propertyAccessCall(LIB, 'unknown');
       }
   }
 }
