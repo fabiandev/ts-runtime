@@ -1,1 +1,1 @@
-export const bla = 'bla';
+export const bla = t.any().assert('bla');
