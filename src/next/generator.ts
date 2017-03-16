@@ -1,12 +1,29 @@
 import * as ts from 'typescript';
 
-export const LIB = 't';
+let LIB = 't';
 
-export function typeDefinition(name: string | ts.Identifier, type: string | ts.TypeNode): ts.VariableDeclaration {
-  return ts.createVariableDeclaration(name, undefined, typeAssertion(type));
+export function setLib(lib: string): void {
+  LIB = lib;
 }
 
-export function typeAssertion(type: ts.TypeNode | string): ts.CallExpression {
+export function getLib(): string {
+  return LIB;
+}
+
+export function typeDeclaration(name: string | ts.Identifier, type: string | ts.TypeNode): ts.VariableDeclaration {
+  return ts.createVariableDeclaration(name, undefined, typeDefinition(type));
+}
+
+export function typeDefinitionAndAssertion(type: string | ts.TypeNode, args: ts.Expression | ts.Expression[] = [], types: ts.TypeNode | ts.TypeNode[] = []): ts.CallExpression {
+  return typeAssertion(typeDefinition(type), args, types);
+}
+
+export function typeAssertion(id: string | ts.Expression, args: ts.Expression | ts.Expression[] = [], types: ts.TypeNode | ts.TypeNode[] = []): ts.CallExpression {
+  return propertyAccessCall(id, 'assert', args, types);
+}
+
+// TODO: Add ParenthesizedType (among others)
+export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
   if (!type) {
     return null;
   }
@@ -28,7 +45,7 @@ export function typeAssertion(type: ts.TypeNode | string): ts.CallExpression {
     case ts.SyntaxKind.ArrayType:
       {
         const typeNode = (type as ts.ArrayTypeNode).elementType as ts.TypeNode;
-        const callExpression = propertyAccessCall(LIB, 'array', typeAssertion(typeNode));
+        const callExpression = propertyAccessCall(LIB, 'array', typeDefinition(typeNode));
         return callExpression;
       }
     case ts.SyntaxKind.TypeReference:
@@ -40,7 +57,7 @@ export function typeAssertion(type: ts.TypeNode | string): ts.CallExpression {
 
         if (typeRef.typeArguments) {
           for (const arg of typeRef.typeArguments) {
-            args.push(typeAssertion(arg));
+            args.push(typeDefinition(arg));
           }
         }
 
@@ -58,7 +75,7 @@ export function typeAssertion(type: ts.TypeNode | string): ts.CallExpression {
         const args: ts.CallExpression[] = [];
 
         for (const arg of typeRef.elementTypes) {
-          args.push(typeAssertion(arg));
+          args.push(typeDefinition(arg));
         }
 
         return propertyAccessCall(LIB, 'tuple', args);
