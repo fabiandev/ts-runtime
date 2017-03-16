@@ -102,7 +102,11 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private transformUntypedConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
+
+    console.log(node.name.getText());
     const implicitType = this.context.getImplicitTypeNode(node.name);
+    console.log(ts.SyntaxKind[implicitType.kind]);
+    console.log('\n');
 
     if (!this.context.options.assertAny && implicitType.kind === ts.SyntaxKind.AnyKeyword) {
       return [node];
