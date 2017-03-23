@@ -14,7 +14,7 @@ export function typeDeclaration(name: string | ts.Identifier, type: string | ts.
   return ts.createVariableDeclaration(name, undefined, typeDefinition(type));
 }
 
-export function typeDefinitionAndAssertion(type: string | ts.TypeNode, args: ts.Expression | ts.Expression[] = [], types: ts.TypeNode | ts.TypeNode[] = []): ts.CallExpression {
+export function typeDefinitionAndAssertion(type: string | ts.TypeNode, args: ts.Expression | ts.Expression[] = [], types: ts.TypeNode | ts.TypeNode[] = []): ts.CallExpression {
   return typeAssertion(typeDefinition(type), args, types);
 }
 
@@ -23,7 +23,26 @@ export function typeAssertion(id: string | ts.Expression, args: ts.Expression | 
 }
 
 // TODO: Add ParenthesizedType, LiteralType,...
-export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
+// Array, Object and Function Destructuring
+// Spread operator
+// Default values
+// Remove types in .tsr
+//
+// VoidKeyword (only undefined or null for variables) OK
+// NeverKeyword
+// EnumKeyword
+//
+// ParenthesizedType OK
+// LiteralType
+// UnionType OK
+//
+// TypePredicate
+// ThisType OK
+// TypeOperator
+// IndexedAccessType
+// MappedType
+// TypeAliasDeclaration
+export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
   if (!type) {
     return null;
   }
@@ -39,13 +58,68 @@ export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
     case ts.SyntaxKind.NumberKeyword:
     case ts.SyntaxKind.StringKeyword:
     case ts.SyntaxKind.AnyKeyword:
+    case ts.SyntaxKind.NullKeyword:
       {
         return propertyAccessCall(LIB, type.getText());
+      }
+    case ts.SyntaxKind.SymbolKeyword:
+      {
+        return propertyAccessCall(LIB, 'ref', ts.createIdentifier('Symbol'));
+      }
+    case ts.SyntaxKind.UndefinedKeyword:
+      {
+        return propertyAccessCall(LIB, 'void');
+      }
+    case ts.SyntaxKind.VoidKeyword:
+      {
+        return propertyAccessCall(LIB, 'union', [
+          propertyAccessCall(LIB, 'void'),
+          propertyAccessCall(LIB, 'null')
+        ]);
+      }
+    case ts.SyntaxKind.ParenthesizedType:
+      {
+        return typeDefinition((type as ts.ParenthesizedTypeNode).type);
+      }
+    case ts.SyntaxKind.LiteralType:
+      {
+        const ltn = type as ts.LiteralTypeNode;
+
+        switch (ltn.literal.kind)  {
+          case ts.SyntaxKind.TrueKeyword:
+            return propertyAccessCall(LIB, 'boolean', ts.createTrue());
+          case ts.SyntaxKind.FalseKeyword:
+            return propertyAccessCall(LIB, 'boolean', ts.createFalse());
+          case ts.SyntaxKind.StringLiteral:
+            const str = ltn.literal.getText();
+            return propertyAccessCall(LIB, 'string', ts.createLiteral(str.substring(1, str.length - 1)));
+          case ts.SyntaxKind.NumericLiteral:
+            return propertyAccessCall(LIB, 'number', ts.createNumericLiteral(ltn.literal.getText()));
+          default:
+            // TODO: Throw exception here?
+            {
+              const str = ltn.literal.getText();
+              return propertyAccessCall(LIB, 'ref', ts.createIdentifier(str.substring(1, str.length - 1)));
+            }
+        }
+      }
+    case ts.SyntaxKind.ThisType:
+      {
+        return propertyAccessCall(LIB, 'this', ts.createThis());
+      }
+    case ts.SyntaxKind.UnionType:
+      {
+        let args: ts.CallExpression[] = (type as ts.UnionTypeNode).types.map(typeNode => {
+          return typeDefinition(typeNode);
+        });
+
+        return propertyAccessCall(LIB, 'union', args);
       }
     case ts.SyntaxKind.ArrayType:
       {
         const typeNode = (type as ts.ArrayTypeNode).elementType as ts.TypeNode;
         const callExpression = propertyAccessCall(LIB, 'array', typeDefinition(typeNode));
+
         return callExpression;
       }
     case ts.SyntaxKind.TypeReference:
@@ -56,7 +130,7 @@ export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
         let callExpression: ts.CallExpression;
 
         if (typeRef.typeArguments) {
-          for (const arg of typeRef.typeArguments) {
+          for (let arg of typeRef.typeArguments) {
             args.push(typeDefinition(arg));
           }
         }
@@ -82,6 +156,7 @@ export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
       }
     default:
       {
+        // TODO: Throw exception, type cannot be classified.
         return propertyAccessCall(LIB, 'unknown');
       }
   }
