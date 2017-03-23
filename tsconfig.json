@@ -21,8 +21,8 @@
   ],
   "exclude": [
     "node_modules",
+    "src/playground/snippets",
     "dist",
-    "src/compiler/_archive",
-    "src/playground"
+    "src/compiler/_archive"
   ]
 }
