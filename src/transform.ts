@@ -7,7 +7,7 @@ import { MutationContext } from './context';
 import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
 
-const DEBUG = false;
+const DEBUG = true;
 
 export function transform(entryFile: string, options?: Options) {
   options = getOptions(options);
@@ -15,9 +15,7 @@ export function transform(entryFile: string, options?: Options) {
   let host: ts.CompilerHost;
   let program: ts.Program;
 
-  startTransformation();
-
-  function startTransformation(): void {
+  (function autoStartTransformation(): void {
     notify(bus.events.START, { entryFile, options });
 
     const basePath = path.dirname(entryFile);
@@ -79,7 +77,7 @@ export function transform(entryFile: string, options?: Options) {
 
     result.dispose();
 
-    emit();
+    emitTransformed();
 
     if (!options.keepTempFiles) {
       const tempPath = getTempPath(basePath, options.tempFolderName);
@@ -89,9 +87,9 @@ export function transform(entryFile: string, options?: Options) {
     }
 
     notify(bus.events.END, { entryFile, options });
-  }
+  })();
 
-  function emit() {
+  function emitTransformed() {
     const tempEntryFile = toTempFilePath(entryFile, path.dirname(entryFile), options.tempFolderName);
     notify(bus.events.EMIT_START, { entryFile, tempEntryFile, options });
 
@@ -127,13 +125,6 @@ export function transform(entryFile: string, options?: Options) {
   }
 
   function onBeforeVisit(node: ts.Node, mc: MutationContext, tc: ts.TransformationContext): ts.Node {
-    if (util.isKind(node, ts.SyntaxKind.SourceFile)) {
-      mc.setSourceFile(node);
-    }
-
-    mc.setTransformationContext(tc);
-    mc.setScope(util.getScope(node));
-
     return node;
   }
 
@@ -142,120 +133,22 @@ export function transform(entryFile: string, options?: Options) {
     return node;
   }
 
-  // function firstPassVisitor(node: ts.Node, mc: MutationContext, tc: ts.TransformationContext): void {
-  //   if (!node) return;
-  //   let checker = program.getTypeChecker();
-  //   ts.forEachChild(node, n => {
-  //
-  //
-  //     // let type = checker.getTypeAtLocation(n);
-  //     // // console.log('TYPE', type);
-  //     // let typeString = checker.typeToString(type);
-  //     // console.log('TYPESTRING', typeString);
-  //     // let source = `let temp: ${typeString};`;
-  //     // console.log('SRC', source);
-  //     // console.log('\n\n\n');
-  //     // let sf = ts.createSourceFile('temp', source, ts.ScriptTarget.ES2015);
-  //     // let typeNode = (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
-  //
-  //     switch (n.kind) {
-  //       case ts.SyntaxKind.BinaryExpression:
-  //         // console.log((n as ts.BinaryExpression).getText());
-  //         // let s = program.getTypeChecker().getSymbolAtLocation(n);
-  //         // let t = program.getTypeChecker().getContextualType(n as ts.BinaryExpression);
-  //         // console.log(s);
-  //         // console.log(t);
-  //         // console.log('\n\n');
-  //         break;
-  //       case ts.SyntaxKind.Identifier:
-  //         console.log((n as ts.Identifier).text);
-  //         console.log('-----------------------');
-  //
-  //
-  //
-  //         // let t = checker.getTypeAtLocation(n);
-  //         // // console.log(checker.getPropertiesOfType(t));
-  //         // // t = checker.getWidenedType(t);
-  //         // //
-  //         // console.log(ts.TypeFlags[t.flags]);
-  //
-  //         let type = checker.getTypeAtLocation(n);
-  //
-  //         let typeString = checker.typeToString(type);
-  //         console.log(typeString);
-  //         let source = `let temp: ${typeString};`;
-  //
-  //         let sf = ts.createSourceFile('temp', source, ts.ScriptTarget.ES2015);
-  //         let typeNode = (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
-  //
-  //         //
-  //         // let asm = type.aliasSymbol;
-  //         //
-  //         // if (asm) {
-  //         //   if (asm.declarations && asm.declarations[0]) {
-  //         //     console.log(asm.declarations.length);
-  //         //     let asmi = asm.declarations[0] as ts.VariableDeclaration;
-  //         //     if (asmi.type) {
-  //         //       console.log('has type');
-  //         //       console.log(ts.SyntaxKind[asmi.type.kind]);
-  //         //     }
-  //         //   }
-  //         // }
-  //         //
-  //         console.log(ts.TypeFlags[type.flags]);
-  //         console.log('\n\n');
-  //
-  //         // console.log('KIND:', (n as ts.Identifier).text);
-  //         // console.log((n as ts.Identifier).originalKeywordKind);
-  //         // console.log('');
-  //
-  //         // if (mc.names.indexOf((n as ts.Identifier).text) === -1) {
-  //         //   // mc.names.push((n as ts.Identifier).text);
-  //         //   // console.log('KIND:', (n as ts.Identifier).text);
-  //         //   // console.log((n as ts.Identifier).originalKeywordKind);
-  //         //   // console.log('');
-  //         // }
-  //         break;
-  //       case ts.SyntaxKind.VariableDeclaration:
-  //         // const dec = n as ts.VariableDeclaration;
-  //         // if (dec.name.kind === ts.SyntaxKind.Identifier) {
-  //         //   mc.declarations.set((dec.name as ts.Identifier).text, dec.type);
-  //         // }
-  //         break;
-  //     }
-  //
-  //     firstPassVisitor(n, mc, tc);
-  //   });
-  // }
-
   function transformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     let mutationContext: MutationContext;
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       if (node.kind === ts.SyntaxKind.SourceFile) {
-        mutationContext = new MutationContext(options, node as ts.SourceFile, program, host);
-        // firstPassVisitor(node as ts.SourceFile, mutationContext, context);
+        mutationContext = new MutationContext(options, node as ts.SourceFile, program, host, context);
       }
-
-      // if (node.kind === ts.SyntaxKind.SourceFile) {
-      //   console.log('---------------');
-      //   console.log('SourceFile');
-      //   console.log((node as ts.SourceFile).fileName);
-      //   console.log('---------------\n\n');
-      // } else {
-      //   console.log(ts.SyntaxKind[node.kind]);
-      // }
 
       const parent = node.parent;
       node = onBeforeVisit(node, mutationContext, context);
 
-      if (DEBUG) {
-        const scope = mutationContext.scope ? ts.SyntaxKind[mutationContext.scope.kind] : 'undefined';
-        console.log(`Visited: ${mutationContext.wasVisited(node) ? 'Yes' : 'No'}`);
-        console.log(`Scope: ${scope}`);
-        console.log(`Kind:  ${ts.SyntaxKind[node.kind]} (${node.kind})`);
-        console.log(`File:  ${mutationContext.sourceFile.fileName}`);
-      }
+      debugText('~~~~~~~~~~~~~~~~~~~~~');
+      debugText('Before Mutation:');
+      debugText('~~~~~~~~~~~~~~~~~~~~~');
+      debugNodeAttributes(node, mutationContext);
+      debugNodeText(node, mutationContext);
 
       for (let mutator of mutators) {
         node = mutator.mutateNode(node, mutationContext);
@@ -264,26 +157,15 @@ export function transform(entryFile: string, options?: Options) {
       node.parent = parent;
       util.setParent(node);
 
-      if (DEBUG) {
-        console.log('<============================================');
-        if (node.parent) {
-          if (node.flags === ts.NodeFlags.Synthesized) {
-            console.log('Cannot get text of synthesized node.');
-          } else {
-            console.log(node.getText());
-          }
-        } else {
-          console.log('Parent not set, cannot get text.');
-        }
-        console.log('============================================>');
-      }
-
-
-      if (DEBUG) {
-        console.log('\n\n');
-      }
-
       node = onAfterVisit(node, mutationContext, context);
+
+      debugSpaces();
+      debugText('~~~~~~~~~~~~~~~~~~~~~');
+      debugText('After Mutation:');
+      debugText('~~~~~~~~~~~~~~~~~~~~~');
+      debugNodeAttributes(node, mutationContext);
+      debugNodeText(node, mutationContext);
+      debugSpaces(3);
 
       return ts.visitEachChild(node, visitor, context);
     };
@@ -299,7 +181,7 @@ export function getOptions(options: Options = {}): Options {
   return opts;
 }
 
-function getRootNames(rootNames: string | string[]): string[] {
+export function getRootNames(rootNames: string | string[]): string[] {
   if (Array.isArray(rootNames)) {
     return rootNames;
   }
@@ -307,11 +189,11 @@ function getRootNames(rootNames: string | string[]): string[] {
   return [rootNames];
 }
 
-function getTempPath(basePath: string, tempFolderName: string): string {
+export function getTempPath(basePath: string, tempFolderName: string): string {
   return path.join(basePath, tempFolderName);
 }
 
-function toTempFilePath(file: string, basePath: string, tempFolderName: string): string {
+export function toTempFilePath(file: string, basePath: string, tempFolderName: string): string {
   const pathFromBase = path.dirname(file.replace(basePath, ''));
   const tempPath = getTempPath(basePath, tempFolderName);
   const fileName = path.basename(file);
@@ -319,7 +201,7 @@ function toTempFilePath(file: string, basePath: string, tempFolderName: string):
   return path.join(tempPath, pathFromBase, fileName);
 }
 
-function check(diagnostics: ts.Diagnostic[]): boolean {
+export function check(diagnostics: ts.Diagnostic[]): boolean {
   if (diagnostics && diagnostics.length > 0) {
     notify(bus.events.DIAGNOSTICS, { diagnostics });
     console.error(ts.formatDiagnostics(diagnostics, {
@@ -333,6 +215,47 @@ function check(diagnostics: ts.Diagnostic[]): boolean {
   return true;
 }
 
-function notify(event: string | symbol, ...args: any[]): boolean {
+export function notify(event: string | symbol, ...args: any[]): boolean {
   return bus.emitter.emit(event, args);
+}
+
+function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): void {
+  if (!DEBUG) return;
+  const scope = util.getScope(node);
+  const scopeKind = scope ? ts.SyntaxKind[scope.kind] : 'undefined';
+  console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
+  try {
+    console.log(`Implicit Type: ${mutationContext.getImplicitTypeText(node)}`);
+  } catch (e) {
+    console.log('Implicit Type:');
+  }
+  console.log(`Visited: ${mutationContext.wasVisited(node) ? 'Yes' : 'No'}`);
+  console.log(`Scope: ${scopeKind}`);
+  console.log(`Synthesized: ${node.flags === ts.NodeFlags.Synthesized ? 'Yes' : 'No'}`);
+  console.log(`File: ${mutationContext.sourceFile.fileName}`);
+}
+
+function debugNodeText(node: ts.Node, mutstionContext: MutationContext) {
+  if (!DEBUG) return;
+  console.log('<============================================');
+  if (node.parent) {
+    if (node.flags === ts.NodeFlags.Synthesized) {
+      console.log('Cannot get text of synthesized node.');
+    } else {
+      console.log(node.getText());
+    }
+  } else {
+    console.log('Parent not set, cannot get text.');
+  }
+  console.log('============================================>');
+}
+
+function debugText(text: string) {
+  if (!DEBUG) return;
+  console.log(text);
+}
+
+function debugSpaces(spaces: number = 1) {
+  if (!DEBUG) return;
+  console.log(Array(Math.abs(spaces) + 1).join('\n'));
 }

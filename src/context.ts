@@ -1,8 +1,6 @@
 import * as ts from 'typescript';
 import * as util from './util';
-import { Options } from './options';
-
-export type Scope = ts.SourceFile | ts.Block | ts.ModuleBlock | ts.CaseBlock;
+import { Options, defaultOptions } from './options';
 
 export class MutationContext {
 
@@ -11,18 +9,17 @@ export class MutationContext {
   private _program: ts.Program;
   private _checker: ts.TypeChecker;
   private _host: ts.CompilerHost;
-  private _scope: Scope;
   private _visited: ts.Node[];
   private _transformationContext: ts.TransformationContext;
 
-  constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost) {
+  constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
     this._options = options;
     this._sourceFile = sourceFile;
     this._program = program;
     this._checker = program.getTypeChecker();
     this._host = host;
-    this._scope = sourceFile;
     this._visited = [];
+    this._transformationContext = context;
   }
 
   public wasVisited(node: ts.Node): boolean {
@@ -68,12 +65,16 @@ export class MutationContext {
   }
 
   // TODO: handle LastTypeNode (and FirstTypeNode)
-  public getImplicitTypeNode(node: ts.Node): ts.TypeNode {
-    let type = this.checker.getTypeAtLocation(node);
-    let typeString = this.checker.typeToString(type);
+  public getImplicitTypeNode(node: string | ts.Node): ts.TypeNode {
+    const typeString = typeof node === 'string' ? node : this.getImplicitTypeText(node);
     let source = `let temp: ${typeString};`;
-    let sf = ts.createSourceFile('temp', source, this.compilerOptions.target || ts.ScriptTarget.ES2015, true, ts.ScriptKind.TS);
+    let sf = ts.createSourceFile('temp', source, this.compilerOptions.target || defaultOptions.compilerOptions.target, true, ts.ScriptKind.TS);
     return (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
+  }
+
+  public getImplicitTypeText(node: ts.Node): string {
+    const type = this.checker.getTypeAtLocation(node);
+    return this.checker.typeToString(type);
   }
 
   public getType(node: ts.Node): ts.Type {
@@ -104,28 +105,6 @@ export class MutationContext {
 
   get visited() {
     return this._visited;
-  }
-
-  get scope() {
-    return this._scope;
-  }
-
-  set scope(node: ts.Node) {
-    switch (node.kind) {
-      case ts.SyntaxKind.SourceFile:
-        this._sourceFile = node as ts.SourceFile;
-      case ts.SyntaxKind.Block:
-      case ts.SyntaxKind.ModuleBlock:
-      case ts.SyntaxKind.CaseBlock:
-        this._scope = node as Scope;
-        break;
-      default:
-      throw new Error(`Scope must be SourceFile, Block, ModuleBlock or CaseBlock, got ${ts.SyntaxKind[node.kind]}.`);
-    }
-  }
-
-  public setScope(node: ts.Node): void {
-    this.scope = node;
   }
 
   get sourceFile() {

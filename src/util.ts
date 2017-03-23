@@ -1,5 +1,7 @@
 import * as ts from 'typescript';
 
+export type Scope = ts.SourceFile | ts.Block | ts.ModuleBlock | ts.CaseBlock;
+
 export function setParent(node: ts.Node): void {
   if (!node) return;
   ts.forEachChild(node, n => {
