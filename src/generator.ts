@@ -23,6 +23,11 @@ export function typeAssertion(id: string | ts.Expression, args: ts.Expression | 
 }
 
 // TODO: Add ParenthesizedType, LiteralType,...
+//
+// Handle strictNullChecks
+// Generics
+// Extends
+//
 // Array, Object and Function Destructuring
 // Spread operator
 // Default values
@@ -31,16 +36,18 @@ export function typeAssertion(id: string | ts.Expression, args: ts.Expression | 
 // VoidKeyword (only undefined or null for variables) OK
 // NeverKeyword
 // EnumKeyword
+// ObjectKeyword
 //
 // ParenthesizedType OK
 // LiteralType
 // UnionType OK
 //
-// TypePredicate
+// TypePredicate (type guards)
 // ThisType OK
 // TypeOperator
 // IndexedAccessType
 // MappedType
+// readonly
 // TypeAliasDeclaration
 export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
   if (!type) {
@@ -59,6 +66,7 @@ export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
     case ts.SyntaxKind.StringKeyword:
     case ts.SyntaxKind.AnyKeyword:
     case ts.SyntaxKind.NullKeyword:
+    case ts.SyntaxKind.ObjectKeyword:
       {
         return propertyAccessCall(LIB, type.getText());
       }
@@ -80,6 +88,10 @@ export function typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
     case ts.SyntaxKind.ParenthesizedType:
       {
         return typeDefinition((type as ts.ParenthesizedTypeNode).type);
+      }
+    case ts.SyntaxKind.TypeLiteral:
+      {
+        // E.g. let a: { x: number; } = {}; // has PropertySignature
       }
     case ts.SyntaxKind.LiteralType:
       {
