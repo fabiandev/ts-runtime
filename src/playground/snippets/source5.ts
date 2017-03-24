@@ -39,4 +39,9 @@ let n: 10;
 let o: true;
 let p: 'str';
 let q: false;
-let n: o;
+let r: o;
+
+let s: object = {};
+let t: Object = {};
+// let u: { x: number; } = {};
+let v: Function = () => {};
