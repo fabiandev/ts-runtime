@@ -8,3 +8,4 @@ pids
 *.pid
 *.seed
 .tsr
+dist
