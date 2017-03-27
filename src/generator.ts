@@ -106,10 +106,6 @@ export class Generator {
         {
           const ltn = type as ts.LiteralTypeNode;
 
-          if (!ltn.literal) {
-            console.log('how come?');
-          }
-
           switch (ltn.literal.kind) {
             case ts.SyntaxKind.TrueKeyword:
               return this.propertyAccessCall(this.lib, 'boolean', ts.createTrue());
@@ -150,14 +146,26 @@ export class Generator {
           return this.propertyAccessCall(this.lib, 'intersection', args);
         }
       case ts.SyntaxKind.ConstructorType:
-        {
-          console.log('CONSTRUCTOR TYPE NOT YET IMPLEMENTED');
-          return;
-        }
       case ts.SyntaxKind.FunctionType:
         {
-          console.log('FUNCTION TYPE NOT YET IMPLEMENTED');
-          return;
+          const expressions: ts.Expression[] = (type as ts.FunctionTypeNode).parameters.map(param => {
+            const parameter: ts.Expression[] = [
+              ts.createLiteral(param.name.getText()),
+              this.typeDefinition(param.type)
+            ];
+
+            if (param.questionToken) {
+              parameter.push(ts.createTrue());
+            }
+
+            return this.propertyAccessCall(this.lib, 'param', parameter);
+          });
+
+          expressions.push(
+            this.propertyAccessCall(this.lib, 'return', this.typeDefinition((type as ts.FunctionTypeNode).type))
+          );
+
+          return this.propertyAccessCall(this.lib, 'function', expressions);
         }
       case ts.SyntaxKind.ArrayType:
         {
@@ -220,7 +228,6 @@ export class Generator {
     return this.nullChecks(this.typeDefinitionBase(type));
   }
 
-  // TODO: questionToken !!
   public typeElements(elements: ts.TypeElement[]): ts.CallExpression {
     const expressions: ts.Expression[] = [];
 
