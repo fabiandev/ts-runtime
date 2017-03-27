@@ -13,10 +13,7 @@ export class InterfaceDeclarationMutator extends Mutator {
           ts.createVariableDeclaration(
             node.name,
             undefined,
-            this.context.generator.propertyAccessCall(this.context.generator.lib, 'type', [
-              ts.createLiteral(node.name),
-              this.context.generator.typeElements(node.members)
-            ])
+            this.context.generator.typeSubstitution(node.name, node.members)
           )
         ],
         ts.NodeFlags.Const
