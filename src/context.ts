@@ -56,15 +56,13 @@ export class MutationContext {
     return false;
   }
 
-  // TODO: implement
   public getTypeDeclarationName(node: string | ts.BindingName): string {
     const name = typeof node === 'string' ? node : node.getText();
-    return `_${name}Type`;
+    return `${this.options.typeIdentifierNamespace}${name}Type`;
   }
 
-  // TODO: implement
   public getLibDeclarationName(): string {
-    return '';
+    return this.options.libIdentifier;
   }
 
   // TODO: handle LastTypeNode (and FirstTypeNode)
