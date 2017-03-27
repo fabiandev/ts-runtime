@@ -4,10 +4,12 @@ export class Generator {
 
   private _lib = 't';
   private _namespace = '_';
+  private _strictNullChecks = false;
 
-  constructor(lib?: string, namespace?: string) {
+  constructor(lib?: string, namespace?: string, strictNullChecks?: boolean) {
     this.lib = lib || this.lib;
     this.namespace = namespace || this.namespace;
+    this._strictNullChecks = strictNullChecks || this.strictNullChecks;
   }
 
   public typeDeclaration(name: string | ts.Identifier, type: string | ts.TypeNode): ts.VariableDeclaration {
@@ -24,7 +26,7 @@ export class Generator {
 
   // TODO: Add ParenthesizedType, LiteralType,...
   //
-  // Handle strictNullChecks
+  // Handle strictNullChecks (nullable)
   // Generics
   // Extends
   //
@@ -52,17 +54,12 @@ export class Generator {
   // TypeAliasDeclaration
   //
   // CallSignature (): string
-  public typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
-    if (!type) {
-      return null;
-    }
 
-    if (typeof type === 'string') {
-      return this.propertyAccessCall(this.lib, type as string);
-    }
+  public nullChecks(expression: ts.CallExpression): ts.CallExpression {
+    return this.strictNullChecks ? expression : this.propertyAccessCall(this.lib, 'nullable', expression);
+  }
 
-    type = type as ts.TypeNode;
-
+  protected typeDefinitionBase(type: ts.TypeNode): ts.CallExpression {
     switch (type.kind) {
       case ts.SyntaxKind.BooleanKeyword:
       case ts.SyntaxKind.NumberKeyword:
@@ -75,7 +72,7 @@ export class Generator {
         }
       case ts.SyntaxKind.SymbolKeyword:
         {
-          return this.propertyAccessCall(this.lib, 'ref', ts.createIdentifier('Symbol'));
+          return this.propertyAccessCall(this.lib, 'symbol');
         }
       case ts.SyntaxKind.UndefinedKeyword:
         {
@@ -94,19 +91,17 @@ export class Generator {
         }
       case ts.SyntaxKind.TypeLiteral:
         {
-          // E.g. let a: { x: number; } = {}; // has PropertySignature
-          console.log('TypeLiteral NOT YET IMPLEMENTED.');
-          return;
+          return this.typeElements((type as ts.TypeLiteralNode).members);
         }
       case ts.SyntaxKind.LiteralType:
         {
           const ltn = type as ts.LiteralTypeNode;
 
           if (!ltn.literal) {
-            console.log('1');
+            console.log('how come?');
           }
 
-          switch (ltn.literal.kind)  {
+          switch (ltn.literal.kind) {
             case ts.SyntaxKind.TrueKeyword:
               return this.propertyAccessCall(this.lib, 'boolean', ts.createTrue());
             case ts.SyntaxKind.FalseKeyword:
@@ -116,7 +111,7 @@ export class Generator {
               return this.propertyAccessCall(this.lib, 'string', ts.createLiteral(str.substring(1, str.length - 1)));
             case ts.SyntaxKind.NumericLiteral:
               return this.propertyAccessCall(this.lib, 'number', ts.createNumericLiteral(ltn.literal.getText()));
-            // case ts.SyntaxKind.ComputedPropertyName:
+            // TODO: case ts.SyntaxKind.ComputedPropertyName:
             default:
               // TODO: Throw exception here?
               {
@@ -136,6 +131,24 @@ export class Generator {
           });
 
           return this.propertyAccessCall(this.lib, 'union', args);
+        }
+      case ts.SyntaxKind.IntersectionType:
+        {
+          let args: ts.CallExpression[] = (type as ts.IntersectionTypeNode).types.map(typeNode => {
+            return this.typeDefinition(typeNode);
+          });
+
+          return this.propertyAccessCall(this.lib, 'intersection', args);
+        }
+      case ts.SyntaxKind.ConstructorType:
+        {
+          console.log('CONSTRUCTOR TYPE NOT YET IMPLEMENTED');
+          return;
+        }
+      case ts.SyntaxKind.FunctionType:
+        {
+          console.log('FUNCTION TYPE NOT YET IMPLEMENTED');
+          return;
         }
       case ts.SyntaxKind.ArrayType:
         {
@@ -184,6 +197,77 @@ export class Generator {
     }
   }
 
+  public typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
+    if (!type) {
+      return null;
+    }
+
+    if (typeof type === 'string') {
+      return this.propertyAccessCall(this.lib, type as string);
+    }
+
+    type = type as ts.TypeNode;
+
+    return this.nullChecks(this.typeDefinitionBase(type));
+  }
+
+  // TODO: questionToken !!
+  public typeElements(elements: ts.TypeElement[]): ts.CallExpression {
+    const expressions: ts.Expression[] = [];
+
+    for (let member of elements) {
+      switch (member.kind) {
+        case ts.SyntaxKind.IndexSignature:
+          {
+            const m = member as ts.IndexSignatureDeclaration;
+            expressions.push(
+              this.propertyAccessCall(this.lib, 'indexer', [
+                ts.createLiteral(m.parameters[0].name.getText()),
+                this.typeDefinition(m.parameters[0].type),
+                this.typeDefinition(m.type)
+              ])
+            );
+
+            break;
+          }
+        case ts.SyntaxKind.PropertySignature:
+          {
+            const m = member as ts.PropertySignature;
+            const typeDef: ts.Expression[] = [
+              ts.createLiteral(m.name.getText()),
+              this.typeDefinition(m.type)
+            ];
+
+            if (m.questionToken) {
+              typeDef.push(ts.createTrue());
+            }
+
+            expressions.push(this.propertyAccessCall(
+              this.lib, 'property', typeDef
+            ));
+
+            break;
+          }
+        case ts.SyntaxKind.ConstructSignature:
+          {
+
+          }
+        case ts.SyntaxKind.CallSignature:
+          {
+
+          }
+        case ts.SyntaxKind.MethodSignature:
+          {
+
+          }
+        default:
+          // TODO: throw exception?
+      }
+    }
+
+    return this.propertyAccessCall(this.lib, 'object', expressions);
+  }
+
   public propertyAccessCall(id: string | ts.Expression, prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = [], types: ts.TypeNode | ts.TypeNode[] = []): ts.CallExpression {
     id = typeof id === 'string' ? ts.createIdentifier(id) : id;
     args = Array.isArray(args) ? args : [args];
@@ -224,6 +308,23 @@ export class Generator {
 
   public getNamespace(): string {
     return this.namespace;
+  }
+
+  set strictNullChecks(strictNullChecks: boolean) {
+    this._strictNullChecks = strictNullChecks;
+  }
+
+  public setStrictNullChecks(strictNullChecks: boolean): Generator {
+    this.strictNullChecks = strictNullChecks;
+    return this;
+  }
+
+  get strictNullChecks(): boolean {
+    return this._strictNullChecks;
+  }
+
+  public getStrictNullChecks(): boolean {
+    return this.strictNullChecks;
   }
 
 }
