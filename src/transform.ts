@@ -7,7 +7,7 @@ import { MutationContext } from './context';
 import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
 
-const DEBUG = true;
+const DEBUG = false;
 
 export function transform(entryFile: string, options?: Options) {
   options = getOptions(options);

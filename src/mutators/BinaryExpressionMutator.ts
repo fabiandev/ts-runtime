@@ -1,8 +1,5 @@
 import * as ts from 'typescript';
-import * as generator from '../generator';
-import * as util from '../util';
 import { Mutator } from './Mutator';
-import { MutationContext } from '../context';
 
 export class BinaryExpressionMutator extends Mutator {
 
@@ -41,7 +38,7 @@ export class BinaryExpressionMutator extends Mutator {
     }
 
     const nodeName = this.context.getTypeDeclarationName(node.left as ts.Identifier);
-    const right = generator.typeAssertion(nodeName, node.right);
+    const right = this.context.generator.typeAssertion(nodeName, node.right);
 
     this.context.addVisited(right, true, node.right);
 

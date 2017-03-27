@@ -3,6 +3,7 @@ import * as util from './util';
 
 export { bus, util };
 export * from './context';
+export * from './generator';
 export * from './mutators';
 export * from './options';
 export * from './transform';

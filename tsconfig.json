@@ -5,6 +5,7 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6"],
     "moduleResolution": "node",
+    "target": "es5",
     "noImplicitAny": true,
     "preserveConstEnums": true,
     "removeComments": false,

@@ -5,6 +5,8 @@ export interface Options {
   assertAny?: boolean;
   keepTempFiles?: boolean;
   tempFolderName?: string;
+  libIdentifier?: string;
+  typeIdentifierNamespace?: string;
 }
 
 export const defaultOptions: Options = {
@@ -15,5 +17,7 @@ export const defaultOptions: Options = {
   },
   assertAny: false,
   keepTempFiles: true,
-  tempFolderName: '.tsr'
+  tempFolderName: '.tsr',
+  libIdentifier: 't',
+  typeIdentifierNamespace: '_'
 };

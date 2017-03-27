@@ -1,8 +1,5 @@
 import * as ts from 'typescript';
-import * as generator from '../generator';
-import * as util from '../util';
 import { Mutator } from './Mutator';
-import { MutationContext } from '../context';
 
 export class VariableDeclarationListMutator extends Mutator {
 
@@ -16,7 +13,7 @@ export class VariableDeclarationListMutator extends Mutator {
     const declarations: ts.VariableDeclaration[] = [];
 
     for (const declaration of node.declarations) {
-      const transformed = this.transform(declaration, this.context);
+      const transformed = this.transform(declaration);
       transformed.forEach(n => this.context.addVisited(n, true, n.initializer));
       declarations.push(...transformed);
     }
@@ -24,8 +21,8 @@ export class VariableDeclarationListMutator extends Mutator {
     return ts.updateVariableDeclarationList(node, declarations);
   }
 
-  private transform(node: ts.VariableDeclaration, context: MutationContext): ts.VariableDeclaration[] {
-    if (context.wasVisited(node)) {
+  private transform(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
+    if (this.context.wasVisited(node)) {
       return [node];
     }
 
@@ -52,13 +49,13 @@ export class VariableDeclarationListMutator extends Mutator {
     }
 
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const typeDefinition = generator.typeDeclaration(nodeName, node.type);
+    const typeDefinition = this.context.generator.typeDeclaration(nodeName, node.type);
 
     if (!node.initializer) {
       return [typeDefinition, node];
     }
 
-    const initializer = generator.typeAssertion(nodeName, node.initializer);
+    const initializer = this.context.generator.typeAssertion(nodeName, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [typeDefinition, assignment];
@@ -71,7 +68,7 @@ export class VariableDeclarationListMutator extends Mutator {
 
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
 
-    const initializer = generator.typeDefinitionAndAssertion(node.type, node.initializer);
+    const initializer = this.context.generator.typeDefinitionAndAssertion(node.type, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [assignment];
@@ -85,7 +82,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    const typeDefinition = generator.typeDeclaration(
+    const typeDefinition = this.context.generator.typeDeclaration(
       nodeName,
       implicitType
     );
@@ -94,7 +91,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return [typeDefinition, node];
     }
 
-    const initializer = generator.typeAssertion(nodeName, [node.initializer]);
+    const initializer = this.context.generator.typeAssertion(nodeName, [node.initializer]);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [typeDefinition, assignment];
@@ -108,7 +105,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    const initializer = generator.typeDefinitionAndAssertion(implicitType, node.initializer);
+    const initializer = this.context.generator.typeDefinitionAndAssertion(implicitType, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [assignment];

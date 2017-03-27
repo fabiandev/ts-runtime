@@ -1,12 +1,11 @@
 import * as ts from 'typescript';
 import { Mutator } from './Mutator';
-import { MutationContext } from '../context';
 
 export class InterfaceDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.InterfaceDeclaration;
 
-  public mutate(node: ts.InterfaceDeclaration, context: MutationContext): ts.Node {
+  public mutate(node: ts.InterfaceDeclaration): ts.Node {
     const substitution = ts.createVariableStatement(
       node.modifiers,
       ts.createVariableDeclarationList(
@@ -27,7 +26,7 @@ export class InterfaceDeclarationMutator extends Mutator {
       )
     );
 
-    context.addVisited(substitution, true);
+    this.context.addVisited(substitution, true);
 
     return substitution;
   }

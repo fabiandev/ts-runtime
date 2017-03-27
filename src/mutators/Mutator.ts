@@ -1,6 +1,5 @@
 import * as ts from 'typescript';
 import { MutationContext } from '../context';
-const self = Mutator;
 
 export abstract class Mutator {
 

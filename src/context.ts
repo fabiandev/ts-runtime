@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import * as util from './util';
+import { Generator } from './generator';
 import { Options, defaultOptions } from './options';
 
 export class MutationContext {
@@ -10,6 +11,7 @@ export class MutationContext {
   private _checker: ts.TypeChecker;
   private _host: ts.CompilerHost;
   private _visited: ts.Node[];
+  private _generator: Generator;
   private _transformationContext: ts.TransformationContext;
 
   constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
@@ -19,6 +21,7 @@ export class MutationContext {
     this._checker = program.getTypeChecker();
     this._host = host;
     this._visited = [];
+    this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace);
     this._transformationContext = context;
   }
 
@@ -91,7 +94,7 @@ export class MutationContext {
 
   // getters and setters
 
-  get transformationContext() {
+  get transformationContext(): ts.TransformationContext {
     return this._transformationContext;
   }
 
@@ -103,11 +106,11 @@ export class MutationContext {
     this.transformationContext = transformationContext;
   }
 
-  get visited() {
+  get visited(): ts.Node[] {
     return this._visited;
   }
 
-  get sourceFile() {
+  get sourceFile(): ts.SourceFile {
     return this._sourceFile;
   }
 
@@ -123,24 +126,28 @@ export class MutationContext {
     this.sourceFile = sourceFile as ts.SourceFile;
   }
 
-  get compilerOptions() {
+  get compilerOptions(): ts.CompilerOptions {
     return this._options.compilerOptions;
   }
 
-  get options() {
+  get options(): Options {
     return this._options;
   }
 
-  get program() {
+  get program(): ts.Program {
     return this._program;
   }
 
-  get checker() {
+  get checker(): ts.TypeChecker {
     return this._checker;
   }
 
-  get host() {
+  get host(): ts.CompilerHost {
     return this._host;
+  }
+
+  get generator(): Generator {
+    return this._generator;
   }
 
 }
