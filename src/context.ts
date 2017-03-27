@@ -21,7 +21,7 @@ export class MutationContext {
     this._checker = program.getTypeChecker();
     this._host = host;
     this._visited = [];
-    this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace);
+    this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
     this._transformationContext = context;
   }
 
