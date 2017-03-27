@@ -59,6 +59,15 @@ export class Generator {
     return this.strictNullChecks ? expression : this.propertyAccessCall(this.lib, 'nullable', expression);
   }
 
+  public typeSubstitution(name: string | ts.Identifier, elements: ts.TypeElement[] | ts.TypeNode): ts.CallExpression {
+    name = typeof name === 'string' ? name : name.getText();
+
+    return this.propertyAccessCall(this.lib, 'type', [
+      ts.createLiteral(name),
+      Array.isArray(elements) ? this.typeElements(elements) : this.typeDefinition(elements)
+    ])
+  }
+
   protected typeDefinitionBase(type: ts.TypeNode): ts.CallExpression {
     switch (type.kind) {
       case ts.SyntaxKind.BooleanKeyword:
