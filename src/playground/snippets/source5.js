@@ -32,5 +32,17 @@ let _qType = t.boolean(false), q;
 let _rType = t.ref(o), r;
 let _sType = t.object(), s = _sType.assert({});
 let _tType = t.ref(Object), t = _tType.assert({});
-// let u: { x: number; } = {};
+let _uType, u = _uType.assert({});
 let _vType = t.ref(Function), v = _vType.assert(() => { });
+const B = Symbol("B");
+let _wType = t.array(), w = _wType.assert([1, 'str', {}, Symbol(1)]);
+let _xType = t.array(t.union(t.string(), t.number())), x = _xType.assert([1, 'str']);
+let _yType, y = _yType.assert({
+    one: 1,
+    two: 'str'
+});
+let _zType, z = _zType.assert({
+    one: 1,
+    two: 'str',
+    three: Symbol(1)
+});

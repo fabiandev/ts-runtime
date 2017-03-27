@@ -43,5 +43,29 @@ let r: o;
 
 let s: object = {};
 let t: Object = {};
-// let u: { x: number; } = {};
+
+let u: { x: number; } = {};
+
 let v: Function = () => {};
+
+type A = {
+  x: number;
+};
+
+interface B {
+  x: number;
+}
+
+let w = [1, 'str', {}, Symbol(1)];
+let x = [1, 'str'];
+
+let y = {
+  one: 1,
+  two: 'str'
+};
+
+let z = {
+  one: 1,
+  two: 'str',
+  three: Symbol(1)
+};
