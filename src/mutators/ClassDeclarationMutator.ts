@@ -81,10 +81,20 @@ export class ClassDeclarationMutator extends Mutator {
               const returnStatement = bodyStatements[index] as ts.ReturnStatement;
               returnStatement.expression = this.context.generator.returnAssertion(returnNameDeclaration, returnStatement.expression);
               bodyStatements[index] = returnStatement;
+
+              this.context.addVisited(returnStatement, true);
             }
 
             bodyStatements.unshift(...bodyAssertions);
             bodyStatements.unshift(...bodyDeclarations);
+
+            bodyAssertions.forEach(assertion => {
+              this.context.addVisited(assertion, true);
+            });
+
+            bodyDeclarations.forEach(declaration => {
+              this.context.addVisited(declaration, true);
+            });
 
             const body = ts.updateBlock(m.body, bodyStatements);
 
