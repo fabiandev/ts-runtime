@@ -89,6 +89,7 @@ type IB = {
 
 type NN = number;
 
+let xxxx: NN;
 
 class B {}
 
@@ -103,7 +104,7 @@ class A extends B {
   static method1(): number {
   }
 
-  method2(p1: number, p2, p3?: string) {
+  method2(p1: number, p2 = true, p3?: string) {
     return;
   }
 }
