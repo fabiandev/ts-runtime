@@ -77,6 +77,7 @@ export class ClassDeclarationMutator extends Mutator {
                 )
               );
 
+              // TODO: this is wrong. We need to find all return statements, that can return a value from the function.
               const index = this.returnStatementIndex(m);
               const returnStatement = bodyStatements[index] as ts.ReturnStatement;
               returnStatement.expression = this.context.generator.returnAssertion(returnNameDeclaration, returnStatement.expression);
@@ -104,15 +105,16 @@ export class ClassDeclarationMutator extends Mutator {
 
             members.push(method);
           }
+
           break;
         case ts.SyntaxKind.GetAccessor:
-
+          // check return type only?
           break;
         case ts.SyntaxKind.SetAccessor:
-
+          // check parameter type
           break;
         case ts.SyntaxKind.PropertyDeclaration:
-
+          // annotate
           break;
         default:
           members.push(member);
@@ -127,7 +129,6 @@ export class ClassDeclarationMutator extends Mutator {
 
     return node;
   }
-
 
   private hasReturn(node: ts.MethodDeclaration): boolean {
     return !node.body || !node.body.statements ? false : node.body.statements.findIndex(el => el.kind === ts.SyntaxKind.ReturnStatement) !== -1;
