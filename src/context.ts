@@ -73,6 +73,14 @@ export class MutationContext {
     return (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
   }
 
+  public getTypeNode(node: ts.Node): ts.TypeNode {
+    if (node.hasOwnProperty('type')) {
+      return (node as any).type;
+    }
+
+    return this.getImplicitTypeNode(node);
+  }
+
   public getImplicitTypeText(node: ts.Node): string {
     const type = this.checker.getTypeAtLocation(node);
     return this.checker.typeToString(type);

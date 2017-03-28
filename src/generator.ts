@@ -24,9 +24,119 @@ export class Generator {
     return this.propertyAccessCall(id, 'assert', args, types);
   }
 
+  public parameterAssertion(id: string, typeName: string): ts.CallExpression {
+    return ts.createCall(
+      ts.createPropertyAccess(
+        this.propertyAccessCall(this.lib, 'param', [ts.createLiteral(id), ts.createIdentifier(typeName)]),
+        'assert'
+      ), undefined, [ts.createIdentifier(id)]
+    );
+  }
+
+  public returnAssertion(typeName: string, expression: ts.Expression): ts.CallExpression {
+    return this.propertyAccessCall(typeName, 'assert', expression);
+  }
+
+  public returnDeclaration(type: ts.TypeNode): ts.CallExpression {
+    return this.propertyAccessCall(this.lib, 'return', this.typeDefinition(type));
+  }
+
+  // public annotationDecorator(): ts.Decorator {
+  //   return ts.createDecorator(this.propertyAccessCall(this.lib, 'annotate'));
+  // }
+  //
+  // public propertyType(name: string, type: ts.TypeNode, isStatic = false): ts.CallExpression {
+  //   return this.propertyAccessCall(this.lib, isStatic ? 'staticProperty': 'property', this.typeDefinition(type));
+  // }
+  //
+  // public methodType(name: string, params: ts.Expression[] = []): ts.CallExpression {
+  //   params.unshift(ts.createLiteral(name));
+  //   return this.propertyAccessCall(this.lib, 'method', params);
+  // }
+  //
+  // public parameterType(name: string, type: ts.TypeNode): ts.CallExpression {
+  //   return this.propertyAccessCall(this.lib, 'param', [
+  //     ts.createLiteral(name),
+  //     this.typeDefinition(type)
+  //   ]);
+  // }
+  //
+  // public returnType(type: ts.TypeNode): ts.CallExpression {
+  //   return this.propertyAccessCall(this.lib, 'return', this.typeDefinition(type));
+  // }
+
+  // TODO: typeParameters
+  // public classAnnotation1(node: ts.ClassDeclaration): ts.CallExpression {
+  //   const expressions: ts.Expression[] = [];
+  //
+  //   if (node.heritageClauses) {
+  //     const extendsIndex = node.heritageClauses.findIndex(element => element.token === ts.SyntaxKind.ExtendsKeyword);
+  //
+  //     if (extendsIndex !== -1) {
+  //       const extendsClause = node.heritageClauses[extendsIndex];
+  //
+  //       if (extendsClause.types) {
+  //         expressions.push(
+  //           this.propertyAccessCall(this.lib, 'extends', extendsClause.types[0].expression)
+  //         );
+  //       }
+  //     }
+  //   }
+  //
+  //   for (let member of node.members) {
+  //     const properties: ts.Expression[] = [
+  //       ts.createLiteral(member.name.getText())
+  //     ];
+  //
+  //     switch (member.kind) {
+  //       case ts.SyntaxKind.MethodDeclaration:
+  //       case ts.SyntaxKind.SetAccessor:
+  //       case ts.SyntaxKind.Constructor:
+  //       case ts.SyntaxKind.GetAccessor:
+  //         if (member.kind !== ts.SyntaxKind.GetAccessor) {
+  //           type HasParameters = ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.ConstructorDeclaration;
+  //
+  //           (member as HasParameters).parameters.forEach(param => {
+  //             const parameters: ts.Expression[] = [
+  //               ts.createLiteral(param.name.getText())
+  //             ];
+  //
+  //             if (param.type) {
+  //               parameters.push(this.typeDefinition(param.type));
+  //             }
+  //
+  //             properties.push(this.propertyAccessCall(this.lib, 'param', parameters));
+  //           });
+  //         }
+  //
+  //         if ((member as ts.GetAccessorDeclaration).type) {
+  //           properties.push(
+  //             this.propertyAccessCall(this.lib, 'return', this.typeDefinition((member as ts.GetAccessorDeclaration).type))
+  //           );
+  //         }
+  //
+  //         expressions.push(
+  //           this.propertyAccessCall(
+  //             this.lib,
+  //             member.modifiers && member.modifiers.findIndex(el => el.kind === ts.SyntaxKind.StaticKeyword) !== -1 ? 'staticMethod' : 'method',
+  //             properties
+  //           )
+  //         );
+  //
+  //         break;
+  //       case ts.SyntaxKind.PropertyDeclaration:
+  //         break;
+  //       default:
+  //       // TODO: throw exception
+  //     }
+  //   }
+  //
+  //   return this.propertyAccessCall(this.lib, 'annotate', this.propertyAccessCall(this.lib, 'class', expressions));
+  // }
+
   // TODO: Add ParenthesizedType, LiteralType,...
   //
-  // Handle strictNullChecks (nullable)
+  //  OK Handle strictNullChecks (nullable)
   // Generics
   // Extends
   //
@@ -40,18 +150,18 @@ export class Generator {
   // EnumKeyword
   // ObjectKeyword
   //
-  // ParenthesizedType OK
+  //  OK ParenthesizedType OK
   // LiteralType
   // UnionType OK
   //
   // TypePredicate (type guards)
-  // ThisType OK
+  //  OK ThisType OK
   // TypeOperator
   // IndexedAccessType
   // MappedType
-  // ConstructorType :new()
+  //  OK ConstructorType :new()
   // readonly
-  // TypeAliasDeclaration
+  //  OK TypeAliasDeclaration
   //
   // CallSignature (): string
 
@@ -68,7 +178,23 @@ export class Generator {
     ])
   }
 
-  protected typeDefinitionBase(type: ts.TypeNode): ts.CallExpression {
+  public typeDefinition(type: string | ts.TypeNode, applyNullChecks = true, forClass = false): ts.CallExpression {
+    if (!type) {
+      return null;
+    }
+
+    if (typeof type === 'string') {
+      return this.propertyAccessCall(this.lib, type);
+    }
+
+    const typeDefinition = this.typeDefinitionBase(type, forClass);
+
+    // TODO: no nullable if any, null included in callexpression
+
+    return applyNullChecks ? this.nullChecks(typeDefinition) : typeDefinition;
+  }
+
+  protected typeDefinitionBase(type: ts.TypeNode, forClass = false): ts.CallExpression {
     switch (type.kind) {
       case ts.SyntaxKind.BooleanKeyword:
       case ts.SyntaxKind.NumberKeyword:
@@ -165,7 +291,7 @@ export class Generator {
             this.propertyAccessCall(this.lib, 'return', this.typeDefinition((type as ts.FunctionTypeNode).type))
           );
 
-          return this.propertyAccessCall(this.lib, 'function', expressions);
+          return this.propertyAccessCall(this.lib, forClass ? 'method' : 'function', expressions);
         }
       case ts.SyntaxKind.ArrayType:
         {
@@ -212,20 +338,6 @@ export class Generator {
           return this.propertyAccessCall(this.lib, 'unknown');
         }
     }
-  }
-
-  public typeDefinition(type: string | ts.TypeNode): ts.CallExpression {
-    if (!type) {
-      return null;
-    }
-
-    if (typeof type === 'string') {
-      return this.propertyAccessCall(this.lib, type as string);
-    }
-
-    type = type as ts.TypeNode;
-
-    return this.nullChecks(this.typeDefinitionBase(type));
   }
 
   public typeElements(elements: ts.TypeElement[]): ts.CallExpression {
@@ -277,7 +389,7 @@ export class Generator {
 
           }
         default:
-          // TODO: throw exception?
+        // TODO: throw exception?
       }
     }
 

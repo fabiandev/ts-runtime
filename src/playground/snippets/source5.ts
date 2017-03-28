@@ -48,13 +48,9 @@ let u: { x: number; } = {};
 
 let v: Function = () => {};
 
-type A = {
+type AA = {
   x: number;
 };
-
-interface B {
-  x: number;
-}
 
 let w = [1, 'str', {}, Symbol(1)];
 let x = [1, 'str'];
@@ -69,3 +65,48 @@ let z = {
   two: 'str',
   three: Symbol(1)
 };
+
+let ab1: (A | B) & B;
+let ab2: A | B & B;
+
+let x: {
+ [index: string]: any;
+ one: number;
+ // two?: new() => void;
+ // three: () => void;
+};
+
+interface IA {
+  one: number;
+  two?: string;
+  three: (param1: string, param2?: number) => number[];
+}
+
+type IB = {
+  one: number;
+  two?: string;
+};
+
+type NN = number;
+
+
+class B {}
+
+class A extends B {
+  static a: string = 'str';
+
+	b: number = 1;
+  constructor() {
+    super();
+    return new CC();
+  }
+  static method1(): number {
+  }
+
+  method2(p1: number, p2, p3?: string) {
+    return;
+  }
+}
+class CC extends A {};
+
+let a: (p1: number, p2: any, p3?: string) => void;
