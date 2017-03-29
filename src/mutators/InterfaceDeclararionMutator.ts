@@ -13,7 +13,7 @@ export class InterfaceDeclarationMutator extends Mutator {
           ts.createVariableDeclaration(
             node.name,
             undefined,
-            this.context.generator.typeSubstitution(node.name, node.members)
+            this.factory.interfaceSubstitution(node)
           )
         ],
         ts.NodeFlags.Const

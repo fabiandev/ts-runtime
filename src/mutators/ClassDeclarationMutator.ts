@@ -11,6 +11,7 @@ enum DeclarationType {
   StaticProperty
 };
 
+// TODO: support computed properties
 export class ClassDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.ClassDeclaration;
