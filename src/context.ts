@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import * as util from './util';
 import { Generator } from './generator';
+import { Factory } from './factory';
 import { Options, defaultOptions } from './options';
 
 export class MutationContext {
@@ -12,6 +13,7 @@ export class MutationContext {
   private _host: ts.CompilerHost;
   private _visited: ts.Node[];
   private _generator: Generator;
+  private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
 
   constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
@@ -22,6 +24,7 @@ export class MutationContext {
     this._host = host;
     this._visited = [];
     this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
+    this._factory = new Factory(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
     this._transformationContext = context;
   }
 
@@ -154,6 +157,10 @@ export class MutationContext {
 
   get generator(): Generator {
     return this._generator;
+  }
+
+  get factory(): Factory {
+    return this._factory;
   }
 
 }
