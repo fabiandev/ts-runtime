@@ -6,30 +6,6 @@ export class Factory {
   private _namespace = '_';
   private _nullable = true;
 
-  get lib(): string {
-    return this._lib;
-  }
-
-  set lib(lib: string) {
-    this._lib = lib;
-  }
-
-  get namespace(): string {
-    return this._namespace;
-  }
-
-  set namespace(namespace: string) {
-    this._namespace = namespace;
-  }
-
-  get nullable(): boolean {
-    return this._nullable;
-  }
-
-  set nullable(nullable: boolean) {
-    this._nullable = nullable;
-  }
-
   public typeReflection(node: ts.TypeNode): ts.Expression {
     switch (node.kind) {
       case ts.SyntaxKind.ParenthesizedType:
@@ -52,41 +28,34 @@ export class Factory {
         return this.nullTypeReflection();
       case ts.SyntaxKind.UndefinedKeyword:
         return this.undefinedTypeReflection();
-      case ts.SyntaxKind.LiteralType: // TODO: implement
-        break;
+      case ts.SyntaxKind.LiteralType:
+        return this.literalTypeReflection(node as ts.LiteralTypeNode);
       case ts.SyntaxKind.ArrayType:
         return this.arrayTypeReflection(node as ts.ArrayTypeNode);
       case ts.SyntaxKind.TupleType:
         return this.tupleTypeReflection(node as ts.TupleTypeNode);
-      case ts.SyntaxKind.ConstructorType: // TODO: implement
-        break;
-      case ts.SyntaxKind.FunctionType: // TODO: implement
-        break;
       case ts.SyntaxKind.UnionType:
         return this.unionTypeReflection(node as ts.UnionTypeNode);
       case ts.SyntaxKind.IntersectionType:
         return this.intersectionTypeReflection(node as ts.IntersectionTypeNode);
-      case ts.SyntaxKind.TypeReference: // TODO: handle enums
-        break;
       case ts.SyntaxKind.ThisType:
         return this.thisTypeReflection();
-      case ts.SyntaxKind.TypeLiteral: // TODO: implement
-        break;
+      case ts.SyntaxKind.TypeReference:
+        return this.typeReferenceReflection(node as ts.TypeReferenceNode);
+      case ts.SyntaxKind.FunctionType:
+      case ts.SyntaxKind.ConstructorType:
+        return this.functionTypeReflection(node as ts.FunctionTypeNode | ts.ConstructorTypeNode);
+      case ts.SyntaxKind.TypeLiteral:
+        return this.typeLiteralReflection(node as ts.TypeLiteralNode);
       case ts.SyntaxKind.TypeParameter: // generics // TODO: implement
-        break;
       case ts.SyntaxKind.TypePredicate: // function a(pet: Fish | Bird) pet is Fish // TODO: implement
-        break;
       case ts.SyntaxKind.TypeQuery: // typeof a // TODO: implement
-        break;
       // type Readonly<T> = {
       //   readonly [P in keyof T]: T[P];
       // }
       case ts.SyntaxKind.MappedType: // TODO: implement
-        break;
       case ts.SyntaxKind.IndexedAccessType: // TODO: implement
-        break;
       default:
-        // TODO: throw exception (bus error)
         throw new Error(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
   }
@@ -127,8 +96,31 @@ export class Factory {
     return this.nullify(this.libCall('void'));
   }
 
-  public literalTypeReflection() {
+  public literalTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    switch (node.literal.kind) {
+      case ts.SyntaxKind.TrueKeyword:
+      case ts.SyntaxKind.FalseKeyword:
+        return this.booleanLiteralTypeReflection(node);
+      case ts.SyntaxKind.StringLiteral:
+        return this.stringLiteralTypeReflection(node);
+      case ts.SyntaxKind.NumericLiteral:
+        return this.numericLiteralTypeReflection(node);
+      case ts.SyntaxKind.ComputedPropertyName:
+      default:
+        throw new Error(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
+    }
+  }
 
+  public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    return this.propertyAccessCall(this.lib, 'boolean', node.literal);
+  }
+
+  public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    return this.propertyAccessCall(this.lib, 'string', node.literal);
+  }
+
+  public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    return this.propertyAccessCall(this.lib, 'number', node.literal);
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
@@ -151,13 +143,126 @@ export class Factory {
     return this.nullify(this.libCall('this', ts.createThis()));
   }
 
-  public typeLiteralReflection() {
-    // ts.SyntaxKind.IndexSignature:
-    // ts.SyntaxKind.PropertySignature
-    // ts.SyntaxKind.ConstructSignature
-    // ts.SyntaxKind.CallSignature
-    // ts.SyntaxKind.MethodSignature
-    // ts.SyntaxKind.ComputedPropertyName // [prop]: string
+  // TODO: handle enums (annotate like functions?)
+  public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
+    let keyword: string = 'array';
+    const typeNameText: string = node.typeName.getText();
+    const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
+
+    if (typeNameText.toLowerCase() !== 'array') {
+      args.unshift(ts.createIdentifier(typeNameText));
+      keyword = 'ref';
+    }
+
+    return this.nullify(this.libCall(keyword, args));
+  }
+
+  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration |  ts.ConstructSignatureDeclaration | ts.MethodSignature): ts.Expression {
+    const args: ts.Expression[] = node.parameters.map(param => {
+      const parameter: ts.Expression[] = [
+        this.declarationNameToLiteralOrExpression(param.name),
+        this.typeReflection(param.type)
+      ];
+
+      if (param.questionToken) {
+        parameter.push(ts.createTrue());
+      }
+
+      return this.libCall('param', parameter);
+    })
+
+    args.push(this.libCall('return', this.typeReflection(node.type)));
+
+    return this.nullify(this.libCall('function', args));
+  }
+
+  public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
+    return this.functionTypeReflection(node);
+  }
+
+  // TODO: handle ComputedPropertyName
+  public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
+    const args: ts.Expression[] = node.members.map(member => {
+      switch (member.kind) {
+        case ts.SyntaxKind.IndexSignature:
+          return this.indexSignatureReflection(member as ts.IndexSignatureDeclaration);
+        case ts.SyntaxKind.PropertySignature:
+          return this.propertySignatureReflection(member as ts.PropertySignature);
+        case ts.SyntaxKind.CallSignature:
+          return this.callSignatureReflection(member as ts.CallSignatureDeclaration);
+        case ts.SyntaxKind.ConstructSignature:
+          return this.constructSignatureReflection(member as ts.ConstructSignatureDeclaration);
+        case ts.SyntaxKind.MethodSignature:
+          return this.methodSignatureReflection(member as ts.MethodSignature);
+        default:
+          throw new Error(`No type literal reflection for syntax kind '${ts.SyntaxKind[member.kind]}' found.`);
+      }
+    });
+
+    return this.nullify(this.libCall('object', args));
+  }
+
+  public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
+    const name = node.parameters[0].name;
+
+    return this.libCall('indexer', [
+      this.declarationNameToLiteralOrExpression(node.parameters[0].name),
+      this.typeReflection(node.parameters[0].type),
+      this.typeReflection(node.type)
+    ]);
+  }
+
+  public propertySignatureReflection(node: ts.PropertySignature): ts.Expression {
+    return this.libCall('property', [
+      this.propertyNameToLiteralOrExpression(node.name),
+      this.typeReflection(node.type)
+    ]);
+  }
+
+  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration): ts.Expression {
+    return this.libCall('callProperty', this.functionTypeReflection(node));
+  }
+
+  public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
+    return this.callSignatureReflection(node);
+  }
+
+  public methodSignatureReflection(node: ts.MethodSignature): ts.Expression {
+    return this.libCall('property', [
+      this.propertyNameToLiteralOrExpression(node.name),
+      this.functionTypeReflection(node)
+    ]);
+  }
+
+  public propertyNameToLiteralOrExpression(node: ts.PropertyName): ts.Expression | ts.StringLiteral | ts.NumericLiteral {
+    // fixes TS compiler error (property kind does not exist on type never) if using ts.SyntaxKind[node.kind] in default clause.
+    const kind = node.kind;
+
+    switch (node.kind) {
+      case ts.SyntaxKind.Identifier:
+        return ts.createLiteral(node);
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+        return node;
+      case ts.SyntaxKind.ComputedPropertyName:
+        return node.expression;
+      default:
+        throw new Error(`Property name for syntax kind '${ts.SyntaxKind[kind]}' could not be generated.`);
+    }
+  }
+
+  public declarationNameToLiteralOrExpression(node: ts.DeclarationName): ts.Expression | ts.StringLiteral | ts.NumericLiteral {
+    switch (node.kind) {
+      case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+      case ts.SyntaxKind.ComputedPropertyName:
+        return this.propertyNameToLiteralOrExpression(node as ts.PropertyName);
+      case ts.SyntaxKind.ObjectBindingPattern:
+      case ts.SyntaxKind.ArrayBindingPattern:
+      default:
+        throw new Error(`Declaration name for syntax kind '${ts.SyntaxKind[node.kind]}' could not be generated.`);
+    }
   }
 
   public nullify(reflection: ts.Expression): ts.Expression {
@@ -174,6 +279,30 @@ export class Factory {
     args = Array.isArray(args) ? args : [args];
 
     return ts.createCall(ts.createPropertyAccess(id, prop), undefined, args);
+  }
+
+  get lib(): string {
+    return this._lib;
+  }
+
+  set lib(lib: string) {
+    this._lib = lib;
+  }
+
+  get namespace(): string {
+    return this._namespace;
+  }
+
+  set namespace(namespace: string) {
+    this._namespace = namespace;
+  }
+
+  get nullable(): boolean {
+    return this._nullable;
+  }
+
+  set nullable(nullable: boolean) {
+    this._nullable = nullable;
   }
 
 }
