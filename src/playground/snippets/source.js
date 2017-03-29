@@ -1,0 +1,2 @@
+const A = t.type("A", t.nullable(t.object(t.property("func1", t.nullable(t.function(t.param("param1", t.nullable(t.string())), t.param("param2", t.nullable(t.number()), true), t.return(t.nullable(t.array(t.nullable(t.number()))))))), t.property("prop1", t.nullable(t.array(t.nullable(t.boolean())))))));
+const B = t.type("B", t.nullable(t.object(t.callProperty(t.nullable(t.function(t.return(t.union(t.null(), t.void()))))))));

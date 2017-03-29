@@ -108,6 +108,6 @@ class A extends B {
     return;
   }
 }
-class CC extends A {};
+class CC extends A {}
 
 let a: (p1: number, p2: any, p3?: string) => void;
