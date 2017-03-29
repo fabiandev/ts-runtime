@@ -150,11 +150,11 @@ export class Factory {
   }
 
   public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.propertyAccessCall(this.lib, 'string', node.literal);
+    return this.propertyAccessCall(this.lib, 'number', node.literal);
   }
 
   public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.propertyAccessCall(this.lib, 'number', node.literal);
+    return this.propertyAccessCall(this.lib, 'string', node.literal);
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
