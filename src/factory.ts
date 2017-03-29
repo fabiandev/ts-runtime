@@ -6,6 +6,12 @@ export class Factory {
   private _namespace = '_';
   private _nullable = true;
 
+  constructor(lib?: string, namespace?: string, strictNullChecks?: boolean) {
+    this.lib = lib || this.lib;
+    this.namespace = namespace || this.namespace;
+    this._nullable = strictNullChecks || this.nullable;
+  }
+
   public typeReflection(node: ts.TypeNode): ts.Expression {
     switch (node.kind) {
       case ts.SyntaxKind.ParenthesizedType:
@@ -59,6 +65,34 @@ export class Factory {
         throw new Error(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
   }
+
+  public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.Expression {
+    return this.propertyAccessCall(this.lib, 'type', [
+      ts.createLiteral(node.name),
+      this.typeReflection(node.type)
+    ]);
+  }
+
+  public interfaceSubstitution(node: ts.InterfaceDeclaration): ts.Expression {
+    return this.propertyAccessCall(this.lib, 'type', [
+      ts.createLiteral(node.name),
+      this.nullify(this.libCall('object', this.typeElementsReflection(node.members)))
+    ])
+  }
+
+  public typeDeclaration(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, node: ts.TypeNode): ts.VariableDeclaration {
+    return ts.createVariableDeclaration(name, undefined, this.typeReflection(node));
+  }
+
+  public typeDefinitionAndAssertion(node: ts.TypeNode, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
+    return this.typeAssertion(this.typeReflection(node), args);
+  }
+
+  public typeAssertion(id: string | ts.Expression, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
+    return this.propertyAccessCall(id, 'assert', args);
+  }
+
+
 
   public anyTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.libCall('any');
@@ -182,24 +216,26 @@ export class Factory {
 
   // TODO: handle ComputedPropertyName
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
-    const args: ts.Expression[] = node.members.map(member => {
-      switch (member.kind) {
+    return this.nullify(this.libCall('object', this.typeElementsReflection(node.members)));
+  }
+
+  public typeElementsReflection(nodes: ts.TypeElement[]) {
+    return nodes.map(node => {
+      switch (node.kind) {
         case ts.SyntaxKind.IndexSignature:
-          return this.indexSignatureReflection(member as ts.IndexSignatureDeclaration);
+          return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
         case ts.SyntaxKind.PropertySignature:
-          return this.propertySignatureReflection(member as ts.PropertySignature);
+          return this.propertySignatureReflection(node as ts.PropertySignature);
         case ts.SyntaxKind.CallSignature:
-          return this.callSignatureReflection(member as ts.CallSignatureDeclaration);
+          return this.callSignatureReflection(node as ts.CallSignatureDeclaration);
         case ts.SyntaxKind.ConstructSignature:
-          return this.constructSignatureReflection(member as ts.ConstructSignatureDeclaration);
+          return this.constructSignatureReflection(node as ts.ConstructSignatureDeclaration);
         case ts.SyntaxKind.MethodSignature:
-          return this.methodSignatureReflection(member as ts.MethodSignature);
+          return this.methodSignatureReflection(node as ts.MethodSignature);
         default:
-          throw new Error(`No type literal reflection for syntax kind '${ts.SyntaxKind[member.kind]}' found.`);
+          throw new Error(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
       }
     });
-
-    return this.nullify(this.libCall('object', args));
   }
 
   public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
