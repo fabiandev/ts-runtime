@@ -1,20 +1,15 @@
 import * as ts from 'typescript';
-import { MutationContext } from './context';
 
 export class Factory {
 
-  private _context: MutationContext;
-  private _strictNullChecks: boolean;
-  private _lib: string;
-  private _namespace: string;
+  private _lib = 't';
+  private _namespace = '_';
+  private _nullable = true;
 
-  // TODO: check ts.SyntaxKind.QualifiedName (e.g. B.One if B is an enum)
-
-  constructor(context: MutationContext, strictNullChecks = false, lib = 't', namespace = '_') {
-    this._context = context;
-    this._lib = lib;
-    this._namespace = namespace;
-    this._strictNullChecks = strictNullChecks;
+  constructor(lib?: string, namespace?: string, strictNullChecks?: boolean) {
+    this.lib = lib || this.lib;
+    this.namespace = namespace || this.namespace;
+    this._nullable = strictNullChecks || this.nullable;
   }
 
   public typeReflection(node: ts.TypeNode): ts.Expression {
@@ -97,39 +92,41 @@ export class Factory {
     return this.propertyAccessCall(id, 'assert', args);
   }
 
-  public anyTypeReflection(): ts.Expression {
+
+
+  public anyTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.libCall('any');
   }
 
-  public numberTypeReflection(): ts.Expression {
+  public numberTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.nullify(this.libCall('number'));
   }
 
-  public booleanTypeReflection(): ts.Expression {
+  public booleanTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.nullify(this.libCall('boolean'));
   }
 
-  public stringTypeReflection(): ts.Expression {
+  public stringTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.nullify(this.libCall('string'));
   }
 
-  public symbolTypeReflection(): ts.Expression {
+  public symbolTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.nullify(this.libCall('symbol'));
   }
 
-  public objectTypeReflection(): ts.Expression {
+  public objectTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.nullify(this.libCall('object'));
   }
 
-  public voidTypeReflection(): ts.Expression {
+  public voidTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.libCall('union', [this.libCall('null'), this.libCall('void')]);
   }
 
-  public nullTypeReflection(): ts.Expression {
+  public nullTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.libCall('null');
   }
 
-  public undefinedTypeReflection(): ts.Expression {
+  public undefinedTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     return this.nullify(this.libCall('void'));
   }
 
@@ -149,18 +146,15 @@ export class Factory {
   }
 
   public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.nullify(this.libCall('boolean', ts.createLiteral(
-      node.literal.kind === ts.SyntaxKind.TrueKeyword ? true : false
-    )));
+    return this.propertyAccessCall(this.lib, 'boolean', node.literal);
   }
 
   public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.nullify(this.libCall('number', ts.createNumericLiteral(node.literal.getText())));
+    return this.propertyAccessCall(this.lib, 'number', node.literal);
   }
 
   public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    const str = node.literal.getText();
-    return this.nullify(this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1))));
+    return this.propertyAccessCall(this.lib, 'string', node.literal);
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
@@ -179,7 +173,7 @@ export class Factory {
     return this.nullify(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
   }
 
-  public thisTypeReflection(): ts.Expression {
+  public thisTypeReflection(node?: ts.ThisTypeNode): ts.Expression {
     return this.nullify(this.libCall('this', ts.createThis()));
   }
 
@@ -197,7 +191,7 @@ export class Factory {
     return this.nullify(this.libCall(keyword, args));
   }
 
-  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration |  ts.ConstructSignatureDeclaration | ts.MethodSignature, noStrictNullCheck?: boolean): ts.Expression {
+  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration |  ts.ConstructSignatureDeclaration | ts.MethodSignature): ts.Expression {
     const args: ts.Expression[] = node.parameters.map(param => {
       const parameter: ts.Expression[] = [
         this.declarationNameToLiteralOrExpression(param.name),
@@ -213,7 +207,7 @@ export class Factory {
 
     args.push(this.libCall('return', this.typeReflection(node.type)));
 
-    return this.nullify(this.libCall('function', args), noStrictNullCheck);
+    return this.nullify(this.libCall('function', args));
   }
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
@@ -245,6 +239,8 @@ export class Factory {
   }
 
   public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
+    const name = node.parameters[0].name;
+
     return this.libCall('indexer', [
       this.declarationNameToLiteralOrExpression(node.parameters[0].name),
       this.typeReflection(node.parameters[0].type),
@@ -259,8 +255,8 @@ export class Factory {
     ]);
   }
 
-  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration, noStrictNullCheck = true): ts.Expression {
-    return this.libCall('callProperty', this.functionTypeReflection(node, noStrictNullCheck));
+  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration): ts.Expression {
+    return this.libCall('callProperty', this.functionTypeReflection(node));
   }
 
   public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
@@ -280,12 +276,10 @@ export class Factory {
 
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
-        return ts.createLiteral(node.getText());
+        return ts.createLiteral(node);
       case ts.SyntaxKind.StringLiteral:
-        let str = node.getText();
-        return ts.createLiteral(str.substring(1, str.length - 1));
       case ts.SyntaxKind.NumericLiteral:
-        return ts.createNumericLiteral(node.getText());
+        return node;
       case ts.SyntaxKind.ComputedPropertyName:
         return node.expression;
       default:
@@ -307,8 +301,8 @@ export class Factory {
     }
   }
 
-  public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
-    return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
+  public nullify(reflection: ts.Expression): ts.Expression {
+    return !this.nullable ? reflection : this.libCall('nullable', reflection);
   }
 
   public libCall(prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
@@ -321,22 +315,6 @@ export class Factory {
     args = Array.isArray(args) ? args : [args];
 
     return ts.createCall(ts.createPropertyAccess(id, prop), undefined, args);
-  }
-
-  get context(): MutationContext {
-    return this._context;
-  }
-
-  set context(context: MutationContext) {
-    this._context = context;
-  }
-
-  get strictNullChecks(): boolean {
-    return this._strictNullChecks;
-  }
-
-  set strictNullChecks(strictNullChecks: boolean) {
-    this._strictNullChecks = strictNullChecks;
   }
 
   get lib(): string {
@@ -353,6 +331,14 @@ export class Factory {
 
   set namespace(namespace: string) {
     this._namespace = namespace;
+  }
+
+  get nullable(): boolean {
+    return this._nullable;
+  }
+
+  set nullable(nullable: boolean) {
+    this._nullable = nullable;
   }
 
 }

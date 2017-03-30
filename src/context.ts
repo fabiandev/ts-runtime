@@ -15,6 +15,7 @@ export class MutationContext {
   private _generator: Generator;
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
+  private _implicitTypeNodeIdentifier = '_TS_RUNTIME_IMPLICIT_TYPE_NODE_';
 
   constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
     this._options = options;
@@ -24,7 +25,7 @@ export class MutationContext {
     this._host = host;
     this._visited = [];
     this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
-    this._factory = new Factory(this, options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
+    this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.typeIdentifierNamespace);
     this._transformationContext = context;
   }
 
@@ -59,7 +60,7 @@ export class MutationContext {
     return false;
   }
 
-  public getTypeDeclarationName(node: string | ts.BindingName): string {
+  public getTypeDeclarationName(node: string |  ts.BindingName): string {
     const name = typeof node === 'string' ? node : node.getText();
     return `${this.options.typeIdentifierNamespace}${name}Type`;
   }
@@ -68,16 +69,29 @@ export class MutationContext {
     return this.options.libIdentifier;
   }
 
-  // TODO: handle LastTypeNode (and FirstTypeNode)
-  public getImplicitTypeNode(node: string | ts.Node): ts.TypeNode {
+  public getImplicitTypeNode(node: string |  ts.Node): ts.TypeNode {
+    if (this.isImplicitTypeNode(node)) return node as ts.TypeNode;
     const typeString = typeof node === 'string' ? node : this.getImplicitTypeText(node);
-    let source = `let temp: ${typeString};`;
-    let sf = ts.createSourceFile('temp', source, this.compilerOptions.target || defaultOptions.compilerOptions.target, true, ts.ScriptKind.TS);
+    let source = `let ${this._implicitTypeNodeIdentifier}: ${typeString};`;
+    let sf = ts.createSourceFile(`${this._implicitTypeNodeIdentifier}SF__`, source, this.compilerOptions.target || defaultOptions.compilerOptions.target, true, ts.ScriptKind.TS);
     return (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
   }
 
+  public isImplicitTypeNode(node: any): boolean {
+    do {
+      if (node && node.name) {
+        try {
+          if (node.name.getText() === this._implicitTypeNodeIdentifier) {
+            return true;
+          }
+        } catch (e) {}
+      }
+    } while(node && (node = node.parent));
+    return false;
+  }
+
   public getTypeNode(node: ts.Node): ts.TypeNode {
-    if (node.hasOwnProperty('type')) {
+    if ((node as any).type) {
       return (node as any).type;
     }
 

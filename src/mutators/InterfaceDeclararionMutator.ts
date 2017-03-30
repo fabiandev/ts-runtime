@@ -6,6 +6,8 @@ export class InterfaceDeclarationMutator extends Mutator {
   protected kind = ts.SyntaxKind.InterfaceDeclaration;
 
   public mutate(node: ts.InterfaceDeclaration): ts.Node {
+    const typeText = this.context.getImplicitTypeText(node.name);
+    console.log(typeText);
     const substitution = ts.createVariableStatement(
       node.modifiers,
       ts.createVariableDeclarationList(

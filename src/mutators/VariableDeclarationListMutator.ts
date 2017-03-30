@@ -48,14 +48,17 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
+    console.log(node.getText());
+    console.log(this.context.getImplicitTypeText(node), '\n');
+
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const typeDefinition = this.context.generator.typeDeclaration(nodeName, node.type);
+    const typeDefinition = this.factory.typeDeclaration(nodeName, node.type);
 
     if (!node.initializer) {
       return [typeDefinition, node];
     }
 
-    const initializer = this.context.generator.typeAssertion(nodeName, node.initializer);
+    const initializer = this.factory.typeAssertion(nodeName, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [typeDefinition, assignment];
@@ -68,7 +71,7 @@ export class VariableDeclarationListMutator extends Mutator {
 
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
 
-    const initializer = this.context.generator.typeDefinitionAndAssertion(node.type, node.initializer);
+    const initializer = this.factory.typeDefinitionAndAssertion(node.type, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [assignment];
@@ -76,13 +79,13 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private transformUntypedDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const implicitType = this.context.getImplicitTypeNode(node.name);
+    const implicitType = this.context.getImplicitTypeNode(node);
 
     if (!this.context.options.assertAny && implicitType.kind === ts.SyntaxKind.AnyKeyword) {
       return [node];
     }
 
-    const typeDefinition = this.context.generator.typeDeclaration(
+    const typeDefinition = this.factory.typeDeclaration(
       nodeName,
       implicitType
     );
@@ -91,7 +94,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return [typeDefinition, node];
     }
 
-    const initializer = this.context.generator.typeAssertion(nodeName, [node.initializer]);
+    const initializer = this.factory.typeAssertion(nodeName, [node.initializer]);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [typeDefinition, assignment];
@@ -99,13 +102,13 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private transformUntypedConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const implicitType = this.context.getImplicitTypeNode(node.name);
+    const implicitType = this.context.getImplicitTypeNode(node);
 
     if (!this.context.options.assertAny && implicitType.kind === ts.SyntaxKind.AnyKeyword) {
       return [node];
     }
 
-    const initializer = this.context.generator.typeDefinitionAndAssertion(implicitType, node.initializer);
+    const initializer = this.factory.typeDefinitionAndAssertion(implicitType, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [assignment];

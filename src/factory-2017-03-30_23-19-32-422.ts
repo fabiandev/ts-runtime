@@ -8,8 +8,6 @@ export class Factory {
   private _lib: string;
   private _namespace: string;
 
-  // TODO: check ts.SyntaxKind.QualifiedName (e.g. B.One if B is an enum)
-
   constructor(context: MutationContext, strictNullChecks = false, lib = 't', namespace = '_') {
     this._context = context;
     this._lib = lib;
@@ -197,7 +195,7 @@ export class Factory {
     return this.nullify(this.libCall(keyword, args));
   }
 
-  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration |  ts.ConstructSignatureDeclaration | ts.MethodSignature, noStrictNullCheck?: boolean): ts.Expression {
+  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration |  ts.ConstructSignatureDeclaration | ts.MethodSignature): ts.Expression {
     const args: ts.Expression[] = node.parameters.map(param => {
       const parameter: ts.Expression[] = [
         this.declarationNameToLiteralOrExpression(param.name),
@@ -213,7 +211,7 @@ export class Factory {
 
     args.push(this.libCall('return', this.typeReflection(node.type)));
 
-    return this.nullify(this.libCall('function', args), noStrictNullCheck);
+    return this.nullify(this.libCall('function', args));
   }
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
@@ -259,8 +257,8 @@ export class Factory {
     ]);
   }
 
-  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration, noStrictNullCheck = true): ts.Expression {
-    return this.libCall('callProperty', this.functionTypeReflection(node, noStrictNullCheck));
+  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration): ts.Expression {
+    return this.libCall('callProperty', this.functionTypeReflection(node));
   }
 
   public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
@@ -308,7 +306,7 @@ export class Factory {
   }
 
   public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
-    return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
+    return !this.nullable || notNullable ? reflection : this.libCall('nullable', reflection);
   }
 
   public libCall(prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
@@ -321,22 +319,6 @@ export class Factory {
     args = Array.isArray(args) ? args : [args];
 
     return ts.createCall(ts.createPropertyAccess(id, prop), undefined, args);
-  }
-
-  get context(): MutationContext {
-    return this._context;
-  }
-
-  set context(context: MutationContext) {
-    this._context = context;
-  }
-
-  get strictNullChecks(): boolean {
-    return this._strictNullChecks;
-  }
-
-  set strictNullChecks(strictNullChecks: boolean) {
-    this._strictNullChecks = strictNullChecks;
   }
 
   get lib(): string {
@@ -353,6 +335,18 @@ export class Factory {
 
   set namespace(namespace: string) {
     this._namespace = namespace;
+  }
+
+  get strictNullChecks(): boolean {
+    return this._strictNullChecks;
+  }
+
+  set strictNullChecks(strictNullChecks: boolean) {
+    this._strictNullChecks = strictNullChecks;
+  }
+
+  get context(): MutationContext {
+    return this._context;
   }
 
 }

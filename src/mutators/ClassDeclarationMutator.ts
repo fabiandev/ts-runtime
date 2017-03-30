@@ -19,7 +19,9 @@ export class ClassDeclarationMutator extends Mutator {
   public mutate(node: ts.ClassDeclaration): ts.Node {
     const members: ts.ClassElement[] = [];
     const assertAny = this.context.options.assertAny;
-
+    if (true === true) {
+    return node;
+  }
     for (let member of node.members) {
       switch (member.kind) {
         case ts.SyntaxKind.Constructor:
