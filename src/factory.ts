@@ -97,8 +97,6 @@ export class Factory {
     return this.propertyAccessCall(id, 'assert', args);
   }
 
-
-
   public anyTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
     if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.libCall('any');
@@ -163,17 +161,23 @@ export class Factory {
 
   public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
     node = this.context.getImplicitTypeNode(node) as typeof node;
-    return this.propertyAccessCall(this.lib, 'boolean', node.literal);
+    return this.nullify(this.libCall('boolean', ts.createLiteral(
+      node.literal.kind === ts.SyntaxKind.TrueKeyword ? true : false
+    )));
   }
 
   public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    console.log(node.literal.getText());
     node = this.context.getImplicitTypeNode(node) as typeof node;
-    return this.propertyAccessCall(this.lib, 'number', node.literal);
+    console.log(node.literal.getText());
+    console.log('\n');
+    return this.nullify(this.libCall('number', ts.createNumericLiteral(node.literal.getText())));
   }
 
   public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
     node = this.context.getImplicitTypeNode(node) as typeof node;
-    return this.propertyAccessCall(this.lib, 'string', node.literal);
+    let str = node.literal.getText();
+    return this.nullify(this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1))));
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
@@ -245,7 +249,7 @@ export class Factory {
 
   // TODO: handle ComputedPropertyName
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
-    node = this.context.getImplicitTypeNode(node) as typeof node;
+    // node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('object', this.typeElementsReflection(node.members)));
   }
 
@@ -269,8 +273,6 @@ export class Factory {
   }
 
   public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
-    const name = node.parameters[0].name;
-
     return this.libCall('indexer', [
       this.declarationNameToLiteralOrExpression(node.parameters[0].name),
       this.typeReflection(node.parameters[0].type),
@@ -306,10 +308,12 @@ export class Factory {
 
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
-        return ts.createLiteral(node);
+        return ts.createLiteral(node.getText());
       case ts.SyntaxKind.StringLiteral:
+        let str = node.getText();
+        return ts.createLiteral(str.substring(1, str.length - 1));
       case ts.SyntaxKind.NumericLiteral:
-        return node;
+        return ts.createNumericLiteral(node.getText());
       case ts.SyntaxKind.ComputedPropertyName:
         return node.expression;
       default:
