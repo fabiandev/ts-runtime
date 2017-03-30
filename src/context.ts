@@ -24,7 +24,7 @@ export class MutationContext {
     this._host = host;
     this._visited = [];
     this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
-    this._factory = new Factory(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
+    this._factory = new Factory(this, options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
     this._transformationContext = context;
   }
 

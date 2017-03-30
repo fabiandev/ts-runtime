@@ -1,18 +1,23 @@
 import * as ts from 'typescript';
+import { MutationContext } from './context';
 
 export class Factory {
 
+  private _context: MutationContext;
   private _lib = 't';
   private _namespace = '_';
   private _nullable = true;
 
-  constructor(lib?: string, namespace?: string, strictNullChecks?: boolean) {
+  constructor(context: MutationContext, lib?: string, namespace?: string, strictNullChecks?: boolean) {
+    this._context = context;
     this.lib = lib || this.lib;
     this.namespace = namespace || this.namespace;
     this._nullable = strictNullChecks || this.nullable;
   }
 
   public typeReflection(node: ts.TypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
+
     switch (node.kind) {
       case ts.SyntaxKind.ParenthesizedType:
         return this.typeReflection((node as ts.ParenthesizedTypeNode).type);
@@ -95,42 +100,53 @@ export class Factory {
 
 
   public anyTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.libCall('any');
   }
 
   public numberTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('number'));
   }
 
   public booleanTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('boolean'));
   }
 
   public stringTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('string'));
   }
 
   public symbolTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('symbol'));
   }
 
   public objectTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('object'));
   }
 
   public voidTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.libCall('union', [this.libCall('null'), this.libCall('void')]);
   }
 
   public nullTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.libCall('null');
   }
 
   public undefinedTypeReflection(node?: ts.KeywordTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('void'));
   }
 
   public literalTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
+
     switch (node.literal.kind) {
       case ts.SyntaxKind.TrueKeyword:
       case ts.SyntaxKind.FalseKeyword:
@@ -146,39 +162,49 @@ export class Factory {
   }
 
   public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.propertyAccessCall(this.lib, 'boolean', node.literal);
   }
 
   public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.propertyAccessCall(this.lib, 'number', node.literal);
   }
 
   public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.propertyAccessCall(this.lib, 'string', node.literal);
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('array', this.typeReflection(node.elementType)));
   }
 
   public tupleTypeReflection(node: ts.TupleTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n))));
   }
 
   public unionTypeReflection(node: ts.UnionTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('union', node.types.map(n => this.typeReflection(n))));
   }
 
   public intersectionTypeReflection(node: ts.IntersectionTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
   }
 
   public thisTypeReflection(node?: ts.ThisTypeNode): ts.Expression {
+    if (node) node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('this', ts.createThis()));
   }
 
   // TODO: handle enums (annotate like functions?)
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
+
     let keyword: string = 'array';
     const typeNameText: string = node.typeName.getText();
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
@@ -192,6 +218,8 @@ export class Factory {
   }
 
   public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration |  ts.ConstructSignatureDeclaration | ts.MethodSignature): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
+
     const args: ts.Expression[] = node.parameters.map(param => {
       const parameter: ts.Expression[] = [
         this.declarationNameToLiteralOrExpression(param.name),
@@ -211,11 +239,13 @@ export class Factory {
   }
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.functionTypeReflection(node);
   }
 
   // TODO: handle ComputedPropertyName
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
+    node = this.context.getImplicitTypeNode(node) as typeof node;
     return this.nullify(this.libCall('object', this.typeElementsReflection(node.members)));
   }
 
@@ -339,6 +369,10 @@ export class Factory {
 
   set nullable(nullable: boolean) {
     this._nullable = nullable;
+  }
+
+  get context(): MutationContext {
+    return this._context;
   }
 
 }
