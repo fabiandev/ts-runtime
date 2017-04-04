@@ -211,15 +211,15 @@ export class Factory {
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
     let keyword = 'array';
 
-    console.log('\n');
-    console.log(node.parent.getText());
-    console.log(node.getText());
-    console.log('isImplicit', this.context.isImplicitTypeNode(node));
-    const original = this.context.getNodeFromImplicit(node);
-    console.log('original', !this.context.isImplicitTypeNode(original));
-    console.log(original.parent.getText());
-    console.log('wasDeclared', this.context.wasDeclared((original as ts.TypeReferenceNode).typeName));
-    console.log();
+    // console.log('\n');
+    // console.log(node.parent.getText());
+    // console.log(node.getText());
+    // console.log('isImplicit', this.context.isImplicitTypeNode(node));
+    // const original = this.context.getNodeFromImplicit(node);
+    // console.log('original', !this.context.isImplicitTypeNode(original));
+    // console.log(original.parent.getText());
+    // console.log('wasDeclared', this.context.wasDeclared((original as ts.TypeReferenceNode).typeName));
+    // console.log();
 
     const typeNameText: string = node.typeName.getText();
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));

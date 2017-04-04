@@ -6,6 +6,10 @@ export class TypeAliasDeclarationMutator extends Mutator {
   protected kind = ts.SyntaxKind.TypeAliasDeclaration;
 
   public mutate(node: ts.TypeAliasDeclaration): ts.Node {
+    console.log(node.name.getText());
+    console.log(this.context.hasSelfReferencing(node));
+    console.log();
+
     const substitution = ts.createVariableStatement(
       node.modifiers,
       ts.createVariableDeclarationList(

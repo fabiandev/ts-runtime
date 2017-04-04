@@ -16,7 +16,6 @@ export class MutationContext {
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
   private _implicitTypeNodeIdentifier = '_TS_RUNTIME_IMPLICIT_TYPE_NODE_';
-  private _implicitNodes = new Map<ts.Node, ts.Node>();
 
   constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
     this._options = options;
@@ -31,10 +30,7 @@ export class MutationContext {
   }
 
   public wasDeclared(node: ts.Node) {
-    node = this.getNodeFromImplicit(node);
-
     const symbol = this.checker.getSymbolAtLocation(node);
-
     if (!symbol || !symbol.declarations) return false;
 
     for (let declaration of symbol.getDeclarations()) {
@@ -44,6 +40,23 @@ export class MutationContext {
     }
 
     return false;
+  }
+
+  public hasSelfReferencing(node: ts.Node): boolean {
+    const symbol = this.checker.getSymbolAtLocation((node as any).name || node);
+
+    const search = (node: ts.Node): boolean => {
+      const isTypeReference = node.kind === ts.SyntaxKind.TypeReference;
+      const isSelfReference = symbol === this.checker.getSymbolAtLocation((node as ts.TypeReferenceNode).typeName);
+
+      if (isTypeReference && isSelfReference) {
+        return true;
+      }
+
+      return ts.forEachChild(node, child => search(child));
+    }
+
+    return search(node) || false;
   }
 
   public wasVisited(node: ts.Node): boolean {
@@ -86,23 +99,15 @@ export class MutationContext {
     return this.options.libIdentifier;
   }
 
-  public getNodeFromImplicit(node: ts.Node): ts.Node {
-    if (!this.implicitNodes.has(node)) {
-      return node;
-    }
-
-    return this.implicitNodes.get(node);
-  }
-
-  public getImplicitTypeNode_old(node: ts.Node): ts.TypeNode {
-    if (this.isImplicitTypeNode(node)) return node as ts.TypeNode;
-    const typeString = this.getImplicitTypeText(node);
-    let source = `let ${this._implicitTypeNodeIdentifier}: ${typeString};`;
-    let sf = ts.createSourceFile(`${this._implicitTypeNodeIdentifier}SF__`, source, this.compilerOptions.target || defaultOptions.compilerOptions.target, true, ts.ScriptKind.TS);
-    const implicit = (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
-    this.implicitNodes.set(implicit, node);
-    return implicit;
-  }
+  // public getImplicitTypeNode_old(node: ts.Node): ts.TypeNode {
+  //   if (this.isImplicitTypeNode(node)) return node as ts.TypeNode;
+  //   const typeString = this.getImplicitTypeText(node);
+  //   let source = `let ${this._implicitTypeNodeIdentifier}: ${typeString};`;
+  //   let sf = ts.createSourceFile(`${this._implicitTypeNodeIdentifier}SF__`, source, this.compilerOptions.target || defaultOptions.compilerOptions.target, true, ts.ScriptKind.TS);
+  //   const implicit = (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
+  //   this.implicitNodes.set(implicit, node);
+  //   return implicit;
+  // }
 
   public getImplicitTypeNode(node: ts.Node): ts.TypeNode {
     const type = this.checker.getTypeAtLocation(node);
@@ -207,10 +212,6 @@ export class MutationContext {
 
   get factory(): Factory {
     return this._factory;
-  }
-
-  get implicitNodes(): Map<ts.Node, ts.Node> {
-    return this._implicitNodes;
   }
 
 }
