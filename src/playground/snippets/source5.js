@@ -17,11 +17,11 @@ f = 'hi';
 let _gType = t.nullable(t.array(t.nullable(t.ref(Symbol)))), g;
 g = _gType.assert([Symbol(1), Symbol(2)]);
 let _hType = t.union(t.null(), t.void()), h;
-let _iType = t.nullable(t.union(t.nullable(t.number()), t.nullable(t.array(t.nullable(t.array(t.nullable(t.boolean()))))), t.nullable(t.ref(Symbol)))), i;
+let _iType = t.nullable(t.union(t.nullable(t.number()), t.nullable(t.ref(Symbol)), t.nullable(t.array(t.nullable(t.array(t.nullable(t.boolean()))))))), i;
 let _jType = t.nullable(t.void()), j;
 let _kType = t.null(), k;
 let _lType = t.nullable(t.symbol()), l;
-let _mType = t.nullable(t.this(this)), m;
+let _mType = t.any(), m;
 // Variable with implicit complex type
 let _eType = t.nullable(t.array(t.nullable(t.union(t.nullable(t.string()), t.nullable(t.number()))))), e = _eType.assert(['one', 10, 'three']);
 e = _eType.assert('hello');
@@ -29,8 +29,8 @@ let _nType = t.nullable(t.number(10)), n;
 let _oType = t.nullable(t.boolean(true)), o;
 let _pType = t.nullable(t.string("str")), p;
 let _qType = t.nullable(t.boolean(false)), q;
-let _rType = t.nullable(t.ref(o)), r;
-let _sType = t.nullable(t.object()), s = _sType.assert({});
+let _rType = t.any(), r;
+let _sType = t.any(), s = _sType.assert({});
 let _tType = t.nullable(t.ref(Object)), t = _tType.assert({});
 let _uType = t.nullable(t.object(t.property("x", t.nullable(t.number())))), u = _uType.assert({});
 let _vType = t.nullable(t.ref(Function)), v = _vType.assert(() => { });
@@ -46,13 +46,12 @@ let _zType = t.nullable(t.object(t.property("one", t.nullable(t.number())), t.pr
     two: 'str',
     three: Symbol(1)
 });
-let _ab1Type = t.nullable(t.intersection(t.nullable(t.union(t.nullable(t.ref(A)), t.nullable(t.ref(B)))), t.nullable(t.ref(B)))), ab1;
-let _ab2Type = t.nullable(t.union(t.nullable(t.ref(A)), t.nullable(t.intersection(t.nullable(t.ref(B)), t.nullable(t.ref(B)))))), ab2;
+let _ab1Type = t.nullable(t.union(t.nullable(t.ref(B)), t.nullable(t.intersection(t.nullable(t.ref(A)), t.nullable(t.ref(B)))))), ab1;
+let _ab2Type = t.nullable(t.union(t.nullable(t.ref(A)), t.nullable(t.ref(B)))), ab2;
 let _xType = t.nullable(t.object(t.indexer("index", t.nullable(t.string()), t.any()), t.property("one", t.nullable(t.number())))), x;
-const IA = t.type("IA", t.nullable(t.object(t.property("one", t.nullable(t.number())), t.property("two", t.nullable(t.string())), t.property("three", t.nullable(t.function(t.param("param1", t.nullable(t.string())), t.param("param2", t.nullable(t.number()), true), t.return(t.nullable(t.array(t.nullable(t.number()))))))))));
 const IB = t.type("IB", t.nullable(t.object(t.property("one", t.nullable(t.number())), t.property("two", t.nullable(t.string())))));
 const NN = t.type("NN", t.nullable(t.number()));
-let _xxxxType = t.nullable(t.ref(NN)), xxxx;
+let _xxxxType = t.nullable(t.number()), xxxx;
 class B {
 }
 class A extends B {
