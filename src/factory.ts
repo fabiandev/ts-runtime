@@ -290,28 +290,89 @@ export class Factory {
 
   // TODO: remove merge here (do in interface)
   public typeElementsReflection(nodes: ts.TypeElement[], merge = false): ts.Expression[] {
-    type MethodOrConstructSignature = ts.MethodSignature | ts.ConstructSignatureDeclaration;
-    const methods: Map<string, MethodOrConstructSignature[]> = new Map();
+    const mergeGroups: Map<string, ts.MethodSignature[]> = new Map();
 
     let elements = nodes.map(node => {
       const reflection: ts.Expression = this.typeElementReflection(node);
 
       // group same name of the kinds: MethodSignature and ConstructSignatureDeclaration
-      if (merge && (node.kind === ts.SyntaxKind.MethodSignature || node.kind === ts.SyntaxKind.ConstructSignature)) {
+      if (merge && (node.kind === ts.SyntaxKind.MethodSignature)) {
         const text = node.name.getText();
 
-        if (!methods.has(text)) {
-          methods.set(text, []);
+        if (!mergeGroups.has(text)) {
+          mergeGroups.set(text, []);
         }
 
-        const elements = methods.get(text);
-        elements.push(node as MethodOrConstructSignature);
+        const elements = mergeGroups.get(text);
+        elements.push(node as ts.MethodSignature);
 
         return null;
       }
 
       return reflection;
     }).filter(element => !!element);
+
+    mergeGroups.forEach((group, name) => {
+      const returnTypes: ts.TypeNode[] = [];
+      const parameterTypes: Map<string, ts.TypeNode[]> = new Map();
+
+      const hasReturnTypes: string[] = [];
+      const hasParameterTypes: Map<string, string[]> = new Map();
+
+      for (let node of group) {
+        const returnTypeText = node.type.getText();
+
+        if (hasReturnTypes.indexOf(returnTypeText) === -1) {
+          hasReturnTypes.push(returnTypeText);
+          returnTypes.push(node.type);
+        }
+
+        for (let parameter of node.parameters) {
+          const parameterNameText = parameter.name.getText();
+          const parameterTypeText = parameter.type.getText();
+
+          if (!hasParameterTypes.has(parameterNameText)) {
+            hasParameterTypes.set(parameterNameText, []);
+          }
+
+          const parameterTypeTexts = hasParameterTypes.get(parameterNameText);
+
+          if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
+            parameterTypeTexts.push(parameterTypeText);
+
+            if (!parameterTypes.has(parameterNameText)) {
+              parameterTypes.set(parameterNameText, []);
+            }
+
+            parameterTypes.get(parameterNameText).push(parameter.type);
+          }
+        }
+      }
+
+      let returnTypeNode = returnTypes[0];
+      if (returnTypes.length > 1) {
+        returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+        (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+      }
+
+      let parameterDeclarations: ts.ParameterDeclaration[] = [];
+
+      parameterTypes.forEach((paramTypes, name) => {
+        const param = paramTypes[0].parent as ts.TypeParameterDeclaration;
+
+        let parameterTypeNode = paramTypes[0];
+        if (paramTypes.length > 1) {
+          parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+          (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+        }
+
+        const parameterDeclaration = ts.createParameter(param.decorators, param.modifiers, undefined, param.name, undefined, parameterTypeNode, undefined);
+        parameterDeclarations.push(parameterDeclaration);
+      });
+
+      const mergedMethodSignature = ts.createMethodSignature(undefined, parameterDeclarations, returnTypeNode, name, group[0].questionToken)
+      elements.push(this.typeElementReflection(mergedMethodSignature));
+    });
 
     // make union type of different return types
     // for each parameter: make union type
@@ -362,7 +423,7 @@ export class Factory {
 
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
-        return ts.createLiteral(node.getText());
+        return ts.createLiteral(node.text);
       case ts.SyntaxKind.StringLiteral:
         let str = node.getText();
         return ts.createLiteral(str.substring(1, str.length - 1));
