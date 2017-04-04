@@ -92,13 +92,13 @@ export class Factory {
   //   return node;
   // }
 
-  public typeAliasSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  public typeAliasSubstitution(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
     args = util.asArray(args);
-    args.unshift(typeof name === 'string' ? ts.createLiteral(name) : ts.createLiteral(name));
+    args.unshift(ts.createLiteral(name as any));
     return this.libCall('type', args);
   }
 
-  public interfaceSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  public interfaceSubstitution(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
     return this.typeAliasSubstitution(name, args);
   }
 
@@ -376,6 +376,18 @@ export class Factory {
         body
       )
     );
+  }
+
+  public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.Expression): ts.Expression {
+    return ts.createArrowFunction(
+      undefined, undefined, [ts.createParameter(undefined, undefined, undefined, name)], undefined,
+      ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+      body
+    );
+  }
+
+  public asObject(nodes: ts.Expression[]): ts.Expression {
+    return this.libCall('object', nodes);
   }
 
   // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {

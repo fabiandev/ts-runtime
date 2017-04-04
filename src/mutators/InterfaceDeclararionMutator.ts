@@ -2,7 +2,6 @@ import * as ts from 'typescript';
 import { Mutator } from './Mutator';
 
 // TODO: declaration merging with all declarations
-// TODO: (general) Check was declared, if not => arrow function (in type literals?) or t.tdz() => { A }
 export class InterfaceDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.InterfaceDeclaration;
@@ -27,11 +26,16 @@ export class InterfaceDeclarationMutator extends Mutator {
 
     const extendsClause = this.getExtendsClause(node);
     const intersections = extendsClause && extendsClause.types && extendsClause.types.map(expr => expr.expression);
-    let typeAliasExpressions = this.factory.typeElementsReflection(node.members);
+
+    let typeAliasExpressions: ts.Expression = this.factory.asObject(this.factory.typeElementsReflection(node.members));
+
+    if (this.context.hasSelfReference(node)) {
+      typeAliasExpressions = this.factory.selfReference(node.name, typeAliasExpressions);
+    }
 
     if (intersections) {
-      (intersections as ts.Expression[]).push(...typeAliasExpressions)
-      typeAliasExpressions = [this.factory.intersect(intersections)];
+      (intersections as ts.Expression[]).push(typeAliasExpressions)
+      typeAliasExpressions = this.factory.intersect(intersections);
     }
 
     const substitution = ts.createVariableStatement(

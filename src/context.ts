@@ -42,7 +42,7 @@ export class MutationContext {
     return false;
   }
 
-  public hasSelfReferencing(node: ts.Node): boolean {
+  public hasSelfReference(node: ts.Node): boolean {
     const symbol = this.checker.getSymbolAtLocation((node as any).name || node);
 
     const search = (node: ts.Node): boolean => {
