@@ -11,7 +11,7 @@
     "removeComments": false,
     "typeRoots": [
       "../node_modules/@types",
-      "../src/definitions"
+      "../src/"
     ],
     "types": [
       "node"
