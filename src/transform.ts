@@ -197,6 +197,10 @@ export function transform(entryFile: string, options?: Options) {
         node = mutator.mutateNode(node, mutationContext);
       }
 
+      if (!node) {
+        return node;
+      }
+
       node.parent = parent;
       util.setParent(node);
 

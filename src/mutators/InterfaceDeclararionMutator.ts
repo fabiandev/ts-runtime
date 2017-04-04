@@ -24,16 +24,34 @@ export class InterfaceDeclarationMutator extends Mutator {
     //
     // console.log();
 
-    const extendsClause = this.getExtendsClause(node);
-    const intersections = extendsClause && extendsClause.types && extendsClause.types.map(expr => expr.expression);
+    const nodeSymbol = this.context.checker.getSymbolAtLocation(node.name);
 
-    let typeAliasExpressions: ts.Expression = this.factory.asObject(this.factory.typeElementsReflection(node.members));
+    // TODO: remove node entirely (return null)
+    if (this.processed.indexOf(nodeSymbol) !== -1) {
+      return null;
+      // const reassignment = ts.createStatement(ts.createBinary(
+      //   ts.createIdentifier(node.name.getText()),
+      //   ts.createToken(ts.SyntaxKind.EqualsToken),
+      //   ts.createIdentifier(node.name.getText())
+      // ));
+      //
+      // this.context.addVisited(reassignment, true);
+      // return reassignment;
+    }
+
+    let typeAliasExpressions: ts.Expression = this.factory.asObject(
+      this.factory.typeElementsReflection(
+        this.mergeDeclarations(nodeSymbol)/*node.members*/, true
+      )
+    );
 
     if (this.context.hasSelfReference(node)) {
       typeAliasExpressions = this.factory.selfReference(node.name, typeAliasExpressions);
     }
 
-    if (intersections) {
+    const intersections = this.mergeExtendsClauses(nodeSymbol);
+
+    if (intersections.length >= 1) {
       (intersections as ts.Expression[]).push(typeAliasExpressions)
       typeAliasExpressions = this.factory.intersect(intersections);
     }
@@ -53,6 +71,7 @@ export class InterfaceDeclarationMutator extends Mutator {
     );
 
     this.context.addVisited(substitution, true);
+    this.processed.push(nodeSymbol);
 
     return substitution;
   }
@@ -65,8 +84,45 @@ export class InterfaceDeclarationMutator extends Mutator {
     })
   }
 
-  private findDeclarations(node: ts.InterfaceDeclaration) {
+  private mergeExtendsClauses(nodeSymbol: ts.Symbol): ts.Expression[] {
+    const existing: string[] = [];
+    const expressions: ts.Expression[] = [];
 
+    for (let declaration of (nodeSymbol.getDeclarations() || []) as ts.InterfaceDeclaration[]) {
+      const extendsClause = this.getExtendsClause(declaration);
+      const intersections = extendsClause && extendsClause.types && extendsClause.types
+        .map(expr => {
+          existing.push(expr.expression.getText());
+          return expr.expression;
+        })
+        .filter(expr => {
+          return existing.indexOf(expr.getText()) !== -1;
+        });
+
+      if (intersections) {
+        expressions.push(...intersections);
+      }
+    }
+
+    return expressions;
+  }
+
+  private mergeDeclarations(nodeSymbol: ts.Symbol): ts.TypeElement[] {
+    const existing: string[] = [];
+    const merged: ts.TypeElement[] = [];
+
+    for (let declaration of (nodeSymbol.getDeclarations() || []) as ts.InterfaceDeclaration[]) {
+      declaration.members.forEach(member => {
+        const text = member.getText();
+
+        if (existing.indexOf(text) === -1) {
+          existing.push(text);
+          merged.push(member);
+        }
+      });
+    }
+
+    return merged;
   }
 
 }

@@ -288,8 +288,42 @@ export class Factory {
     }
   }
 
-  public typeElementsReflection(nodes: ts.TypeElement[]): ts.Expression[] {
-    return nodes.map(node => this.typeElementReflection(node));
+  // TODO: remove merge here (do in interface)
+  public typeElementsReflection(nodes: ts.TypeElement[], merge = false): ts.Expression[] {
+    type MethodOrConstructSignature = ts.MethodSignature | ts.ConstructSignatureDeclaration;
+    const methods: Map<string, MethodOrConstructSignature[]> = new Map();
+
+    let elements = nodes.map(node => {
+      const reflection: ts.Expression = this.typeElementReflection(node);
+
+      // group same name of the kinds: MethodSignature and ConstructSignatureDeclaration
+      if (merge && (node.kind === ts.SyntaxKind.MethodSignature || node.kind === ts.SyntaxKind.ConstructSignature)) {
+        const text = node.name.getText();
+
+        if (!methods.has(text)) {
+          methods.set(text, []);
+        }
+
+        const elements = methods.get(text);
+        elements.push(node as MethodOrConstructSignature);
+
+        return null;
+      }
+
+      return reflection;
+    }).filter(element => !!element);
+
+    // make union type of different return types
+    // for each parameter: make union type
+    //
+    // 1. iterate over every group
+    // 1.1 get typeReference for every return type
+    // 1.2 get typeReference for every parameter and save it by name
+    // 2. make union (by lib call) for all return types (distinct)
+    // 3. make union (by lib call) for every parameter by name (distinct)
+    // 4. push the final expression to elements
+
+    return elements;
   }
 
   public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
