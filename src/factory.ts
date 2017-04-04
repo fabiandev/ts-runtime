@@ -92,13 +92,13 @@ export class Factory {
   //   return node;
   // }
 
-  public typeAliasSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  public typeAliasSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
     args = util.asArray(args);
     args.unshift(typeof name === 'string' ? ts.createLiteral(name) : ts.createLiteral(name));
     return this.libCall('type', args);
   }
 
-  public interfaceSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  public interfaceSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
     return this.typeAliasSubstitution(name, args);
   }
 
@@ -225,7 +225,13 @@ export class Factory {
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
 
     if (typeNameText.toLowerCase() !== 'array') {
-      args.unshift(ts.createIdentifier(typeNameText));
+      let identifier: ts.Expression = ts.createIdentifier(typeNameText);
+
+      if (!this.context.wasDeclared(node.typeName)) {
+        identifier = this.tdz(identifier);
+      }
+
+      args.unshift(identifier);
       keyword = 'ref';
     }
 
@@ -356,8 +362,19 @@ export class Factory {
     return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
   }
 
-  public intersect(args: ts.Expression | ts.Expression[]) {
+  public intersect(args: ts.Expression | ts.Expression[]): ts.Expression {
     return this.libCall('intersect', args);
+  }
+
+  public tdz(body: ts.Expression): ts.Expression {
+    return this.libCall(
+      'tdz',
+      ts.createArrowFunction(
+        undefined, undefined, [], undefined,
+        ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+        body
+      )
+    );
   }
 
   // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
