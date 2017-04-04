@@ -13,7 +13,7 @@ export class TypeAliasDeclarationMutator extends Mutator {
           ts.createVariableDeclaration(
             node.name,
             undefined,
-            this.factory.typeAliasSubstitution(node)
+            this.factory.typeAliasSubstitution(node.name, this.factory.typeReflection(node.type))
           )
         ],
         ts.NodeFlags.Const

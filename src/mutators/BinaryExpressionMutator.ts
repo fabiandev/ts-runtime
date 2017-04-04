@@ -31,12 +31,6 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
-    const implicitType = this.context.getImplicitTypeNode(node.left);
-
-    if (!this.context.options.assertAny && implicitType.kind === ts.SyntaxKind.AnyKeyword) {
-      return node;
-    }
-
     // TODO: revisit as ts.Identifier (could be any expression)
     const nodeName = this.context.getTypeDeclarationName(node.left as ts.Identifier);
     const right = this.factory.typeAssertion(nodeName, node.right);

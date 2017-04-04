@@ -48,9 +48,6 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    console.log(node.getText());
-    console.log(this.context.getImplicitTypeText(node), '\n');
-
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
     const typeDefinition = this.factory.typeDeclaration(nodeName, node.type);
 
@@ -71,7 +68,7 @@ export class VariableDeclarationListMutator extends Mutator {
 
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
 
-    const initializer = this.factory.typeDefinitionAndAssertion(node.type, node.initializer);
+    const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [assignment];
@@ -79,15 +76,14 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private transformUntypedDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const implicitType = this.context.getImplicitTypeNode(node);
 
-    if (!this.context.options.assertAny && implicitType.kind === ts.SyntaxKind.AnyKeyword) {
+    if (!this.context.options.assertAny && node.type.kind === ts.SyntaxKind.AnyKeyword) {
       return [node];
     }
 
     const typeDefinition = this.factory.typeDeclaration(
       nodeName,
-      implicitType
+      node.type
     );
 
     if (!node.initializer) {
@@ -102,13 +98,12 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private transformUntypedConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const implicitType = this.context.getImplicitTypeNode(node);
 
-    if (!this.context.options.assertAny && implicitType.kind === ts.SyntaxKind.AnyKeyword) {
+    if (!this.context.options.assertAny && node.type.kind === ts.SyntaxKind.AnyKeyword) {
       return [node];
     }
 
-    const initializer = this.factory.typeDefinitionAndAssertion(implicitType, node.initializer);
+    const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
     return [assignment];

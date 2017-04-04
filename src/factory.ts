@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import * as util from './util';
 import { MutationContext } from './context';
 
 export class Factory {
@@ -18,7 +19,9 @@ export class Factory {
   }
 
   public typeReflection(node: ts.TypeNode): ts.Expression {
-    node = this.context.getImplicitTypeNode(node);
+    if (!node) {
+      return this.anyTypeReflection();
+    }
 
     switch (node.kind) {
       case ts.SyntaxKind.ParenthesizedType:
@@ -41,6 +44,8 @@ export class Factory {
         return this.nullTypeReflection();
       case ts.SyntaxKind.UndefinedKeyword:
         return this.undefinedTypeReflection();
+      case ts.SyntaxKind.ThisType:
+        return this.thisTypeReflection();
       case ts.SyntaxKind.LiteralType:
         return this.literalTypeReflection(node as ts.LiteralTypeNode);
       case ts.SyntaxKind.ArrayType:
@@ -51,34 +56,51 @@ export class Factory {
         return this.unionTypeReflection(node as ts.UnionTypeNode);
       case ts.SyntaxKind.IntersectionType:
         return this.intersectionTypeReflection(node as ts.IntersectionTypeNode);
-      case ts.SyntaxKind.ThisType:
-        return this.thisTypeReflection();
       case ts.SyntaxKind.TypeReference:
         return this.typeReferenceReflection(node as ts.TypeReferenceNode);
       case ts.SyntaxKind.FunctionType:
+        return this.functionTypeReflection(node as ts.FunctionTypeNode);
       case ts.SyntaxKind.ConstructorType:
-        return this.functionTypeReflection(node as ts.FunctionTypeNode | ts.ConstructorTypeNode);
+        return this.constructorTypeReflection(node as ts.ConstructorTypeNode);
       case ts.SyntaxKind.TypeLiteral:
         return this.typeLiteralReflection(node as ts.TypeLiteralNode);
+      case ts.SyntaxKind.TypeQuery:
+        return this.typeQueryReflection(node as ts.TypeQueryNode);
       case ts.SyntaxKind.TypeParameter: // generics // TODO: implement
       case ts.SyntaxKind.TypePredicate: // function a(pet: Fish | Bird) pet is Fish // TODO: implement
-      case ts.SyntaxKind.TypeQuery: // typeof a // TODO: implement
+      case ts.SyntaxKind.MappedType: // TODO: implement
       // type Readonly<T> = {
       //   readonly [P in keyof T]: T[P];
       // }
-      case ts.SyntaxKind.MappedType: // TODO: implement
       case ts.SyntaxKind.IndexedAccessType: // TODO: implement
+      case ts.SyntaxKind.ExpressionWithTypeArguments: // TODO: implement (extends SomeType)
+      case ts.SyntaxKind.TypeOperator: // TODO: implement
       default:
         throw new Error(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
   }
 
-  // public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.Expression {
-  //   return this.propertyAccessCall(this.lib, 'type', [
-  //     ts.createLiteral(node.name),
-  //     this.typeReflection(node.type)
-  //   ]);
+  // public getImplicitTypeNodeOrOriginal(node: ts.TypeNode): ts.TypeNode {
+  //   const original = node;
+  //
+  //   node = this.context.getImplicitTypeNode(node);
+  //
+  //   if (node.kind !== original.kind) {
+  //     node = original;
+  //   }
+  //
+  //   return node;
   // }
+
+  public typeAliasSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+    args = util.asArray(args);
+    args.unshift(typeof name === 'string' ? ts.createLiteral(name) : ts.createLiteral(name));
+    return this.libCall('type', args);
+  }
+
+  public interfaceSubstitution(name: string | ts.StringLiteral | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+    return this.typeAliasSubstitution(name, args);
+  }
 
   // public interfaceSubstitution(node: ts.InterfaceDeclaration): ts.Expression {
   //   return this.propertyAccessCall(this.lib, 'type', [
@@ -135,6 +157,10 @@ export class Factory {
     return this.nullify(this.libCall('void'));
   }
 
+  public thisTypeReflection(): ts.Expression {
+    return this.nullify(this.libCall('this', ts.createThis()));
+  }
+
   public literalTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
     switch (node.literal.kind) {
       case ts.SyntaxKind.TrueKeyword:
@@ -181,13 +207,20 @@ export class Factory {
     return this.nullify(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
   }
 
-  public thisTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('this', ts.createThis()));
-  }
-
   // TODO: handle enums (annotate like functions?)
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
-    let keyword: string = 'array';
+    let keyword = 'array';
+
+    console.log('\n');
+    console.log(node.parent.getText());
+    console.log(node.getText());
+    console.log('isImplicit', this.context.isImplicitTypeNode(node));
+    const original = this.context.getNodeFromImplicit(node);
+    console.log('original', !this.context.isImplicitTypeNode(original));
+    console.log(original.parent.getText());
+    console.log('wasDeclared', this.context.wasDeclared((original as ts.TypeReferenceNode).typeName));
+    console.log();
+
     const typeNameText: string = node.typeName.getText();
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
 
@@ -225,6 +258,10 @@ export class Factory {
   // TODO: handle ComputedPropertyName
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
     return this.nullify(this.libCall('object', this.typeElementsReflection(node.members)));
+  }
+
+  public typeQueryReflection(node: ts.TypeQueryNode): ts.Expression {
+    return this.nullify(this.libCall('typeOf', ts.createIdentifier(node.exprName.getText())));
   }
 
   public typeElementReflection(node: ts.TypeElement): ts.Expression {
@@ -311,9 +348,24 @@ export class Factory {
     }
   }
 
+  // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
+  //   return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
+  // }
+
   public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
-    return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
+    return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
   }
+
+  public intersect(args: ts.Expression | ts.Expression[]) {
+    return this.libCall('intersect', args);
+  }
+
+  // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
+  //   return this.strictNullChecks || notNullable ? reflection : this.libCall('union', [
+  //     this.libCall('null'),
+  //     reflection
+  //   ]);
+  // }
 
   public libCall(prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
     return this.propertyAccessCall(this.lib, prop, args);
@@ -321,8 +373,7 @@ export class Factory {
 
   public propertyAccessCall(id: string | ts.Expression, prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
     id = typeof id === 'string' ? ts.createIdentifier(id) : id;
-
-    args = Array.isArray(args) ? args : [args];
+    args = util.asArray(args);
 
     return ts.createCall(ts.createPropertyAccess(id, prop), undefined, args);
   }

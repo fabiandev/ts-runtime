@@ -29,9 +29,8 @@ export class ClassDeclarationMutator extends Mutator {
         case ts.SyntaxKind.MethodDeclaration:
           {
             const m = (member as ts.MethodDeclaration);
-            const implicitType = this.context.getImplicitTypeNode(m.name) as ts.FunctionTypeNode;
             const isStatic = this.isStatic(m);
-            const notAny = implicitType.type.kind !== ts.SyntaxKind.AnyKeyword;
+            const notAny = m.type.kind !== ts.SyntaxKind.AnyKeyword;
             const assert = notAny || assertAny;
 
             const bodyStatements = m.body.statements;
@@ -39,7 +38,7 @@ export class ClassDeclarationMutator extends Mutator {
             const bodyDeclarations: ts.Statement[] = [];
             const bodyAssertions: ts.Statement[] = []
 
-            for (let param of implicitType.parameters) {
+            for (let param of (m.type as ts.FunctionTypeNode).parameters) {
               const paramNameDeclaration = this.context.getTypeDeclarationName(param.name.getText());
               const notAny = param.type.kind !== ts.SyntaxKind.AnyKeyword;
               const assert = notAny || assertAny;
@@ -73,7 +72,7 @@ export class ClassDeclarationMutator extends Mutator {
                   [], ts.createVariableDeclarationList(
                     [
                       ts.createVariableDeclaration(
-                        returnNameDeclaration, undefined, this.context.generator.returnDeclaration(implicitType.type)
+                        returnNameDeclaration, undefined, this.context.generator.returnDeclaration(m.type)
                       )
                     ], ts.NodeFlags.Const
                   )
@@ -103,7 +102,7 @@ export class ClassDeclarationMutator extends Mutator {
             const body = ts.updateBlock(m.body, bodyStatements);
 
             const method = ts.updateMethod(
-              m, m.decorators, m.modifiers, m.asteriskToken, m.name, m.typeParameters, m.parameters, m.type, body
+              m, m.decorators, m.modifiers, m.asteriskToken, m.name, m.questionToken, m.typeParameters, m.parameters, m.type, body
             );
 
             members.push(method);

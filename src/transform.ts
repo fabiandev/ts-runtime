@@ -12,13 +12,15 @@ const DEBUG = false;
 export function transform(entryFile: string, options?: Options) {
   options = getOptions(options);
 
+  const basePath = path.dirname(entryFile);
+
   let host: ts.CompilerHost;
   let program: ts.Program;
 
   (function autoStartTransformation(): void {
-    notify(bus.events.START, { entryFile, options });
+    let sourceFiles: ts.SourceFile[];
 
-    const basePath = path.dirname(entryFile);
+    deleteTempFiles();
 
     host = ts.createCompilerHost(options.compilerOptions, true);
     program = ts.createProgram([entryFile], options.compilerOptions, host);
@@ -33,22 +35,43 @@ export function transform(entryFile: string, options?: Options) {
       diagnostics.push(...program.getSemanticDiagnostics(sourceFile));
     }
 
-    if (!check(diagnostics)) {
-      notify(bus.events.DIAGNOSTICS_TRANSFORM, { diagnostics });
-      notify(bus.events.DIAGNOSTICS_TRANSFORM_PRE, { diagnostics });
-    }
+    check(diagnostics);
 
-    const sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
+    sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
+    const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
 
-    notify(bus.events.TRANSFORM_START, { sourceFiles });
+    writeTempFiles(typedResult);
+    typedResult.dispose();
+
+    createProgramFromTempFiles();
+
+    sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
-    notify(bus.events.TRANSFORM_END, { sourceFiles: result.transformed });
 
-    if (!check(result.diagnostics)) {
-      notify(bus.events.DIAGNOSTICS_TRANSFORM, { diagnostics });
-      notify(bus.events.DIAGNOSTICS_TRANSFORM_POST, { diagnostics: result.diagnostics });
+    writeTempFiles(result);
+    result.dispose();
+
+    // check(result.diagnostics)
+
+    emitTransformed();
+
+    if (!options.keepTempFiles) {
+      deleteTempFiles();
     }
+  })();
 
+  function deleteTempFiles(): void {
+    const tempPath = getTempPath(basePath, options.tempFolderName);
+    rimraf.sync(getTempPath(basePath, options.tempFolderName));
+  }
+
+  function createProgramFromTempFiles(): void {
+    const tempEntryFile = toTempFilePath(entryFile, path.dirname(entryFile), options.tempFolderName);
+    host = ts.createCompilerHost(options.compilerOptions);
+    program = ts.createProgram([tempEntryFile], options.compilerOptions, host);
+  }
+
+  function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
     const printerOptions: ts.PrinterOptions = {
       target: options.compilerOptions.target,
       removeComments: false
@@ -60,7 +83,6 @@ export function transform(entryFile: string, options?: Options) {
       }
     };
 
-    notify(bus.events.WRITE_START, { count: result.transformed.length });
     const printer = ts.createPrinter(printerOptions, printHandlers);
 
     let count = 0;
@@ -68,26 +90,9 @@ export function transform(entryFile: string, options?: Options) {
       count++;
       const location = toTempFilePath(transformed.fileName, basePath, options.tempFolderName);
       const source = printer.printFile(transformed);
-      notify(bus.events.WRITE_FILE_START, { location, transformed, source });
       ts.sys.writeFile(location, source);
-      notify(bus.events.WRITE_FILE_END, { location, transformed, source });
     }
-
-    notify(bus.events.WRITE_END, { count });
-
-    result.dispose();
-
-    emitTransformed();
-
-    if (!options.keepTempFiles) {
-      const tempPath = getTempPath(basePath, options.tempFolderName);
-      notify(bus.events.TEMP_DELETE_START, { tempPath });
-      rimraf.sync(getTempPath(basePath, options.tempFolderName));
-      notify(bus.events.TEMP_DELETE_END, { tempPath });
-    }
-
-    notify(bus.events.END, { entryFile, options });
-  })();
+  }
 
   function emitTransformed() {
     const tempEntryFile = toTempFilePath(entryFile, path.dirname(entryFile), options.tempFolderName);
@@ -95,8 +100,7 @@ export function transform(entryFile: string, options?: Options) {
 
     options.compilerOptions.outDir = path.dirname(entryFile);
 
-    host = ts.createCompilerHost(options.compilerOptions);
-    program = ts.createProgram([tempEntryFile], options.compilerOptions, host);
+    createProgramFromTempFiles();
 
     const diagnostics: ts.Diagnostic[] = [];
 
@@ -124,6 +128,15 @@ export function transform(entryFile: string, options?: Options) {
     notify(bus.events.EMIT_END, { entryFile, tempEntryFile, options });
   }
 
+  let mutationContext: MutationContext;
+  let currentSourceFile: ts.SourceFile;
+  function setMutationContext(node: ts.Node, context: ts.TransformationContext): void {
+    if (node.kind === ts.SyntaxKind.SourceFile/* && currentSourceFile !== node */) {
+      currentSourceFile = node as ts.SourceFile;
+      mutationContext = new MutationContext(options, node as ts.SourceFile, program, host, context);
+    }
+  }
+
   function onBeforeVisit(node: ts.Node, mc: MutationContext, tc: ts.TransformationContext): ts.Node {
     return node;
   }
@@ -133,13 +146,33 @@ export function transform(entryFile: string, options?: Options) {
     return node;
   }
 
-  function transformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
-    let mutationContext: MutationContext;
-
+  function firstPassTransformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (node.kind === ts.SyntaxKind.SourceFile) {
-        mutationContext = new MutationContext(options, node as ts.SourceFile, program, host, context);
+      setMutationContext(node, context);
+
+      switch (node.kind) {
+        case ts.SyntaxKind.CallSignature:
+        case ts.SyntaxKind.ConstructSignature:
+        case ts.SyntaxKind.VariableDeclaration:
+        case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertySignature:
+        case ts.SyntaxKind.PropertyDeclaration:
+        case ts.SyntaxKind.MappedType:
+          if (!(node as any).type) (node as any).type = mutationContext.getImplicitTypeNode(node);
+          break;
       }
+
+      util.setParent(node);
+
+      return ts.visitEachChild(node, visitor, context);
+    };
+
+    return (sf: ts.SourceFile) => ts.visitNode(sf, visitor);
+  }
+
+  function transformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
+    const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
+      setMutationContext(node, context);
 
       const parent = node.parent;
       node = onBeforeVisit(node, mutationContext, context);
