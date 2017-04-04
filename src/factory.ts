@@ -227,6 +227,7 @@ export class Factory {
     if (typeNameText.toLowerCase() !== 'array') {
       let identifier: ts.Expression = ts.createIdentifier(typeNameText);
 
+      // TODO: check if self-referencing
       if (!this.context.wasDeclared(node.typeName)) {
         identifier = this.tdz(identifier);
       }

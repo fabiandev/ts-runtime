@@ -143,23 +143,38 @@ export function transform(entryFile: string, options?: Options) {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       setMutationContext(node, context);
 
-      // TODO: determine all kinds that may have a type
-      switch (node.kind) {
-        case ts.SyntaxKind.CallSignature:
-        case ts.SyntaxKind.ConstructSignature:
-        case ts.SyntaxKind.VariableDeclaration:
-        case ts.SyntaxKind.Parameter:
-        case ts.SyntaxKind.PropertySignature:
-        case ts.SyntaxKind.PropertyDeclaration:
-        case ts.SyntaxKind.MappedType:
-        // ArrowFunction
-          if (!(node as any).type) (node as any).type = mutationContext.getImplicitTypeNode(node);
-          break;
+      if (!(node as any).type) {
+        let type: ts.TypeNode;
+        switch (node.kind) {
+          case ts.SyntaxKind.Parameter:
+          case ts.SyntaxKind.PropertySignature:
+          case ts.SyntaxKind.PropertyDeclaration:
+          case ts.SyntaxKind.MethodSignature:
+          case ts.SyntaxKind.CallSignature:
+          case ts.SyntaxKind.ConstructSignature:
+          case ts.SyntaxKind.IndexSignature:
+          case ts.SyntaxKind.VariableDeclaration:
+            type = mutationContext.getImplicitTypeNode((node as any).name || node);
+            break;
+          case ts.SyntaxKind.MethodDeclaration:
+          case ts.SyntaxKind.Constructor:
+          case ts.SyntaxKind.GetAccessor:
+          case ts.SyntaxKind.SetAccessor:
+          case ts.SyntaxKind.FunctionExpression:
+          case ts.SyntaxKind.ArrowFunction:
+          case ts.SyntaxKind.FunctionDeclaration:
+            type = mutationContext.getImplicitTypeNode((node as any).name || node);
+            type = (type as any).type || type;
+            break;
+        }
+
+        if (type) {
+          (node as any).type = type;
+          util.setParent(node);
+        }
       }
 
-      util.setParent(node);
-
-      return ts.visitEachChild(node, visitor, context);
+      return ts.visitEachChild(node, visitor, context);;
     };
 
     return (sf: ts.SourceFile) => ts.visitNode(sf, visitor);
