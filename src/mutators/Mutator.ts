@@ -1,5 +1,4 @@
 import * as ts from 'typescript';
-import { Generator } from '../generator';
 import { Factory } from '../factory';
 import { MutationContext } from '../context';
 
@@ -34,10 +33,6 @@ export abstract class Mutator {
     }
 
     return [this.kind];
-  }
-
-  get generator(): Generator {
-    return this.context.generator;
   }
 
   get factory(): Factory {

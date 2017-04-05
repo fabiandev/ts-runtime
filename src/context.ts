@@ -1,6 +1,5 @@
 import * as ts from 'typescript';
 import * as util from './util';
-import { Generator } from './generator';
 import { Factory } from './factory';
 import { Options, defaultOptions } from './options';
 
@@ -24,7 +23,6 @@ export class MutationContext {
     this._checker = program.getTypeChecker();
     this._host = host;
     this._visited = [];
-    this._generator = new Generator(options.libIdentifier, options.typeIdentifierNamespace, options.compilerOptions.strictNullChecks);
     this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.typeIdentifierNamespace);
     this._transformationContext = context;
   }
