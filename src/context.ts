@@ -11,7 +11,6 @@ export class MutationContext {
   private _checker: ts.TypeChecker;
   private _host: ts.CompilerHost;
   private _visited: ts.Node[];
-  private _generator: Generator;
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
   private _implicitTypeNodeIdentifier = '_TS_RUNTIME_IMPLICIT_TYPE_NODE_';
@@ -202,10 +201,6 @@ export class MutationContext {
 
   get host(): ts.CompilerHost {
     return this._host;
-  }
-
-  get generator(): Generator {
-    return this._generator;
   }
 
   get factory(): Factory {
