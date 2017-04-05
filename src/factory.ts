@@ -476,9 +476,8 @@ export class Factory {
     // return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
   }
 
-  // TODO: wrap every intersection with t.ref()
   public intersect(args: ts.Expression | ts.Expression[]): ts.Expression {
-    return this.libCall('intersect', util.asArray(args).map(arg => this.libCall('ref', arg)));
+    return this.libCall('intersect', args);
   }
 
   public tdz(body: ts.Expression): ts.Expression {
@@ -502,6 +501,10 @@ export class Factory {
 
   public asObject(nodes: ts.Expression[]): ts.Expression {
     return this.libCall('object', nodes);
+  }
+
+  public asRef(arg: ts.Expression): ts.Expression {
+    return this.libCall('ref', arg);
   }
 
   // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {

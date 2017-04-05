@@ -33,7 +33,7 @@ export class InterfaceDeclarationMutator extends Mutator {
       typeAliasExpressions = this.factory.selfReference(node.name, typeAliasExpressions);
     }
 
-    const intersections = this.mergeExtendsClauses(nodeSymbol);
+    const intersections = this.mergeExtendsClauses(nodeSymbol).map(intersection => this.factory.asRef(intersection));
 
     if (intersections.length >= 1) {
       (intersections as ts.Expression[]).push(typeAliasExpressions)
