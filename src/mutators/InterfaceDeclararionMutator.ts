@@ -9,24 +9,8 @@ export class InterfaceDeclarationMutator extends Mutator {
   private processed: ts.Symbol[] = [];
 
   public mutate(node: ts.InterfaceDeclaration): ts.Node {
-    // TODO: get all declarations, merge (including extends), add to processed,
-    // replace future mutations simply with IFace = IFace or remove it completely.
-    //
-    // const sym = this.context.checker.getSymbolAtLocation(node.name);
-    // console.log(sym.getName());
-    // console.log(sym.getDeclarations().length);
-    // console.log(ts.SyntaxKind[sym.declarations[0].kind]);
-    //
-    // sym.declarations.forEach(dec => {
-    //   const s = this.context.checker.getSymbolAtLocation(dec.name)
-    //   console.log(sym === s);
-    // })
-    //
-    // console.log();
-
     const nodeSymbol = this.context.checker.getSymbolAtLocation(node.name);
 
-    // TODO: remove node entirely (return null)
     if (this.processed.indexOf(nodeSymbol) !== -1) {
       return null;
       // const reassignment = ts.createStatement(ts.createBinary(
@@ -40,8 +24,8 @@ export class InterfaceDeclarationMutator extends Mutator {
     }
 
     let typeAliasExpressions: ts.Expression = this.factory.asObject(
-      this.factory.typeElementsReflection(
-        this.mergeDeclarations(nodeSymbol)/*node.members*/, true
+      this.factory.mergedTypeElementsReflection(
+        this.mergeDeclarations(nodeSymbol)
       )
     );
 

@@ -251,7 +251,7 @@ export class Factory {
       }
 
       return this.libCall('param', parameter);
-    })
+    });
 
     args.push(this.libCall('return', this.typeReflection(node.type)));
 
@@ -288,15 +288,17 @@ export class Factory {
     }
   }
 
-  // TODO: remove merge here (do in interface)
   public typeElementsReflection(nodes: ts.TypeElement[], merge = false): ts.Expression[] {
+    if (merge) return this.mergedTypeElementsReflection(nodes);
+    return nodes.map(node => this.typeElementReflection(node));
+  }
+
+  // TODO: Merge all function types (including construct signature and call signature)
+  public mergedTypeElementsReflection(nodes: ts.TypeElement[]): ts.Expression[] {
     const mergeGroups: Map<string, ts.MethodSignature[]> = new Map();
 
     let elements = nodes.map(node => {
-      const reflection: ts.Expression = this.typeElementReflection(node);
-
-      // group same name of the kinds: MethodSignature and ConstructSignatureDeclaration
-      if (merge && (node.kind === ts.SyntaxKind.MethodSignature)) {
+      if (node.kind === ts.SyntaxKind.MethodSignature) {
         const text = node.name.getText();
 
         if (!mergeGroups.has(text)) {
@@ -309,15 +311,18 @@ export class Factory {
         return null;
       }
 
-      return reflection;
+      return this.typeElementReflection(node);
     }).filter(element => !!element);
 
     mergeGroups.forEach((group, name) => {
       const returnTypes: ts.TypeNode[] = [];
-      const parameterTypes: Map<string, ts.TypeNode[]> = new Map();
-
       const hasReturnTypes: string[] = [];
-      const hasParameterTypes: Map<string, string[]> = new Map();
+
+      const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
+      const hasParameterTypes: Map<number, string[]> = new Map();
+
+      const typeParameters: ts.TypeParameterDeclaration[] = [];
+      const hasTypeParameters: string[] = [];
 
       for (let node of group) {
         const returnTypeText = node.type.getText();
@@ -327,25 +332,32 @@ export class Factory {
           returnTypes.push(node.type);
         }
 
+        if (node.typeParameters) {
+
+        }
+
+        let parameterIndex = 0;
         for (let parameter of node.parameters) {
-          const parameterNameText = parameter.name.getText();
+          // const parameterNameText = parameter.name.getText();
           const parameterTypeText = parameter.type.getText();
 
-          if (!hasParameterTypes.has(parameterNameText)) {
-            hasParameterTypes.set(parameterNameText, []);
+          if (!hasParameterTypes.has(parameterIndex)) {
+            hasParameterTypes.set(parameterIndex, []);
           }
 
-          const parameterTypeTexts = hasParameterTypes.get(parameterNameText);
+          const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
 
           if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
             parameterTypeTexts.push(parameterTypeText);
 
-            if (!parameterTypes.has(parameterNameText)) {
-              parameterTypes.set(parameterNameText, []);
+            if (!parameterTypes.has(parameterIndex)) {
+              parameterTypes.set(parameterIndex, []);
             }
 
-            parameterTypes.get(parameterNameText).push(parameter.type);
+            parameterTypes.get(parameterIndex).push(parameter.type);
           }
+
+          parameterIndex++;
         }
       }
 
@@ -357,8 +369,8 @@ export class Factory {
 
       let parameterDeclarations: ts.ParameterDeclaration[] = [];
 
-      parameterTypes.forEach((paramTypes, name) => {
-        const param = paramTypes[0].parent as ts.TypeParameterDeclaration;
+      parameterTypes.forEach((paramTypes, index) => {
+        const param = paramTypes[0].parent as ts.ParameterDeclaration;
 
         let parameterTypeNode = paramTypes[0];
         if (paramTypes.length > 1) {
@@ -366,23 +378,20 @@ export class Factory {
           (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
         }
 
-        const parameterDeclaration = ts.createParameter(param.decorators, param.modifiers, undefined, param.name, undefined, parameterTypeNode, undefined);
+        const parameterDeclaration = ts.createParameter(
+          param.decorators, param.modifiers, param.dotDotDotToken, param.name,
+          param.questionToken, parameterTypeNode, param.initializer
+        );
+
         parameterDeclarations.push(parameterDeclaration);
       });
 
-      const mergedMethodSignature = ts.createMethodSignature(undefined, parameterDeclarations, returnTypeNode, name, group[0].questionToken)
+      const mergedMethodSignature = ts.createMethodSignature(
+        group[0].typeParameters, parameterDeclarations, returnTypeNode, name, group[0].questionToken
+      );
+
       elements.push(this.typeElementReflection(mergedMethodSignature));
     });
-
-    // make union type of different return types
-    // for each parameter: make union type
-    //
-    // 1. iterate over every group
-    // 1.1 get typeReference for every return type
-    // 1.2 get typeReference for every parameter and save it by name
-    // 2. make union (by lib call) for all return types (distinct)
-    // 3. make union (by lib call) for every parameter by name (distinct)
-    // 4. push the final expression to elements
 
     return elements;
   }
@@ -396,10 +405,17 @@ export class Factory {
   }
 
   public propertySignatureReflection(node: ts.PropertySignature): ts.Expression {
-    return this.libCall('property', [
+    const args: ts.Expression[] = [
       this.propertyNameToLiteralOrExpression(node.name),
       this.typeReflection(node.type)
-    ]);
+    ];
+
+
+    if (node.questionToken) {
+      args.push(ts.createTrue());
+    }
+
+    return this.libCall('property', args);
   }
 
   public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration, noStrictNullCheck = true): ts.Expression {
@@ -425,10 +441,10 @@ export class Factory {
       case ts.SyntaxKind.Identifier:
         return ts.createLiteral(node.text);
       case ts.SyntaxKind.StringLiteral:
-        let str = node.getText();
+        let str = node.text;
         return ts.createLiteral(str.substring(1, str.length - 1));
       case ts.SyntaxKind.NumericLiteral:
-        return ts.createNumericLiteral(node.getText());
+        return ts.createNumericLiteral(node.text);
       case ts.SyntaxKind.ComputedPropertyName:
         return node.expression;
       default:
@@ -454,12 +470,15 @@ export class Factory {
   //   return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
   // }
 
+  // TODO: think about a more performant/readable/controlable way to handle strictNullChecks true/false
   public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
-    return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
+    return reflection;
+    // return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
   }
 
+  // TODO: wrap every intersection with t.ref()
   public intersect(args: ts.Expression | ts.Expression[]): ts.Expression {
-    return this.libCall('intersect', args);
+    return this.libCall('intersect', util.asArray(args).map(arg => this.libCall('ref', arg)));
   }
 
   public tdz(body: ts.Expression): ts.Expression {
@@ -520,7 +539,7 @@ export class Factory {
   }
 
   get lib(): string {
-    return this._lib;
+    return `${this.namespace}${this._lib}`;
   }
 
   set lib(lib: string) {
