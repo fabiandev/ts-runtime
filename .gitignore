@@ -9,3 +9,5 @@ pids
 *.seed
 .tsr
 dist
+_archived
+playground
