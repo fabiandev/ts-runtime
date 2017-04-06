@@ -1,18 +1,19 @@
 import * as ts from 'typescript';
+import * as util from '../util';
 import { Mutator } from './Mutator';
 
-type HasTypeMember = ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration |
-  ts.ConstructorDeclaration | ts.PropertyDeclaration;
+// type HasTypeMember = ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration |
+//   ts.ConstructorDeclaration | ts.PropertyDeclaration;
 
 type FunctionLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration
 
-enum DeclarationType {
-  Method,
-  StaticMethod,
-  Property,
-  StaticProperty
-};
+// enum DeclarationType {
+//   Method,
+//   StaticMethod,
+//   Property,
+//   StaticProperty
+// };
 
 // TODO: support computed properties
 export class ClassDeclarationMutator extends Mutator {
@@ -34,7 +35,9 @@ export class ClassDeclarationMutator extends Mutator {
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
-          members.push(this.mutateMethodDeclaration(member as FunctionLikeProperty));
+          member = this.mutateMethodDeclaration(member as FunctionLikeProperty);
+          (member as FunctionLikeProperty).body = this.factory.assertReturnStatements((member as FunctionLikeProperty).body)
+          members.push(member);
           break;
         case ts.SyntaxKind.PropertyDeclaration:
           members.push(this.mutatePropertyDeclaration(member as ts.PropertyDeclaration));
@@ -136,8 +139,8 @@ export class ClassDeclarationMutator extends Mutator {
   //   return !node.body || !node.body.statements ? -1 : node.body.statements.findIndex(el => el.kind === ts.SyntaxKind.ReturnStatement);
   // }
 
-  private isStatic(node: HasTypeMember): boolean {
-    return !node.modifiers ? false : node.modifiers.findIndex(el => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
-  }
+  // private isStatic(node: HasTypeMember): boolean {
+  //   return !node.modifiers ? false : node.modifiers.findIndex(el => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
+  // }
 
 }

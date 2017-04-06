@@ -608,6 +608,30 @@ export class Factory {
     return ts.createCall(ts.createPropertyAccess(id, prop), undefined, args);
   }
 
+  public assertReturnStatements<T extends ts.Node>(node: T): T {
+    const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
+      if (node.kind === ts.SyntaxKind.FunctionDeclaration || node.kind === ts.SyntaxKind.FunctionExpression || node.kind === ts.SyntaxKind.ArrowFunction) {
+        return node;
+      }
+
+      if (node.kind === ts.SyntaxKind.ReturnStatement) {
+        const assertion = this.typeAssertion(
+          this.context.getTypeDeclarationName('return'),
+          (node as ts.ReturnStatement).expression
+        );
+
+        const substitution = ts.updateReturn((node as ts.ReturnStatement), assertion);
+        this.context.addVisited(substitution, true, (node as ts.ReturnStatement).expression);
+        this.context.addVisited(node);
+        return substitution;
+      }
+
+      return ts.visitEachChild(node, visitor, this.context.transformationContext);
+    };
+
+    return ts.visitEachChild(node, visitor, this.context.transformationContext);
+  }
+
   get context(): MutationContext {
     return this._context;
   }
