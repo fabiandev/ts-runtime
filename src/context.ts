@@ -71,7 +71,7 @@ export class MutationContext {
 
     if (recursive) {
       ts.forEachChild(node, (n: ts.Node) => {
-        this.addVisited(n, recursive);
+        this.addVisited(n, recursive, ...exclude);
       });
     }
   }
@@ -112,6 +112,18 @@ export class MutationContext {
     return typeNode;
   }
 
+  public getContextualTypeNode(node: ts.Expression): ts.TypeNode {
+    const type = this.checker.getContextualType(node);
+    const typeNode = this.checker.typeToTypeNode(type);
+    return typeNode;
+  }
+
+  public getBaseTypeNode(node: ts.Node): ts.TypeNode {
+    const type = this.checker.getBaseTypeOfLiteralType(this.checker.getTypeAtLocation(node));
+    const typeNode = this.checker.typeToTypeNode(type);
+    return typeNode;
+  }
+
   public isImplicitTypeNode(node: any): boolean {
     do {
       if (node && node.name) {
@@ -135,6 +147,45 @@ export class MutationContext {
   public getImplicitTypeText(node: ts.Node): string {
     const type = this.checker.getTypeAtLocation(node);
     return this.checker.typeToString(type);
+  }
+
+  public getContextualTypeText(node: ts.Expression): string {
+    const type = this.checker.getContextualType(node);
+    return this.checker.typeToString(type);
+  }
+
+  public getBaseTypeText(node: ts.Node): string {
+    const type = this.checker.getBaseTypeOfLiteralType(this.checker.getTypeAtLocation(node));
+    return this.checker.typeToString(type);
+  }
+
+  public typeMatchesBaseType(node: ts.Node, other: ts.Node, trueIfAny = false): boolean {
+    const nodeTypeText = this.getImplicitTypeText(node);
+    const otherBaseTypeText = this.getBaseTypeText(other);
+
+    if (trueIfAny && nodeTypeText === 'any') {
+      return true;
+    }
+
+    if (nodeTypeText !== otherBaseTypeText) {
+      const otherTypeText = this.getImplicitTypeText(other);
+
+      if (nodeTypeText === otherTypeText) {
+        return true;
+      }
+
+      return false;
+    }
+
+    return true;
+  }
+
+  public typeMatchesBaseTypeOrAny(node: ts.Node, other: ts.Node): boolean {
+    return this.typeMatchesBaseType(node, other, true);
+  }
+
+  public isTypeNode(node: ts.Node): boolean {
+    return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
   }
 
   public getType(node: ts.Node): ts.Type {
