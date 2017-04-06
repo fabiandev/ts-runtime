@@ -21,6 +21,12 @@ export class ClassDeclarationMutator extends Mutator {
 
   public mutate(node: ts.ClassDeclaration): ts.Node {
     const members: ts.ClassElement[] = [];
+    const classReflection = this.factory.classReflection(node);
+
+    const decorators = node.decorators || [] as ts.Decorator[];
+    const decorator = ts.createDecorator(this.factory.annotate(classReflection));
+    this.context.addVisited(decorator, true);
+    decorators.unshift(decorator);
 
     for (let member of node.members) {
       switch (member.kind) {
@@ -33,13 +39,14 @@ export class ClassDeclarationMutator extends Mutator {
         case ts.SyntaxKind.PropertyDeclaration:
           members.push(this.mutatePropertyDeclaration(member as ts.PropertyDeclaration));
           break;
+        case ts.SyntaxKind.IndexSignature:
         default:
-          throw new Error(`Unexpected member ${ts.SyntaxKind[node.kind]} in class declaration.`);
+          members.push(member);
       }
     }
 
     return ts.updateClassDeclaration(
-      node, node.decorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, members
+      node, decorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, members
     );
   }
 
@@ -47,6 +54,7 @@ export class ClassDeclarationMutator extends Mutator {
     const decorators = node.decorators || [] as ts.Decorator[];
     const decorator = ts.createDecorator(this.factory.decorate(this.factory.typeReflection(node.type)));
     decorators.unshift(decorator);
+    this.context.addVisited(decorator, true);
     return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
   }
 

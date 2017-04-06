@@ -1,7 +1,6 @@
 import * as ts from 'typescript';
 import { Mutator } from './Mutator';
 
-// TODO: declaration merging with all declarations
 export class InterfaceDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.InterfaceDeclaration;
@@ -13,14 +12,6 @@ export class InterfaceDeclarationMutator extends Mutator {
 
     if (this.processed.indexOf(nodeSymbol) !== -1) {
       return null;
-      // const reassignment = ts.createStatement(ts.createBinary(
-      //   ts.createIdentifier(node.name.getText()),
-      //   ts.createToken(ts.SyntaxKind.EqualsToken),
-      //   ts.createIdentifier(node.name.getText())
-      // ));
-      //
-      // this.context.addVisited(reassignment, true);
-      // return reassignment;
     }
 
     let typeAliasExpressions: ts.Expression = this.factory.asObject(

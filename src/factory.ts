@@ -258,6 +258,77 @@ export class Factory {
     return this.libCall(param.dotDotDotToken ? 'rest' : 'param', parameter);
   }
 
+  public classReflection(node: ts.ClassDeclaration): ts.Expression {
+    const args = node.members.map(member => this.classElementReflection(member));
+    args.unshift(ts.createLiteral(node.name));
+    return this.libCall('class', args);
+  }
+
+  public classElementReflection(node: ts.ClassElement): ts.Expression {
+    switch(node.kind) {
+      case ts.SyntaxKind.Constructor:
+        return this.constructorReflection(node as ts.ConstructorDeclaration)
+      case ts.SyntaxKind.MethodDeclaration:
+        return this.methodDeclarationReflection(node as ts.MethodDeclaration);
+      case ts.SyntaxKind.GetAccessor:
+        return this.getAccessorReflection(node as ts.GetAccessorDeclaration);
+      case ts.SyntaxKind.SetAccessor:
+        return this.setAccessorReflection(node as ts.SetAccessorDeclaration);
+      case ts.SyntaxKind.PropertyDeclaration:
+        return this.propertyDeclarationReflection(node as ts.PropertyDeclaration);
+      case ts.SyntaxKind.IndexSignature:
+        return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
+      default:
+        throw new Error(`No class class member reflection for syntax kind ${ts.SyntaxKind[node.kind]} found.`);
+    }
+  }
+
+  public isStaticClassElement(node: ts.ClassElement): boolean {
+    return !node.modifiers ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
+  }
+
+  // TODO: revisit
+  public constructorReflection(node: ts.ConstructorDeclaration): null {
+    // When comparing two objects of a class type, only members of the instance are compared.
+    // Static members and constructors do not affect compatibility.
+    // https://www.typescriptlang.org/docs/handbook/type-compatibility.html
+    return null;
+  }
+
+  public methodDeclarationReflection(node: ts.MethodDeclaration): ts.Expression {
+    const isStatic = this.isStaticClassElement(node);
+    const args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
+
+    args.push(this.returnTypeReflection(node.type));
+    args.unshift(this.propertyNameToLiteralOrExpression(node.name));
+
+    return this.libCall(isStatic ? 'staticMethod' : 'method', args);
+  }
+
+  public getAccessorReflection(node: ts.GetAccessorDeclaration): ts.Expression {
+    return this.methodDeclarationReflection(node as any);
+  }
+
+  public setAccessorReflection(node: ts.SetAccessorDeclaration): ts.Expression {
+    return this.methodDeclarationReflection(node as any);
+  }
+
+  public propertyDeclarationReflection(node: ts.PropertyDeclaration): ts.Expression {
+    const isStatic = this.isStaticClassElement(node);
+
+    const args: ts.Expression[] = [
+      this.propertyNameToLiteralOrExpression(node.name),
+      this.typeReflection(node.type)
+    ];
+
+
+    if (node.questionToken) {
+      args.push(ts.createTrue());
+    }
+
+    return this.libCall(isStatic ? 'staticProperty' : 'property', args);
+  }
+
   public returnTypeReflection(node: ts.TypeNode): ts.Expression {
     return this.libCall('return', this.typeReflection(node));
   }
@@ -476,26 +547,6 @@ export class Factory {
 
   public annotate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
     return this.libCall('annotate', expressions);
-  }
-
-  public classDecorator() {
-
-  }
-
-  public classPropertyDecorator() {
-
-  }
-
-  public functionLikeParameterReflections() {
-
-  }
-
-  public returnTypeAssertion() {
-
-  }
-
-  public classMemberReflection() {
-
   }
 
   // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
