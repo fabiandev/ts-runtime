@@ -2,6 +2,8 @@
   "compileOnSave": false,
   "compilerOptions": {
     "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6"],
     "moduleResolution": "node",
@@ -22,7 +24,6 @@
   ],
   "exclude": [
     "node_modules",
-    "src/playground",
     "dist",
     "src/_archived"
   ]
