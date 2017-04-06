@@ -16,7 +16,7 @@ export {
 
 export const mutators: Mutator[] = [
   new BinaryExpressionMutator(),
-  // new ClassDeclarationMutator(),
+  new ClassDeclarationMutator(),
   new InterfaceDeclarationMutator(),
   new TypeAliasDeclarationMutator(),
   new VariableDeclarationListMutator(),

@@ -31,6 +31,10 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
+    if (this.context.typeMatchesBaseTypeOrAny(node.left, node.right)) {
+      return node;
+    } 
+
     // TODO: revisit as ts.Identifier (could be any expression)
     const nodeName = this.context.getTypeDeclarationName(node.left as ts.Identifier);
     const right = this.factory.typeAssertion(nodeName, node.right);
