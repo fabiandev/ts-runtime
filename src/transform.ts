@@ -71,12 +71,11 @@ export function transform(entryFile: string, options?: Options) {
   function createProgramFromTempFiles(): void {
     tempEntryFile = toTempFilePath(tempEntryFile, path.dirname(tempEntryFile), options.tempFolderName);
     host = ts.createCompilerHost(options.compilerOptions);
-    program = ts.createProgram([tempEntryFile], options.compilerOptions, host);
+    program = ts.createProgram([tempEntryFile], options.compilerOptions, host, undefined);
   }
 
   function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
     const printerOptions: ts.PrinterOptions = {
-      target: options.compilerOptions.target,
       removeComments: false
     };
 
@@ -140,8 +139,14 @@ export function transform(entryFile: string, options?: Options) {
   }
 
   function firstPassTransformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
+    const visited: ts.Node[] = [];
+
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       setMutationContext(node, context);
+
+      if (mutationContext.wasVisited(node)) {
+        return node;
+      }
 
       if (!(node as any).type) {
         let type: ts.TypeNode;
@@ -171,10 +176,13 @@ export function transform(entryFile: string, options?: Options) {
         if (type) {
           (node as any).type = type;
           util.setParent(node);
+          mutationContext.addVisited(type, true);
         }
       }
 
-      return ts.visitEachChild(node, visitor, context);;
+      mutationContext.addVisited(node);
+      return ts.visitEachChild(node, visitor, context);
+      // return node;
     };
 
     return (sf: ts.SourceFile) => ts.visitNode(sf, visitor);
@@ -215,6 +223,7 @@ export function transform(entryFile: string, options?: Options) {
       debugSpaces(3);
 
       return ts.visitEachChild(node, visitor, context);
+      // return node;
     };
 
     return (sf: ts.SourceFile) => ts.visitNode(sf, visitor);
