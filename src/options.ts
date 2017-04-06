@@ -2,7 +2,6 @@ import * as ts from 'typescript';
 
 export interface Options {
   compilerOptions?: ts.CompilerOptions;
-  assertAny?: boolean;
   keepTempFiles?: boolean;
   tempFolderName?: string;
   libIdentifier?: string;
@@ -14,9 +13,10 @@ export const defaultOptions: Options = {
     skipLibCheck: true,
     module: ts.ModuleKind.ES2015,
     target: ts.ScriptTarget.ES2015,
-    strictNullChecks: false
+    strictNullChecks: false,
+    experimentalDecorators: true,
+    emitDecoratorMetadata: true,
   },
-  assertAny: false,
   keepTempFiles: true,
   tempFolderName: '.tsr',
   libIdentifier: 't',
