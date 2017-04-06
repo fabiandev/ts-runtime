@@ -2,18 +2,8 @@ import * as ts from 'typescript';
 import * as util from '../util';
 import { Mutator } from './Mutator';
 
-// type HasTypeMember = ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration |
-//   ts.ConstructorDeclaration | ts.PropertyDeclaration;
-
 type FunctionLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration
-
-// enum DeclarationType {
-//   Method,
-//   StaticMethod,
-//   Property,
-//   StaticProperty
-// };
 
 // TODO: support computed properties
 export class ClassDeclarationMutator extends Mutator {
@@ -130,17 +120,5 @@ export class ClassDeclarationMutator extends Mutator {
 
     return method;
   }
-
-  // private hasReturn(node: ts.MethodDeclaration): boolean {
-  //   return !node.body || !node.body.statements ? false : node.body.statements.findIndex(el => el.kind === ts.SyntaxKind.ReturnStatement) !== -1;
-  // }
-  //
-  // private returnStatementIndex(node: ts.MethodDeclaration): number {
-  //   return !node.body || !node.body.statements ? -1 : node.body.statements.findIndex(el => el.kind === ts.SyntaxKind.ReturnStatement);
-  // }
-
-  // private isStatic(node: HasTypeMember): boolean {
-  //   return !node.modifiers ? false : node.modifiers.findIndex(el => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
-  // }
 
 }

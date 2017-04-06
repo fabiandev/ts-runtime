@@ -622,7 +622,7 @@ export class Factory {
 
         const substitution = ts.updateReturn((node as ts.ReturnStatement), assertion);
         this.context.addVisited(substitution, true, (node as ts.ReturnStatement).expression);
-        this.context.addVisited(node);
+
         return substitution;
       }
 
