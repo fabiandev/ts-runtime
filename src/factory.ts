@@ -240,22 +240,26 @@ export class Factory {
   }
 
   public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature, noStrictNullCheck?: boolean): ts.Expression {
-    const args: ts.Expression[] = node.parameters.map(param => {
-      const parameter: ts.Expression[] = [
-        this.declarationNameToLiteralOrExpression(param.name),
-        this.typeReflection(param.type)
-      ];
-
-      if (param.questionToken) {
-        parameter.push(ts.createTrue());
-      }
-
-      return this.libCall('param', parameter);
-    });
-
-    args.push(this.libCall('return', this.typeReflection(node.type)));
-
+    const args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
+    args.push(this.returnTypeReflection(node.type));
     return this.nullify(this.libCall('function', args), noStrictNullCheck);
+  }
+
+  public parameterReflection(param: ts.ParameterDeclaration) {
+    const parameter: ts.Expression[] = [
+      this.declarationNameToLiteralOrExpression(param.name),
+      this.typeReflection(param.type)
+    ];
+
+    if (param.questionToken) {
+      parameter.push(ts.createTrue());
+    }
+
+    return this.libCall(param.dotDotDotToken ? 'rest' : 'param', parameter);
+  }
+
+  public returnTypeReflection(node: ts.TypeNode): ts.Expression {
+    return this.libCall('return', this.typeReflection(node));
   }
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
@@ -464,6 +468,34 @@ export class Factory {
       default:
         throw new Error(`Declaration name for syntax kind '${ts.SyntaxKind[node.kind]}' could not be generated.`);
     }
+  }
+
+  public decorate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
+    return this.libCall('decorate', expressions);
+  }
+
+  public annotate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
+    return this.libCall('annotate', expressions);
+  }
+
+  public classDecorator() {
+
+  }
+
+  public classPropertyDecorator() {
+
+  }
+
+  public functionLikeParameterReflections() {
+
+  }
+
+  public returnTypeAssertion() {
+
+  }
+
+  public classMemberReflection() {
+
   }
 
   // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
