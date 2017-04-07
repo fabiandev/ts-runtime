@@ -13,10 +13,11 @@ export function transform(entryFile: string, options?: Options) {
   options = getOptions(options);
 
   const basePath = path.dirname(entryFile);
-
   let tempEntryFile: string = entryFile;
   let host: ts.CompilerHost;
   let program: ts.Program;
+  let mutationContext: MutationContext;
+  let currentSourceFile: ts.SourceFile;
 
   (function autoStartTransformation(): void {
     let sourceFiles: ts.SourceFile[];
@@ -120,29 +121,18 @@ export function transform(entryFile: string, options?: Options) {
     check(emitResult.diagnostics);
   }
 
-  let mutationContext: MutationContext;
-  let currentSourceFile: ts.SourceFile;
-  function setMutationContext(node: ts.Node, context: ts.TransformationContext): void {
-    if (node.kind === ts.SyntaxKind.SourceFile/* && currentSourceFile !== node */) {
+  function createMutationContext(node: ts.Node, context: ts.TransformationContext): void {
+    if (node.kind === ts.SyntaxKind.SourceFile && currentSourceFile !== node) {
       currentSourceFile = node as ts.SourceFile;
       mutationContext = new MutationContext(options, node as ts.SourceFile, program, host, context);
     }
-  }
-
-  function onBeforeVisit(node: ts.Node, mc: MutationContext, tc: ts.TransformationContext): ts.Node {
-    return node;
-  }
-
-  function onAfterVisit(node: ts.Node, mc: MutationContext, tc: ts.TransformationContext): ts.Node {
-    mc.addVisited(node);
-    return node;
   }
 
   function firstPassTransformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visited: ts.Node[] = [];
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      setMutationContext(node, context);
+      createMutationContext(node, context);
 
       if (mutationContext.wasVisited(node)) {
         return node;
@@ -182,18 +172,19 @@ export function transform(entryFile: string, options?: Options) {
 
       mutationContext.addVisited(node);
       return ts.visitEachChild(node, visitor, context);
-      // return node;
     };
 
-    return (sf: ts.SourceFile) => ts.visitNode(sf, visitor);
+    return (sf: ts.SourceFile) => {
+      createMutationContext(sf, context);
+      return ts.visitNode(sf, visitor);
+    };
   }
 
   function transformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      setMutationContext(node, context);
-
       const parent = node.parent;
-      node = onBeforeVisit(node, mutationContext, context);
+
+      node = ts.visitEachChild(node, visitor, context);
 
       debugText('~~~~~~~~~~~~~~~~~~~~~');
       debugText('Before Mutation:');
@@ -212,7 +203,7 @@ export function transform(entryFile: string, options?: Options) {
       node.parent = parent;
       util.setParent(node);
 
-      node = onAfterVisit(node, mutationContext, context);
+      mutationContext.addVisited(node);
 
       debugSpaces();
       debugText('~~~~~~~~~~~~~~~~~~~~~');
@@ -222,11 +213,14 @@ export function transform(entryFile: string, options?: Options) {
       debugNodeText(node, mutationContext);
       debugSpaces(3);
 
-      return ts.visitEachChild(node, visitor, context);
-      // return node;
+      // return ts.visitEachChild(node, visitor, context);
+      return node;
     };
 
-    return (sf: ts.SourceFile) => ts.visitNode(sf, visitor);
+    return (sf: ts.SourceFile) => {
+      createMutationContext(sf, context);
+      return ts.visitNode(sf, visitor);
+    }
   }
 
 }
@@ -276,8 +270,8 @@ export function notify(event: string | symbol, ...args: any[]): boolean {
 
 function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): void {
   if (!DEBUG) return;
-  const scope = util.getScope(node);
-  const scopeKind = scope ? ts.SyntaxKind[scope.kind] : 'undefined';
+  // const scope = util.getScope(node);
+  // const scopeKind = scope ? ts.SyntaxKind[scope.kind] : 'undefined';
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
     console.log(`Implicit Type: ${mutationContext.getImplicitTypeText(node)}`);
@@ -285,12 +279,12 @@ function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): v
     console.log('Implicit Type:');
   }
   console.log(`Visited: ${mutationContext.wasVisited(node) ? 'Yes' : 'No'}`);
-  console.log(`Scope: ${scopeKind}`);
+  // console.log(`Scope: ${scopeKind}`);
   console.log(`Synthesized: ${node.flags === ts.NodeFlags.Synthesized ? 'Yes' : 'No'}`);
   console.log(`File: ${mutationContext.sourceFile.fileName}`);
 }
 
-function debugNodeText(node: ts.Node, mutstionContext: MutationContext) {
+function debugNodeText(node: ts.Node, mutstionContext: MutationContext): void {
   if (!DEBUG) return;
   console.log('<============================================');
   if (node.parent) {
@@ -305,12 +299,12 @@ function debugNodeText(node: ts.Node, mutstionContext: MutationContext) {
   console.log('============================================>');
 }
 
-function debugText(text: string) {
+function debugText(text: string): void {
   if (!DEBUG) return;
   console.log(text);
 }
 
-function debugSpaces(spaces: number = 1) {
+function debugSpaces(spaces: number = 1): void {
   if (!DEBUG) return;
   console.log(Array(Math.abs(spaces) + 1).join('\n'));
 }
