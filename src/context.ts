@@ -13,7 +13,6 @@ export class MutationContext {
   private _visited: ts.Node[];
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
-  private _implicitTypeNodeIdentifier = '_TS_RUNTIME_IMPLICIT_TYPE_NODE_';
 
   constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
     this._options = options;
@@ -22,15 +21,14 @@ export class MutationContext {
     this._checker = program.getTypeChecker();
     this._host = host;
     this._visited = [];
-    this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.typeIdentifierNamespace);
+    this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.libNamespace);
     this._transformationContext = context;
   }
 
   public wasDeclared(node: ts.Node) {
-    const symbol = this.checker.getSymbolAtLocation(node);
-    if (!symbol || !symbol.declarations) return false;
+    const declarations = this.getDeclarations(node);
 
-    for (let declaration of symbol.getDeclarations()) {
+    for (let declaration of declarations) {
       if (declaration.getEnd() < node.getEnd()) {
         return true;
       }
@@ -40,11 +38,11 @@ export class MutationContext {
   }
 
   public hasSelfReference(node: ts.Node): boolean {
-    const symbol = this.checker.getSymbolAtLocation((node as any).name || node);
+    const symbol = this.getSymbol((node as any).name || node);
 
     const search = (node: ts.Node): boolean => {
       const isTypeReference = node.kind === ts.SyntaxKind.TypeReference;
-      const isSelfReference = symbol === this.checker.getSymbolAtLocation((node as ts.TypeReferenceNode).typeName);
+      const isSelfReference = symbol === this.getSymbol((node as ts.TypeReferenceNode).typeName);
 
       if (isTypeReference && isSelfReference) {
         return true;
@@ -89,88 +87,75 @@ export class MutationContext {
 
   public getTypeDeclarationName(node: string | ts.BindingName): string {
     const name = typeof node === 'string' ? node : node.getText();
-    return `${this.options.typeIdentifierNamespace}${name}Type`;
+    return `${this.options.libNamespace}${name}Type`;
   }
 
   public getLibDeclarationName(): string {
-    return this.options.libIdentifier;
+    return `${this.options.libNamespace}${this.options.libIdentifier}`;
   }
 
-  // public getImplicitTypeNode_old(node: ts.Node): ts.TypeNode {
-  //   if (this.isImplicitTypeNode(node)) return node as ts.TypeNode;
-  //   const typeString = this.getImplicitTypeText(node);
-  //   let source = `let ${this._implicitTypeNodeIdentifier}: ${typeString};`;
-  //   let sf = ts.createSourceFile(`${this._implicitTypeNodeIdentifier}SF__`, source, this.compilerOptions.target || defaultOptions.compilerOptions.target, true, ts.ScriptKind.TS);
-  //   const implicit = (sf.statements[0] as ts.VariableStatement).declarationList.declarations[0].type;
-  //   this.implicitNodes.set(implicit, node);
-  //   return implicit;
-  // }
+  public getSymbol(node: ts.Node): ts.Symbol {
+    return this.checker.getSymbolAtLocation(node);
+  }
+
+  public getDeclarations(node: ts.Node): ts.Declaration[] {
+    const symbol = this.getSymbol(node);
+    if (!symbol || !symbol.declarations) return [];
+    return symbol.getDeclarations();
+  }
+
+  public isTypeNode(node: ts.Node): boolean {
+    return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
+  }
+
+  public getImplicitType(node: ts.Node): ts.Type {
+    return this.checker.getTypeAtLocation(node);
+  }
 
   public getImplicitTypeNode(node: ts.Node): ts.TypeNode {
-    const type = this.checker.getTypeAtLocation(node);
-    const typeNode = this.checker.typeToTypeNode(type);
-    return typeNode;
-  }
-
-  public getContextualTypeNode(node: ts.Expression): ts.TypeNode {
-    const type = this.checker.getContextualType(node);
-    const typeNode = this.checker.typeToTypeNode(type);
-    return typeNode;
-  }
-
-  public getBaseTypeNode(node: ts.Node): ts.TypeNode {
-    const type = this.checker.getBaseTypeOfLiteralType(this.checker.getTypeAtLocation(node));
-    const typeNode = this.checker.typeToTypeNode(type);
-    return typeNode;
-  }
-
-  public isImplicitTypeNode(node: any): boolean {
-    do {
-      if (node && node.name) {
-        if (node.name.getText() === this._implicitTypeNodeIdentifier) {
-          return true;
-        }
-      }
-    } while (node = node.parent);
-
-    return false;
-  }
-
-  public getTypeNode(node: ts.Node): ts.TypeNode {
-    if ((node as any).type) {
-      return (node as any).type;
-    }
-
-    return this.getImplicitTypeNode(node);
+    return this.checker.typeToTypeNode(this.getImplicitType(node));
   }
 
   public getImplicitTypeText(node: ts.Node): string {
-    const type = this.checker.getTypeAtLocation(node);
-    return this.checker.typeToString(type);
+    return this.checker.typeToString(this.getImplicitType(node));
+  }
+
+  public getContextualType(node: ts.Expression): ts.Type {
+    return this.checker.getContextualType(node);
+  }
+
+  public getContextualTypeNode(node: ts.Expression): ts.TypeNode {
+    return this.checker.typeToTypeNode(this.getContextualType(node));
   }
 
   public getContextualTypeText(node: ts.Expression): string {
-    const type = this.checker.getContextualType(node);
-    return this.checker.typeToString(type);
+    return this.checker.typeToString(this.getContextualType(node));
+  }
+
+  public getBaseType(node: ts.Node): ts.Type {
+    return this.checker.getBaseTypeOfLiteralType(this.checker.getTypeAtLocation(node));
+  }
+
+  public getBaseTypeNode(node: ts.Node): ts.TypeNode {
+    return this.checker.typeToTypeNode(this.getBaseType(node));
   }
 
   public getBaseTypeText(node: ts.Node): string {
-    const type = this.checker.getBaseTypeOfLiteralType(this.checker.getTypeAtLocation(node));
-    return this.checker.typeToString(type);
+    return this.checker.typeToString(this.getBaseType(node));
   }
 
   public typeMatchesBaseType(node: ts.Node, other: ts.Node, trueIfAny = false): boolean {
-    const nodeTypeText = this.getImplicitTypeText(node);
-    const otherBaseTypeText = this.getBaseTypeText(other);
+    let nodeImplicitTypeText = this.getImplicitTypeText(node);
+    let otherBaseTypeText = this.getBaseTypeText(other);
 
-    if (trueIfAny && nodeTypeText === 'any') {
+    if (trueIfAny && nodeImplicitTypeText === 'any') {
       return true;
     }
 
-    if (nodeTypeText !== otherBaseTypeText) {
+    if (nodeImplicitTypeText !== otherBaseTypeText) {
       const otherTypeText = this.getImplicitTypeText(other);
 
-      if (nodeTypeText === otherTypeText) {
+      if (nodeImplicitTypeText === otherTypeText) {
         return true;
       }
 
@@ -182,22 +167,6 @@ export class MutationContext {
 
   public typeMatchesBaseTypeOrAny(node: ts.Node, other: ts.Node): boolean {
     return this.typeMatchesBaseType(node, other, true);
-  }
-
-  public isTypeNode(node: ts.Node): boolean {
-    return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
-  }
-
-  public getType(node: ts.Node): ts.Type {
-    return this.checker.getTypeAtLocation(node);
-  }
-
-  public getTypeFlag(node: ts.Node): ts.TypeFlags {
-    return this.getType(node).flags;
-  }
-
-  public getTypeFlagString(node: ts.Node): string {
-    return ts.TypeFlags[this.getTypeFlag(node)];
   }
 
   // getters and setters
@@ -224,14 +193,14 @@ export class MutationContext {
 
   set sourceFile(sourceFile: ts.SourceFile) {
     if (!util.isKind(sourceFile, ts.SyntaxKind.SourceFile)) {
-      throw new Error(`Attemt to set invalid node as SourceFile, got ${ts.SyntaxKind[sourceFile.kind]}.`);
+      throw new Error(`Attemt to set invalid node as SourceFile on MutationContext. Got ${ts.SyntaxKind[sourceFile.kind]}.`);
     }
 
     this._sourceFile = sourceFile;
   }
 
-  public setSourceFile(sourceFile: ts.Node): void {
-    this.sourceFile = sourceFile as ts.SourceFile;
+  public setSourceFile(sourceFile: ts.SourceFile): void {
+    this.sourceFile = sourceFile;
   }
 
   get compilerOptions(): ts.CompilerOptions {
