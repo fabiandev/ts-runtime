@@ -5,7 +5,6 @@ import { Mutator } from './Mutator';
 type FunctionLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration
 
-// TODO: support computed properties
 export class ClassDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.ClassDeclaration;
@@ -26,7 +25,6 @@ export class ClassDeclarationMutator extends Mutator {
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
           member = this.mutateMethodDeclaration(member as FunctionLikeProperty);
-          (member as FunctionLikeProperty).body = this.factory.assertReturnStatements((member as FunctionLikeProperty).body)
           members.push(member);
           break;
         case ts.SyntaxKind.PropertyDeclaration:
@@ -52,7 +50,7 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private mutateMethodDeclaration(node: FunctionLikeProperty): FunctionLikeProperty {
-    const bodyStatements = node.body.statements || [] as ts.Statement[];
+    let bodyStatements = node.body.statements || [] as ts.Statement[];
 
     const bodyDeclarations: ts.Statement[] = [];
     const bodyAssertions: ts.Statement[] = [];
@@ -101,7 +99,10 @@ export class ClassDeclarationMutator extends Mutator {
       this.context.addVisited(declaration, true);
     });
 
-    const body = ts.updateBlock(node.body, bodyStatements);
+
+    let body;
+    body = ts.updateBlock(node.body, bodyStatements);
+    body = ts.updateBlock(body, this.factory.assertReturnStatements(body).statements);
 
     let method: FunctionLikeProperty;
     switch(node.kind) {

@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import * as util from '../util';
 import { Mutator } from './Mutator';
 
 export class BinaryExpressionMutator extends Mutator {
@@ -31,12 +32,15 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
+    if (!util.isBindingName(node.left)) {
+      return node;
+    }
+
     if (this.context.typeMatchesBaseTypeOrAny(node.left, node.right)) {
       return node;
     } 
 
-    // TODO: revisit as ts.Identifier (could be any expression)
-    const nodeName = this.context.getTypeDeclarationName(node.left as ts.Identifier);
+    const nodeName = this.context.getTypeDeclarationName(node.left as ts.BindingName);
     const right = this.factory.typeAssertion(nodeName, node.right);
 
     this.context.addVisited(right, true, node.right);

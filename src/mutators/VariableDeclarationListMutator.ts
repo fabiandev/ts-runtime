@@ -24,10 +24,6 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transform(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    if (this.context.wasVisited(node)) {
-      return [node];
-    }
-
     let nameIsBindingPattern = false;
     switch(node.name.kind) {
       // case ts.SyntaxKind.Identifier:
@@ -77,7 +73,6 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private transformConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
     if (node.initializer.kind === ts.SyntaxKind.FunctionExpression) {
-      console.log('FUNCTION');
       return [node];
     }
 

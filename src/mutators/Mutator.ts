@@ -13,7 +13,11 @@ export abstract class Mutator {
   public mutateNode(node: ts.Node, context: MutationContext): ts.Node {
     this.context = context;
 
-    if (!node || this.getKind().indexOf(node.kind) === -1) {
+    if (!node) {
+      return node;
+    }
+
+    if (this.getKind().indexOf(node.kind) === -1) {
       return node;
     }
 
