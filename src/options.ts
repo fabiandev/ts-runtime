@@ -5,7 +5,7 @@ export interface Options {
   keepTempFiles?: boolean;
   tempFolderName?: string;
   libIdentifier?: string;
-  typeIdentifierNamespace?: string;
+  libNamespace?: string;
 }
 
 export const defaultOptions: Options = {
@@ -20,5 +20,5 @@ export const defaultOptions: Options = {
   keepTempFiles: true,
   tempFolderName: '.tsr',
   libIdentifier: 't',
-  typeIdentifierNamespace: '_'
+  libNamespace: '_'
 };
