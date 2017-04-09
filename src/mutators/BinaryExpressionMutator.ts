@@ -6,7 +6,7 @@ export class BinaryExpressionMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.BinaryExpression;
 
-  private assignmentKinds: ts.SyntaxKind[] = [
+  private assignmentOperators: ts.AssignmentOperator[] = [
     ts.SyntaxKind.EqualsToken,
     ts.SyntaxKind.PlusEqualsToken,
     ts.SyntaxKind.MinusEqualsToken,
@@ -23,12 +23,12 @@ export class BinaryExpressionMutator extends Mutator {
   ];
 
   // TODO: check spec (e.g. destructuring, rest element,...)
-  public mutate(node: ts.BinaryExpression): ts.Node {
+  protected mutate(node: ts.BinaryExpression): ts.Node {
     if (node.left.kind !== ts.SyntaxKind.Identifier) {
       return node;
     }
 
-    if (this.assignmentKinds.indexOf(node.operatorToken.kind) === -1) {
+    if (this.assignmentOperators.indexOf(node.operatorToken.kind as any) === -1) {
       return node;
     }
 
