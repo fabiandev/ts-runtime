@@ -132,8 +132,6 @@ export function transform(entryFile: string, options?: Options) {
     const visited: ts.Node[] = [];
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      createMutationContext(node, context);
-
       if (mutationContext.wasVisited(node)) {
         return node;
       }
@@ -213,7 +211,6 @@ export function transform(entryFile: string, options?: Options) {
       debugNodeText(node, mutationContext);
       debugSpaces(3);
 
-      // return ts.visitEachChild(node, visitor, context);
       return node;
     };
 
@@ -268,10 +265,18 @@ export function notify(event: string | symbol, ...args: any[]): boolean {
   return bus.emitter.emit(event, args);
 }
 
+function debugText(text: string): void {
+  if (!DEBUG) return;
+  console.log(text);
+}
+
+function debugSpaces(spaces: number = 1): void {
+  if (!DEBUG) return;
+  console.log(Array(Math.abs(spaces) + 1).join('\n'));
+}
+
 function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): void {
   if (!DEBUG) return;
-  // const scope = util.getScope(node);
-  // const scopeKind = scope ? ts.SyntaxKind[scope.kind] : 'undefined';
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
     console.log(`Implicit Type: ${mutationContext.getImplicitTypeText(node)}`);
@@ -297,14 +302,4 @@ function debugNodeText(node: ts.Node, mutstionContext: MutationContext): void {
     console.log('Parent not set, cannot get text.');
   }
   console.log('============================================>');
-}
-
-function debugText(text: string): void {
-  if (!DEBUG) return;
-  console.log(text);
-}
-
-function debugSpaces(spaces: number = 1): void {
-  if (!DEBUG) return;
-  console.log(Array(Math.abs(spaces) + 1).join('\n'));
 }
