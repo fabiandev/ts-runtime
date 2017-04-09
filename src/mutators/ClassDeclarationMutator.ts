@@ -9,11 +9,11 @@ export class ClassDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.ClassDeclaration;
 
-  public mutate(node: ts.ClassDeclaration): ts.Node {
+  protected mutate(node: ts.ClassDeclaration): ts.Node {
     const members: ts.ClassElement[] = [];
     const classReflection = this.factory.classReflection(node);
 
-    const decorators = node.decorators || [] as ts.Decorator[];
+    const decorators = util.asNewArray(node.decorators);
     const decorator = ts.createDecorator(this.factory.annotate(classReflection));
     this.context.addVisited(decorator, true);
     decorators.unshift(decorator);
@@ -42,7 +42,7 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
-    const decorators = node.decorators || [] as ts.Decorator[];
+    const decorators = util.asNewArray(node.decorators);
     const decorator = ts.createDecorator(this.factory.decorate(this.factory.typeReflection(node.type)));
     decorators.unshift(decorator);
     this.context.addVisited(decorator, true);
@@ -50,7 +50,7 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private mutateMethodDeclaration(node: FunctionLikeProperty): FunctionLikeProperty {
-    let bodyStatements = node.body.statements || [] as ts.Statement[];
+    let bodyStatements = util.asNewArray(node.body.statements);
 
     const bodyDeclarations: ts.Statement[] = [];
     const bodyAssertions: ts.Statement[] = [];

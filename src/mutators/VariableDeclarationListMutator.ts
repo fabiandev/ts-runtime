@@ -7,7 +7,7 @@ export class VariableDeclarationListMutator extends Mutator {
 
   private constDeclaration: boolean;
 
-  public mutate(node: ts.VariableDeclarationList): ts.Node {
+  protected mutate(node: ts.VariableDeclarationList): ts.Node {
     if (!node.declarations) {
       return node;
     }
