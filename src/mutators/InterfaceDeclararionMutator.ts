@@ -7,7 +7,7 @@ export class InterfaceDeclarationMutator extends Mutator {
 
   private processed: ts.Symbol[] = [];
 
-  public mutate(node: ts.InterfaceDeclaration): ts.Node {
+  protected mutate(node: ts.InterfaceDeclaration): ts.Node {
     const nodeSymbol = this.context.checker.getSymbolAtLocation(node.name);
 
     if (this.processed.indexOf(nodeSymbol) !== -1) {

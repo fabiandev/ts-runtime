@@ -5,7 +5,7 @@ export class TypeAliasDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.TypeAliasDeclaration;
 
-  public mutate(node: ts.TypeAliasDeclaration): ts.Node {
+  protected mutate(node: ts.TypeAliasDeclaration): ts.Node {
     let typeReflection = this.factory.typeReflection(node.type);
 
     if (this.context.hasSelfReference(node)) {
