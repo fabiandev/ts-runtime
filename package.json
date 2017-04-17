@@ -11,6 +11,7 @@
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck",
+    "build:tsr": "ts-node ./src/bin/",
     "build:demo": "./node_modules/.bin/webpack docs/demo.js docs/bundle.js"
   },
   "dependencies": {
@@ -19,7 +20,7 @@
     "flow-runtime": "^0.2.1",
     "log-symbols": "^1.0.2",
     "node-status": "^1.0.0",
-    "ora": "^1.1.0",
+    "ora": "^1.2.0",
     "rimraf": "^2.6.1",
     "source-map-support": "0.4.3",
     "ts-type-info": "^6.2.2",
