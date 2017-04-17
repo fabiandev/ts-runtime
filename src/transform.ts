@@ -14,7 +14,9 @@ export function transform(entryFile: string, options?: Options) {
 
   entryFile = path.normalize(entryFile);
   options = getOptions(options);
+
   const basePath = path.dirname(entryFile);
+
   let tempEntryFile: string = entryFile;
   let host: ts.CompilerHost;
   let program: ts.Program;
@@ -103,9 +105,7 @@ export function transform(entryFile: string, options?: Options) {
 
     const printer = ts.createPrinter(printerOptions, printHandlers);
 
-    let count = 0;
     for (let transformed of result.transformed) {
-      count++;
       const location = toTempFilePath(transformed.fileName, basePath, options.tempFolderName);
       const source = printer.printFile(transformed);
       ts.sys.writeFile(location, source);
@@ -113,7 +113,9 @@ export function transform(entryFile: string, options?: Options) {
   }
 
   function emitTransformed(): boolean {
-    options.compilerOptions.outDir = path.dirname(entryFile);
+    if (!options.compilerOptions.outDir) {
+      options.compilerOptions.outDir = path.resolve(path.dirname(entryFile));
+    }
 
     createProgramFromTempFiles();
 
@@ -253,11 +255,11 @@ export function getRootNames(rootNames: string | string[]): string[] {
 }
 
 export function getTempPath(basePath: string, tempFolderName: string): string {
-  return path.join(basePath, tempFolderName);
+  return path.join(path.resolve(basePath), tempFolderName);
 }
 
 export function toTempFilePath(file: string, basePath: string, tempFolderName: string): string {
-  const pathFromBase = path.dirname(file.replace(basePath, ''));
+  const pathFromBase = path.dirname(path.resolve(file).replace(path.resolve(basePath), ''));
   const tempPath = getTempPath(basePath, tempFolderName);
   const fileName = path.basename(file);
 
