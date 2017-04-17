@@ -10,8 +10,10 @@ import { Options, defaultOptions } from './options';
 const DEBUG = false;
 
 export function transform(entryFile: string, options?: Options) {
-  options = getOptions(options);
+  emit(bus.events.START);
 
+  entryFile = path.normalize(entryFile);
+  options = getOptions(options);
   const basePath = path.dirname(entryFile);
   let tempEntryFile: string = entryFile;
   let host: ts.CompilerHost;
@@ -38,9 +40,14 @@ export function transform(entryFile: string, options?: Options) {
     }
 
     // Check original file (pre-diagnostics)
-    check(diagnostics);
+    if (!check(diagnostics, options.log) && !options.finishOnError) {
+      if (!options.keepTempFiles) deleteTempFiles();
+      emit(bus.events.STOP);
+      return;
+    }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
+    emit(bus.events.TRANSFORM, sourceFiles);
     const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
 
     writeTempFiles(typedResult);
@@ -55,13 +62,21 @@ export function transform(entryFile: string, options?: Options) {
     result.dispose();
 
     // do not check post-diagnostics of temp file
-    // check(result.diagnostics)
+    // check(result.diagnostics, options.log)
 
-    emitTransformed();
+    if (!emitTransformed() && !options.finishOnError) {
+      if (!options.keepTempFiles) deleteTempFiles();
+      emit(bus.events.STOP);
+      return;
+    }
+
+    emit(bus.events.CLEANUP);
 
     if (!options.keepTempFiles) {
       deleteTempFiles();
     }
+
+    emit(bus.events.END);
   })();
 
   function deleteTempFiles(): void {
@@ -97,7 +112,7 @@ export function transform(entryFile: string, options?: Options) {
     }
   }
 
-  function emitTransformed() {
+  function emitTransformed(): boolean {
     options.compilerOptions.outDir = path.dirname(entryFile);
 
     createProgramFromTempFiles();
@@ -113,12 +128,13 @@ export function transform(entryFile: string, options?: Options) {
     }
 
     // do not check pre-diagnostics of temp file
-    // check(diagnostics);
+    // check(diagnostics, options.log);
 
     const emitResult = program.emit();
 
     // check final result (post-diagnostics)
-    check(emitResult.diagnostics);
+
+    return check(emitResult.diagnostics, options.log);
   }
 
   function createMutationContext(node: ts.Node, context: ts.TransformationContext): void {
@@ -248,20 +264,26 @@ export function toTempFilePath(file: string, basePath: string, tempFolderName: s
   return path.join(tempPath, pathFromBase, fileName);
 }
 
-export function check(diagnostics: ts.Diagnostic[]): boolean {
+export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
   if (diagnostics && diagnostics.length > 0) {
-    console.error(ts.formatDiagnostics(diagnostics, {
-      getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
-      getNewLine: () => ts.sys.newLine,
-      getCanonicalFileName: (f: string) => f
-    }));
+
+    emit(bus.events.DIAGNOSTICS, diagnostics);
+
+    if (log) {
+      console.error(ts.formatDiagnostics(diagnostics, {
+        getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
+        getNewLine: () => ts.sys.newLine,
+        getCanonicalFileName: (f: string) => f
+      }));
+    }
+
     return false;
   }
 
   return true;
 }
 
-export function notify(event: string | symbol, ...args: any[]): boolean {
+export function emit(event: string | symbol, ...args: any[]): boolean {
   return bus.emitter.emit(event, args);
 }
 
