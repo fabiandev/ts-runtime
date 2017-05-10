@@ -20,12 +20,12 @@ process.on('unhandledRejection', (reason: any, p: any) => {
 
 process.on('SIGINT', () => {
   status.term();
-  process.exit();
+  process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   status.term();
-  process.exit();
+  process.exit(0);
 });
 
 process.on('message', (data: { message: string, payload: any }) => {
@@ -114,5 +114,5 @@ status.error = (error: string | Error) => {
   }
 
   status.term();
-  process.exit();
+  process.exit(1);
 };

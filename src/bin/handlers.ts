@@ -5,20 +5,40 @@ import * as bus from '../bus';
 import * as util from './util';
 
 const child = cp.fork(path.join(__dirname, './status'));
+let childIsRunning = true;
 
 // TODO: check how to safely output pending events before killing child,
-// as "Processing has interrupted" is occuring randomly
-// process.on('exit', () => {
-//   // console.log('EXIT');
-//   child.kill();
-// });
+// as "Processing has interrupted" is occuring random
 
-child.on('exit', () => {
-  process.exit();
+function killChild() {
+  if (childIsRunning) {
+    child.kill();
+  }
+}
+
+process.on('exit', () => {
+  killChild();
+});
+
+process.on('SIGINT', () => {
+  killChild();
+});
+
+process.on('SIGTERM', () => {
+  killChild();
+});
+
+child.on('exit', code => {
+  childIsRunning = false;
+  process.exit(code);
 });
 
 function handleError(error: string | Error) {
-  child.send({ message: 'error', payload: util.getError(error) });
+  if (childIsRunning) {
+    child.send({ message: 'error', payload: util.getError(error) });
+  } else {
+    process.exit(1);
+  }
 }
 
 process.on('uncaughtException', handleError);
