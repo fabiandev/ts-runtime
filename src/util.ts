@@ -1,5 +1,13 @@
 import * as ts from 'typescript';
 
+export const LITERAL_KINDS = [
+  ts.SyntaxKind.LiteralType,
+  ts.SyntaxKind.NumericLiteral,
+  ts.SyntaxKind.StringLiteral,
+  ts.SyntaxKind.TrueKeyword,
+  ts.SyntaxKind.FalseKeyword
+];
+
 export function asArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : !value ? [] : [value];
 }
@@ -32,6 +40,10 @@ export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
 
 export function isBindingName(node: ts.Node) {
   return isKind(node, ts.SyntaxKind.Identifier, ts.SyntaxKind.ArrayBindingPattern, ts.SyntaxKind.ObjectBindingPattern);
+}
+
+export function isLiteral(node: ts.Node) {
+  return LITERAL_KINDS.indexOf(node.kind) !== -1;
 }
 
 // export function getScope(node: ts.Node): ts.Node {

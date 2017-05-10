@@ -115,7 +115,7 @@ export class MutationContext {
     return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
   }
 
-  public typesMatch(node: ts.Node, other: ts.Node, matchIfNodeIsAny = true, matchIfOtherIsAny = false): boolean {
+  public typesAreCompatible(node: ts.Node, other: ts.Node, strict = false): boolean {
     const nodeProperties = this.scanner.getPropertiesFromNode(node);
     const otherProperties = this.scanner.getPropertiesFromNode(other);
 
@@ -130,33 +130,15 @@ export class MutationContext {
       return false;
     }
 
-    if (matchIfNodeIsAny && nodeTypeText === 'any') {
+    if (!strict && nodeTypeText === 'any') {
       return true;
     }
 
-    if (matchIfOtherIsAny && otherTypeText === 'any') {
-      return true;
+    if (!strict && !nodeProperties.isLiteralType && otherProperties.isLiteralType) {
+      otherTypeText = otherProperties.literalTypeText;
     }
-
-    const nodeIsLiteral = this.isLiteral(nodeProperties.typeNode);
-    const otherIsLiteral = this.isLiteral(otherProperties.typeNode);
-
-    if (!nodeIsLiteral && otherIsLiteral) {
-      otherTypeText = this.checker.typeToString(this.checker.getBaseTypeOfLiteralType(otherProperties.type));
-    }
-
-    console.log(`${nodeTypeText} === ${otherTypeText}`);
 
     return nodeTypeText === otherTypeText;
-  }
-
-  public isLiteral(node: ts.Node) {
-    return [
-      ts.SyntaxKind.NumericLiteral,
-      ts.SyntaxKind.StringLiteral,
-      ts.SyntaxKind.TrueKeyword,
-      ts.SyntaxKind.FalseKeyword
-    ].indexOf(node.kind) !== -1;
   }
 
   // public getImplicitType(node: ts.Node): ts.Type {

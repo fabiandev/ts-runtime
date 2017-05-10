@@ -91,7 +91,7 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private declarationTypeIsInitializerType(node: ts.VariableDeclaration): boolean {
-    return this.context.typesMatch(node.name, node.initializer);
+    return this.context.typesAreCompatible(node.name, node.initializer);
   }
 
   // private transformUntypedDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {

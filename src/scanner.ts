@@ -1,13 +1,19 @@
 import * as ts from 'typescript';
+import * as util from './util';
 
 export interface ScanProperties {
   node: ts.Node;
   symbol: ts.Symbol;
   sourceFile: ts.SourceFile;
   isDeclaration: boolean;
+  isLiteral: boolean;
+  isLiteralType: boolean;
   type?: ts.Type;
   typeNode?: ts.TypeNode;
   typeText?: string;
+  literalType?: ts.Type;
+  literalTypeNode?: ts.TypeNode;
+  literalTypeText?: string;
 }
 
 export class Scanner {
@@ -83,9 +89,14 @@ export class Scanner {
       this._nodeMap.set(node, symbol);
       this._symbolMap.set(symbol, node);
 
-      let type: ts.Type, typeNode: ts.TypeNode, typeText: string;
+      let type: ts.Type;
+      let typeNode: ts.TypeNode;
+      let typeText: string;
+      let literalType: ts.Type;
+      let literalTypeNode: ts.TypeNode;
+      let literalTypeText: string;
 
-      console.log(ts.SyntaxKind[node.kind]);
+      // console.log(ts.SyntaxKind[node.kind]);
 
       if (this._incompatibleKinds.indexOf(node.kind) === -1) {
         type = this._checker.getTypeAtLocation(node);
@@ -96,24 +107,38 @@ export class Scanner {
         typeText = this._checker.typeToString(type);
       }
 
+      // TODO: determine
       let isDeclaration: undefined = void 0;
 
+      let isLiteral = util.isLiteral(node);
+      let isLiteralType = !typeNode ? false : util.isLiteral(typeNode);
+
+      if (isLiteralType && type) {
+        literalType = this._checker.getBaseTypeOfLiteralType(type);
+
+        if (literalType) {
+          literalTypeNode = this._checker.typeToTypeNode(literalType);
+          literalTypeText = this._checker.typeToString(literalType);
+        }
+      }
+
       let scanProperties: ScanProperties = {
-        node, symbol, sourceFile, isDeclaration, type, typeNode, typeText
+        node, symbol, sourceFile, isDeclaration, isLiteral, isLiteralType,
+        type, typeNode, typeText, literalType, literalTypeNode, literalTypeText
       };
 
       this._propertiesTable.set(node, scanProperties);
 
-      // TODO: remove debug
-      if (type) {
-        console.log(this._checker.typeToString(type));
-      } else {
-        console.log('-');
-      }
-      if (symbol) {
-        console.log(ts.SymbolFlags[symbol.getFlags()]);
-      }
-      console.log();
+      // // TODO: remove debug
+      // if (type) {
+      //   console.log(this._checker.typeToString(type));
+      // } else {
+      //   console.log('-');
+      // }
+      // if (symbol) {
+      //   console.log(ts.SymbolFlags[symbol.getFlags()]);
+      // }
+      // console.log();
 
       ts.forEachChild(node, scanNode);
     };

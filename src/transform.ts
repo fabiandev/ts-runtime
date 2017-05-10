@@ -205,8 +205,13 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (mutationContext.wasVisited(node)) {
+      if (!node || mutationContext.wasVisited(node)) {
         return node;
+      }
+
+      if (node.kind === ts.SyntaxKind.AsExpression) {
+        mutationContext.addVisited(node);
+        return (node as ts.AsExpression).expression;
       }
 
       if (node && !(node as any).type) {
