@@ -7,17 +7,16 @@ import * as util from './util';
 const child = cp.fork(path.join(__dirname, './status'));
 let childIsRunning = true;
 
-// TODO: check how to safely output pending events before killing child,
-// as "Processing has interrupted" is occuring random
-
-function killChild() {
+function killChild(exitOtherwise = true) {
   if (childIsRunning) {
     child.kill();
+  } else if (exitOtherwise) {
+    process.exit(0);
   }
 }
 
 process.on('exit', () => {
-  killChild();
+  killChild(false);
 });
 
 process.on('SIGINT', () => {
@@ -85,13 +84,3 @@ bus.emitter.on(bus.events.STOP, (args: any[]) => {
 bus.emitter.on(bus.events.END, (args: any[]) => {
   child.send({ message: 'end', payload: args });
 });
-
-
-// process.on('SIGINT', () => {
-//   child.send({message: 'term'});
-// });
-//
-// process.on('SIGTERM', () => {
-//   process.stdin.resume();
-//   child.send({message: 'term'});
-// });
