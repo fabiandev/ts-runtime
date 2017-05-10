@@ -220,20 +220,35 @@ export class Factory {
     // console.log(original.parent.getText());
     // console.log('wasDeclared', this.context.wasDeclared((original as ts.TypeReferenceNode).typeName));
     // console.log();
+    //
+
+    // TODO: refactor! fix!
+    // let isAmbient = false;
+    // const refSymbol = this.context.checker.getSymbolAtLocation(node.typeName);
+    //
+    // if (refSymbol !== undefined) {
+    //   if (refSymbol.flags & (ts.SymbolFlags.Type)) {
+    //     isAmbient = true;
+    //
+    //     if (this.context.ambient.indexOf(refSymbol) === -1) {
+    //       this.context.ambient.push(refSymbol);
+    //     }
+    //   }
+    // }
 
     const typeNameText: string = node.typeName.getText();
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
 
     if (typeNameText.toLowerCase() !== 'array') {
-      let identifier: ts.Expression = ts.createIdentifier(typeNameText);
+      let identifier: ts.Expression = /*isAmbient*/ false ? ts.createLiteral(typeNameText) : ts.createIdentifier(typeNameText);
 
       // TODO: check if self-referencing
-      if (!this.context.wasDeclared(node.typeName)) {
+      if (/*!isAmbient && */!this.context.wasDeclared(node.typeName)) {
         identifier = this.tdz(identifier);
       }
 
-      args.unshift(identifier);
       keyword = 'ref';
+      args.unshift(identifier);
     }
 
     return this.nullify(this.libCall(keyword, args));
@@ -259,13 +274,13 @@ export class Factory {
   }
 
   public classReflection(node: ts.ClassDeclaration): ts.Expression {
-    const args = node.members.map(member => this.classElementReflection(member));
+    const args = node.members.map(member => this.classElementReflection(member)).filter(member => !!member);
     args.unshift(ts.createLiteral(node.name));
     return this.libCall('class', args);
   }
 
   public classElementReflection(node: ts.ClassElement): ts.Expression {
-    switch(node.kind) {
+    switch (node.kind) {
       case ts.SyntaxKind.Constructor:
         return this.constructorReflection(node as ts.ConstructorDeclaration)
       case ts.SyntaxKind.MethodDeclaration:
@@ -554,7 +569,7 @@ export class Factory {
   // }
 
   // TODO: think about a more performant/readable/controlable way to handle strictNullChecks true/false
-  public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
+  public nullify(reflection: ts.Expression, notNullable ?: boolean): ts.Expression {
     return reflection;
     // return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
   }
@@ -563,14 +578,18 @@ export class Factory {
     return this.libCall('intersect', args);
   }
 
+  // TODO: pass name as string as second parameter to tdz(cb, "Name")
   public tdz(body: ts.Expression): ts.Expression {
     return this.libCall(
       'tdz',
-      ts.createArrowFunction(
-        undefined, undefined, [], undefined,
-        ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-        body
-      )
+      [
+        ts.createArrowFunction(
+          undefined, undefined, [], undefined,
+          ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+          body
+        )
+        // ,ts.createLiteral(body.getText())
+      ]
     );
   }
 
@@ -605,7 +624,7 @@ export class Factory {
     id = typeof id === 'string' ? ts.createIdentifier(id) : id;
     args = util.asArray(args);
 
-    return ts.createCall(ts.createPropertyAccess(id, prop), undefined, args);
+    return ts.createCall(ts.createPropertyAccess(id, prop), [], args);
   }
 
   public assertReturnStatements<T extends ts.Node>(node: T): T {

@@ -3,7 +3,7 @@ import * as util from '../util';
 import { Mutator } from './Mutator';
 
 type FunctionLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
-  ts.SetAccessorDeclaration | ts.GetAccessorDeclaration
+  ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
 export class ClassDeclarationMutator extends Mutator {
 
@@ -19,6 +19,10 @@ export class ClassDeclarationMutator extends Mutator {
     decorators.unshift(decorator);
 
     for (let member of node.members) {
+      if (util.hasModifier(member, ts.SyntaxKind.AbstractKeyword)) {
+        continue;
+      }
+
       switch (member.kind) {
         case ts.SyntaxKind.Constructor:
         case ts.SyntaxKind.MethodDeclaration:

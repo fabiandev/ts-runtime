@@ -36,7 +36,11 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
-    if (this.context.typeMatchesBaseTypeOrAny(node.left, node.right)) {
+    // if (this.context.typeMatchesBaseTypeOrAny(node.left, node.right)) {
+    //   return node;
+    // } 
+
+    if (this.context.typesMatch(node.left, node.right)) {
       return node;
     } 
 

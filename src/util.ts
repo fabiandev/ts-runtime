@@ -16,6 +16,16 @@ export function setParent(node: ts.Node): void {
   });
 }
 
+export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
+  for (let flag of node.modifiers || []) {
+    if (flag.kind === modifier) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
   return kind.indexOf(node.kind) !== -1;
 }

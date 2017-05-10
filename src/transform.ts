@@ -6,10 +6,19 @@ import * as bus from './bus';
 import { MutationContext } from './context';
 import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
+import { Scanner } from './scanner';
 
 const DEBUG = false;
 
-export function transform(entryFile: string, options?: Options) {
+export function transform(entryFile: string, options?: Options): void {
+  return transformProgram(entryFile, options) as void;
+}
+
+// export function transformModule(source: string, options?: Options, autoStart = true): string {
+//   return transformProgram(source, options, autoStart, true) as string;
+// }
+
+function transformProgram(entryFile: string, options?: Options): void {
   emit(bus.events.START);
 
   entryFile = path.normalize(entryFile);
@@ -20,10 +29,27 @@ export function transform(entryFile: string, options?: Options) {
   let tempEntryFile: string = entryFile;
   let host: ts.CompilerHost;
   let program: ts.Program;
+  let scanner: Scanner;
   let mutationContext: MutationContext;
   let currentSourceFile: ts.SourceFile;
 
-  (function autoStartTransformation(): void {
+  return startTransformation();
+
+  // function startModuleTransformation(): string {
+  //   let sourceFile = ts.createSourceFile('transformed.ts', entryFile, options.compilerOptions.target, true, ts.ScriptKind.TS);
+  //   host = ts.createCompilerHost(options.compilerOptions, true);
+  //
+  //   const typedResult = ts.transform(sourceFile, [firstPassTransformer], options.compilerOptions);
+  //   typedResult.dispose();
+  //
+  //   const result = ts.transform(typedResult.transformed[0], [transformer], options.compilerOptions);
+  //   const source = result.transformed[0].getText();
+  //   result.dispose();
+  //
+  //   return source;
+  // }
+
+  function startTransformation(): void {
     let sourceFiles: ts.SourceFile[];
 
     deleteTempFiles();
@@ -49,6 +75,8 @@ export function transform(entryFile: string, options?: Options) {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
+    scanner = new Scanner(program);
+
     emit(bus.events.TRANSFORM, sourceFiles);
     const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
 
@@ -58,6 +86,8 @@ export function transform(entryFile: string, options?: Options) {
     createProgramFromTempFiles();
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
+    scanner = new Scanner(program);
+
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
     writeTempFiles(result);
@@ -79,7 +109,7 @@ export function transform(entryFile: string, options?: Options) {
     }
 
     emit(bus.events.END);
-  })();
+  };
 
   function deleteTempFiles(): void {
     const tempPath = getTempPath(basePath, options.tempFolderName);
@@ -142,19 +172,44 @@ export function transform(entryFile: string, options?: Options) {
   function createMutationContext(node: ts.Node, context: ts.TransformationContext): void {
     if (node.kind === ts.SyntaxKind.SourceFile && currentSourceFile !== node) {
       currentSourceFile = node as ts.SourceFile;
-      mutationContext = new MutationContext(options, node as ts.SourceFile, program, host, context);
+      mutationContext = new MutationContext(node as ts.SourceFile, options, program, host, scanner, context);
     }
   }
 
   function firstPassTransformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visited: ts.Node[] = [];
 
+    const declarationCanHaveType = (node: ts.Node) => {
+      let current: ts.Node = node;
+
+      if (current.kind === ts.SyntaxKind.VariableDeclaration && current.parent) {
+        current = current.parent;
+      }
+
+      if (current.kind === ts.SyntaxKind.VariableDeclarationList && current.parent) {
+        current = current.parent;
+      }
+
+      switch (current.kind) {
+        case ts.SyntaxKind.ForOfStatement:
+        case ts.SyntaxKind.ForInStatement:
+        case ts.SyntaxKind.CatchClause:
+          return false;
+      }
+
+      return true;
+    };
+
+    const getImplicitTypeNode = (node: ts.Node) => {
+      return mutationContext.scanner.getPropertiesFromNode((node as any).name || node).typeNode;
+    }
+
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       if (mutationContext.wasVisited(node)) {
         return node;
       }
 
-      if (!(node as any).type) {
+      if (node && !(node as any).type) {
         let type: ts.TypeNode;
         switch (node.kind) {
           case ts.SyntaxKind.Parameter:
@@ -164,17 +219,21 @@ export function transform(entryFile: string, options?: Options) {
           case ts.SyntaxKind.CallSignature:
           case ts.SyntaxKind.ConstructSignature:
           case ts.SyntaxKind.IndexSignature:
+            type = getImplicitTypeNode(node);
+            break;
           case ts.SyntaxKind.VariableDeclaration:
-            type = mutationContext.getImplicitTypeNode((node as any).name || node);
+            if (declarationCanHaveType(node)) {
+              type = getImplicitTypeNode(node);
+            }
             break;
           case ts.SyntaxKind.MethodDeclaration:
-          case ts.SyntaxKind.Constructor:
+          // case ts.SyntaxKind.Constructor:
           case ts.SyntaxKind.GetAccessor:
-          case ts.SyntaxKind.SetAccessor:
+          // case ts.SyntaxKind.SetAccessor:
           case ts.SyntaxKind.FunctionExpression:
           case ts.SyntaxKind.ArrowFunction:
           case ts.SyntaxKind.FunctionDeclaration:
-            type = mutationContext.getImplicitTypeNode((node as any).name || node);
+            type = getImplicitTypeNode(node);
             type = (type as any).type || type;
             break;
         }
@@ -303,7 +362,7 @@ function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): v
   if (!DEBUG) return;
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
-    console.log(`Implicit Type: ${mutationContext.getImplicitTypeText(node)}`);
+    console.log(`Implicit Type: ${mutationContext.scanner.getPropertiesFromNode(node).typeNode}`);
   } catch (e) {
     console.log('Implicit Type:');
   }

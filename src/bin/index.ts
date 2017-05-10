@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+Error.stackTraceLimit = Infinity;
 import './handlers';
 import * as path from 'path';
 import * as ts from 'typescript';

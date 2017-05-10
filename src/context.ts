@@ -2,6 +2,7 @@ import * as ts from 'typescript';
 import * as util from './util';
 import { Factory } from './factory';
 import { Options, defaultOptions } from './options';
+import { Scanner } from './scanner';
 
 export class MutationContext {
 
@@ -10,22 +11,28 @@ export class MutationContext {
   private _program: ts.Program;
   private _checker: ts.TypeChecker;
   private _host: ts.CompilerHost;
+  private _scanner: Scanner;
   private _visited: ts.Node[];
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
 
-  constructor(options: Options, sourceFile: ts.SourceFile, program: ts.Program, host: ts.CompilerHost, context: ts.TransformationContext) {
-    this._options = options;
+  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext) {
     this._sourceFile = sourceFile;
+    this._options = options;
     this._program = program;
     this._checker = program.getTypeChecker();
     this._host = host;
+    this._scanner = scanner;
     this._visited = [];
     this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.libNamespace);
     this._transformationContext = context;
   }
 
   public wasDeclared(node: ts.Node) {
+    while (node.kind === ts.SyntaxKind.QualifiedName) {
+      node = (node as ts.QualifiedName).left;
+    }
+
     const declarations = this.getDeclarations(node);
 
     for (let declaration of declarations) {
@@ -38,11 +45,11 @@ export class MutationContext {
   }
 
   public hasSelfReference(node: ts.Node): boolean {
-    const symbol = this.getSymbol((node as any).name || node);
+    const symbol = this.scanner.getSymbolFromNode((node as any).name || node);
 
     const search = (node: ts.Node): boolean => {
       const isTypeReference = node.kind === ts.SyntaxKind.TypeReference;
-      const isSelfReference = symbol === this.getSymbol((node as ts.TypeReferenceNode).typeName);
+      const isSelfReference = symbol === this.scanner.getSymbolFromNode((node as ts.TypeReferenceNode).typeName);
 
       if (isTypeReference && isSelfReference) {
         return true;
@@ -94,12 +101,12 @@ export class MutationContext {
     return `${this.options.libNamespace}${this.options.libIdentifier}`;
   }
 
-  public getSymbol(node: ts.Node): ts.Symbol {
-    return this.checker.getSymbolAtLocation(node);
-  }
+  // public getSymbol(node: ts.Node): ts.Symbol {
+  //   return this.checker.getSymbolAtLocation(node);
+  // }
 
   public getDeclarations(node: ts.Node): ts.Declaration[] {
-    const symbol = this.getSymbol(node);
+    const symbol = this.scanner.getSymbolFromNode(node);
     if (!symbol || !symbol.declarations) return [];
     return symbol.getDeclarations();
   }
@@ -108,66 +115,164 @@ export class MutationContext {
     return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
   }
 
-  public getImplicitType(node: ts.Node): ts.Type {
-    return this.checker.getTypeAtLocation(node);
-  }
+  public typesMatch(node: ts.Node, other: ts.Node, matchIfNodeIsAny = true, matchIfOtherIsAny = false): boolean {
+    const nodeProperties = this.scanner.getPropertiesFromNode(node);
+    const otherProperties = this.scanner.getPropertiesFromNode(other);
 
-  public getImplicitTypeNode(node: ts.Node): ts.TypeNode {
-    return this.checker.typeToTypeNode(this.getImplicitType(node));
-  }
-
-  public getImplicitTypeText(node: ts.Node): string {
-    return this.checker.typeToString(this.getImplicitType(node));
-  }
-
-  public getContextualType(node: ts.Expression): ts.Type {
-    return this.checker.getContextualType(node);
-  }
-
-  public getContextualTypeNode(node: ts.Expression): ts.TypeNode {
-    return this.checker.typeToTypeNode(this.getContextualType(node));
-  }
-
-  public getContextualTypeText(node: ts.Expression): string {
-    return this.checker.typeToString(this.getContextualType(node));
-  }
-
-  public getBaseType(node: ts.Node): ts.Type {
-    return this.checker.getBaseTypeOfLiteralType(this.checker.getTypeAtLocation(node));
-  }
-
-  public getBaseTypeNode(node: ts.Node): ts.TypeNode {
-    return this.checker.typeToTypeNode(this.getBaseType(node));
-  }
-
-  public getBaseTypeText(node: ts.Node): string {
-    return this.checker.typeToString(this.getBaseType(node));
-  }
-
-  public typeMatchesBaseType(node: ts.Node, other: ts.Node, trueIfAny = false): boolean {
-    let nodeImplicitTypeText = this.getImplicitTypeText(node);
-    let otherBaseTypeText = this.getBaseTypeText(other);
-
-    if (trueIfAny && nodeImplicitTypeText === 'any') {
-      return true;
-    }
-
-    if (nodeImplicitTypeText !== otherBaseTypeText) {
-      const otherTypeText = this.getImplicitTypeText(other);
-
-      if (nodeImplicitTypeText === otherTypeText) {
-        return true;
-      }
-
+    if (!nodeProperties || !otherProperties) {
       return false;
     }
 
-    return true;
+    let nodeTypeText = nodeProperties.typeText;
+    let otherTypeText = otherProperties.typeText;
+
+    if (!nodeTypeText || !otherTypeText) {
+      return false;
+    }
+
+    if (matchIfNodeIsAny && nodeTypeText === 'any') {
+      return true;
+    }
+
+    if (matchIfOtherIsAny && otherTypeText === 'any') {
+      return true;
+    }
+
+    const nodeIsLiteral = this.isLiteral(nodeProperties.typeNode);
+    const otherIsLiteral = this.isLiteral(otherProperties.typeNode);
+
+    if (!nodeIsLiteral && otherIsLiteral) {
+      otherTypeText = this.checker.typeToString(this.checker.getBaseTypeOfLiteralType(otherProperties.type));
+    }
+
+    console.log(`${nodeTypeText} === ${otherTypeText}`);
+
+    return nodeTypeText === otherTypeText;
   }
 
-  public typeMatchesBaseTypeOrAny(node: ts.Node, other: ts.Node): boolean {
-    return this.typeMatchesBaseType(node, other, true);
+  public isLiteral(node: ts.Node) {
+    return [
+      ts.SyntaxKind.NumericLiteral,
+      ts.SyntaxKind.StringLiteral,
+      ts.SyntaxKind.TrueKeyword,
+      ts.SyntaxKind.FalseKeyword
+    ].indexOf(node.kind) !== -1;
   }
+
+  // public getImplicitType(node: ts.Node): ts.Type {
+  //   return this.checker.getTypeAtLocation(node);
+  // }
+  //
+  // public getImplicitTypeNode(node: ts.Node): ts.TypeNode {
+  //   return this.toTypeNode(this.getImplicitType(node), node);
+  // }
+  //
+  // public getImplicitTypeText(node: ts.Node): string {
+  //   return this.toTypeString(this.getImplicitType(node), node);
+  // }
+  //
+  // public getContextualType(node: ts.Expression): ts.Type {
+  //   return this.checker.getContextualType(node);
+  // }
+  //
+  // public getContextualTypeNode(node: ts.Expression): ts.TypeNode {
+  //   return this.toTypeNode(this.getContextualType(node), node);
+  // }
+  //
+  // public getContextualTypeText(node: ts.Expression): string {
+  //   return this.toTypeString(this.getContextualType(node), node);
+  // }
+  //
+  // public getBaseType(node: ts.Node): ts.Type {
+  //   // try {
+  //   // return this.checker.getBaseTypes(this.getImplicitType(node));
+  //   // return this.getImplicitType(node);
+  //   // console.log('');
+  //   // console.log('start')
+  //   // const implicit = this.getImplicitType(node);
+  //   //
+  //   // if (implicit.flags & ts.TypeFlags.Literal) {
+  //   //   // console.log('hm');
+  //     return this.checker.getBaseTypeOfLiteralType(this.getImplicitType(node));
+  //   // }
+  //   // console.log('yep');
+  //   // return implicit;
+  //   // } catch (e) {
+  //   //   console.log(e);
+  //   //   console.log('');
+  //   //   console.log(ts.SyntaxKind[node.kind]);
+  //   //   console.log((node as any).name ? (node as any).name.getText() : '');
+  //   //   console.log(node.getText());
+  //   //   console.log('');
+  //   //   throw e;
+  //   // }
+  // }
+  //
+  // public getBaseTypeNode(node: ts.Node): ts.TypeNode {
+  //   return this.toTypeNode(this.getBaseType(node), node);
+  // }
+  //
+  // public getBaseTypeText(node: ts.Node): string {
+  //   return this.toTypeString(this.getBaseType(node), node);
+  // }
+  //
+  // public toTypeNode(type: ts.Type, node: ts.Node) {
+  //   return this.checker.typeToTypeNode(type, node.parent);
+  // }
+  //
+  // public toTypeString(type: ts.Type, node: ts.Node) {
+  //   return this.checker.typeToString(type, node.parent);
+  // }
+  //
+  // public typeMatchesBaseType(node: ts.Node, other: ts.Node, matchIfAny = false): boolean {
+  //   let nodeImplicitTypeText = this.getImplicitTypeText(node);
+  //   let otherBaseTypeText: string;
+  //
+  //   // TODO: fix for e.g. CallExpression
+  //   try {
+  //     otherBaseTypeText = this.getBaseTypeText(other);
+  //   } catch (e) {
+  //     return false;
+  //   }
+  //
+  //   if (matchIfAny && nodeImplicitTypeText === 'any') {
+  //     return true;
+  //   }
+  //
+  //   if (nodeImplicitTypeText !== otherBaseTypeText) {
+  //     const otherTypeText = this.getImplicitTypeText(other);
+  //
+  //     if (nodeImplicitTypeText === otherTypeText) {
+  //       return true;
+  //     }
+  //
+  //     return false;
+  //   }
+  //
+  //   return true;
+  // }
+  //
+  // public implicitEqualsExplicitType(node: ts.Node): boolean {
+  //   if (!(node as any).type) {
+  //     return false;
+  //   }
+  //
+  //   const implicit = this.toTypeString(this.checker.getApparentType(this.checker.getTypeAtLocation(node)), node);
+  //
+  //   if (implicit === 'any') {
+  //     return true;
+  //   }
+  //
+  //   const explicit = this.toTypeString(this.checker.getTypeFromTypeNode((node as any).type), node);
+  //
+  //   // console.log(`${implicit} === ${explicit}`);
+  //
+  //   return implicit === explicit;
+  // }
+  //
+  // public typeMatchesBaseTypeOrAny(node: ts.Node, other: ts.Node): boolean {
+  //   return this.typeMatchesBaseType(node, other, true);
+  // }
 
   // getters and setters
 
@@ -221,6 +326,10 @@ export class MutationContext {
 
   get host(): ts.CompilerHost {
     return this._host;
+  }
+
+  get scanner(): Scanner {
+    return this._scanner;
   }
 
   get factory(): Factory {

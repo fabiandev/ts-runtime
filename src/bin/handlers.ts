@@ -6,14 +6,14 @@ import * as util from './util';
 
 const child = cp.fork(path.join(__dirname, './status'));
 
-// TODO: check how to safely output pending events before killing child
-process.on('exit', () => {
-  // console.log('EXIT');
-  child.kill();
-});
+// TODO: check how to safely output pending events before killing child,
+// as "Processing has interrupted" is occuring randomly
+// process.on('exit', () => {
+//   // console.log('EXIT');
+//   child.kill();
+// });
 
 child.on('exit', () => {
-  // console.log('CHILD EXIT');
   process.exit();
 });
 

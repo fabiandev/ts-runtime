@@ -6,4 +6,5 @@ export * from './context';
 export * from './factory';
 export * from './mutators';
 export * from './options';
+export * from './scanner';
 export * from './transform';

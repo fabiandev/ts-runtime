@@ -72,11 +72,11 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transformConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    if (node.initializer.kind === ts.SyntaxKind.FunctionExpression) {
+    if (!node.initializer || node.initializer.kind === ts.SyntaxKind.FunctionExpression) {
       return [node];
     }
 
-    if (this.declarationTypeIsInitializerType(node)) {
+    if (!node.type || this.declarationTypeIsInitializerType(node)) {
       return [node];
     }
 
@@ -91,7 +91,7 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private declarationTypeIsInitializerType(node: ts.VariableDeclaration): boolean {
-    return this.context.typeMatchesBaseTypeOrAny(node.type, node.initializer);
+    return this.context.typesMatch(node.name, node.initializer);
   }
 
   // private transformUntypedDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
