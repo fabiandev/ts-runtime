@@ -8,6 +8,13 @@ export const LITERAL_KINDS = [
   ts.SyntaxKind.FalseKeyword
 ];
 
+export const AMBIENT_KINDS = [
+  // ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.InterfaceDeclaration,
+  ts.SyntaxKind.TypeAliasDeclaration,
+  ts.SyntaxKind.ModuleDeclaration
+];
+
 export function asArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : !value ? [] : [value];
 }
@@ -24,6 +31,14 @@ export function setParent(node: ts.Node): void {
   });
 }
 
+export function getIdentifierOfQualifiedName(node: ts.Node): ts.Node {
+  while (node.kind === ts.SyntaxKind.QualifiedName) {
+    node = (node as ts.QualifiedName).left;
+  }
+
+  return node;
+}
+
 export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
   for (let flag of node.modifiers || []) {
     if (flag.kind === modifier) {
@@ -32,6 +47,26 @@ export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
   }
 
   return false;
+}
+
+export function isAmbientDeclaration(node: ts.Node): boolean {
+  if (hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
+    return true;
+  }
+
+  while(node.parent) {
+    node = node.parent;
+
+    if (isKind(node, ts.SyntaxKind.ModuleDeclaration) && hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
+      return true;
+    }
+  }
+
+  return false
+}
+
+export function isAmbient(node: ts.Node) {
+  return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_KINDS);
 }
 
 export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
@@ -44,6 +79,10 @@ export function isBindingName(node: ts.Node) {
 
 export function isLiteral(node: ts.Node) {
   return LITERAL_KINDS.indexOf(node.kind) !== -1;
+}
+
+export function isTypeNode(node: ts.Node): boolean {
+  return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
 }
 
 // export function getScope(node: ts.Node): ts.Node {

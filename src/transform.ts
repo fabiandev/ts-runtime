@@ -25,6 +25,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   options = getOptions(options);
 
   const basePath = path.dirname(entryFile);
+  options.compilerOptions.rootDir = path.resolve(basePath);
 
   let tempEntryFile: string = entryFile;
   let host: ts.CompilerHost;
@@ -143,6 +144,8 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function emitTransformed(): boolean {
+    options.compilerOptions.rootDir = undefined;
+
     if (!options.compilerOptions.outDir) {
       options.compilerOptions.outDir = path.resolve(path.dirname(entryFile));
     }

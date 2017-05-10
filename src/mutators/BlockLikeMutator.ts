@@ -13,7 +13,7 @@ export class BlockLikeMutator extends Mutator {
   ];
 
   protected mutate(node: ts.BlockLike): ts.BlockLike {
-    const statements = util.asNewArray(node.statements);
+    const statements: ts.Statement[] = [];
 
     let substitution: ts.BlockLike;
     let needsUpdate = false;
@@ -26,6 +26,16 @@ export class BlockLikeMutator extends Mutator {
       }
 
       statements.push(statement);
+    }
+
+    if (node.kind === ts.SyntaxKind.SourceFile) {
+      needsUpdate = true;
+
+      statements.unshift(ts.createImportDeclaration(
+        [], undefined, ts.createImportClause(
+          undefined, ts.createNamespaceImport(ts.createIdentifier('_t'))
+        ), ts.createLiteral('flow-runtime')
+      ));
     }
 
     switch (node.kind) {

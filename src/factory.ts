@@ -211,40 +211,23 @@ export class Factory {
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
     let keyword = 'array';
 
-    // console.log('\n');
-    // console.log(node.parent.getText());
-    // console.log(node.getText());
-    // console.log('isImplicit', this.context.isImplicitTypeNode(node));
-    // const original = this.context.getNodeFromImplicit(node);
-    // console.log('original', !this.context.isImplicitTypeNode(original));
-    // console.log(original.parent.getText());
-    // console.log('wasDeclared', this.context.wasDeclared((original as ts.TypeReferenceNode).typeName));
-    // console.log();
-    //
+    let asLiteral = false;
+    const scanner = this.context.scanner;
+    const props = scanner.getPropertiesFromNode(node);
 
-    // TODO: refactor! fix!
-    // let isAmbient = false;
-    // const refSymbol = this.context.checker.getSymbolAtLocation(node.typeName);
-    //
-    // if (refSymbol !== undefined) {
-    //   if (refSymbol.flags & (ts.SymbolFlags.Type)) {
-    //     isAmbient = true;
-    //
-    //     if (this.context.ambient.indexOf(refSymbol) === -1) {
-    //       this.context.ambient.push(refSymbol);
-    //     }
-    //   }
-    // }
+    if (props.isTypeNode && props.typeIsReference && ((props.typeReferenceIsAmbient && props.typeReferenceIsExternal) || props.typeReferenceIsAmbientDeclaration)) {
+      asLiteral = true;
+    }
 
     const typeNameText: string = node.typeName.getText();
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
 
     if (typeNameText.toLowerCase() !== 'array') {
-      let identifier: ts.Expression = /*isAmbient*/ false ? ts.createLiteral(typeNameText) : ts.createIdentifier(typeNameText);
+      let identifier: ts.Expression = asLiteral ? ts.createLiteral(typeNameText) : ts.createIdentifier(typeNameText);
 
       // TODO: check if self-referencing
-      if (/*!isAmbient && */!this.context.wasDeclared(node.typeName)) {
-        identifier = this.tdz(identifier);
+      if (!asLiteral && !this.context.wasDeclared(node.typeName)) {
+        identifier = this.tdz(identifier as ts.Identifier);
       }
 
       keyword = 'ref';
@@ -579,7 +562,7 @@ export class Factory {
   }
 
   // TODO: pass name as string as second parameter to tdz(cb, "Name")
-  public tdz(body: ts.Expression): ts.Expression {
+  public tdz(body: ts.Identifier): ts.Expression {
     return this.libCall(
       'tdz',
       [
@@ -587,8 +570,8 @@ export class Factory {
           undefined, undefined, [], undefined,
           ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
           body
-        )
-        // ,ts.createLiteral(body.getText())
+        ),
+        ts.createLiteral(body)
       ]
     );
   }

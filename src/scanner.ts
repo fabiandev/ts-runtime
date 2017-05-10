@@ -2,18 +2,23 @@ import * as ts from 'typescript';
 import * as util from './util';
 
 export interface ScanProperties {
-  node: ts.Node;
-  symbol: ts.Symbol;
-  sourceFile: ts.SourceFile;
-  isDeclaration: boolean;
-  isLiteral: boolean;
-  isLiteralType: boolean;
-  type?: ts.Type;
-  typeNode?: ts.TypeNode;
-  typeText?: string;
-  literalType?: ts.Type;
-  literalTypeNode?: ts.TypeNode;
-  literalTypeText?: string;
+  node: ts.Node;                                // AST node
+  symbol?: ts.Symbol;                           // node symbol
+  sourceFile: ts.SourceFile;                    // node source file
+  isLiteral: boolean;                           // node is a literal
+  isTypeNode: boolean;                          // node is type node
+  typeIsReference: boolean;                     // inferred type is a type reference
+  typeReferenceIsAmbient: boolean;              // inferred type reference is declaration, interface, type alias or module/namespace
+  typeReferenceIsAmbientDeclaration: boolean;   // inferred type reference declaration has declare keyword
+  typeReferenceIsExternal: boolean;             // inferred type reference is external
+  typeReferenceDeclarationCount: number;        // inferred type reference declaration count (e.g. for declaration merging)
+  typeIsLiteral: boolean;                       // inferred type is a literal type
+  type?: ts.Type;                               // inferred type
+  typeNode?: ts.TypeNode;                       // inferred type node
+  typeText?: string;                            // inferred type text
+  literalType?: ts.Type;                        // inferred base type of literal type
+  literalTypeNode?: ts.TypeNode;                // inferred base type node of literal type
+  literalTypeText?: string;                     // inferred base type text of literal type
 }
 
 export class Scanner {
@@ -24,6 +29,8 @@ export class Scanner {
   private _symbolMap: Map<ts.Symbol, ts.Node>;
   private _sourceFileMap: Map<ts.SourceFile, Set<ts.Node>>;
   private _propertiesTable: Map<ts.Node, ScanProperties>;
+  private _externalReferences: Set<ts.Node>;
+  private _ambientDeclarations: Set<ts.Node>;
 
   private _incompatibleKinds = [
     ts.SyntaxKind.ImportClause
@@ -35,6 +42,7 @@ export class Scanner {
     this._symbolMap = new Map();
     this._sourceFileMap = new Map();
     this._propertiesTable = new Map();
+    this._externalReferences = new Set();
 
     if (!defer) {
       this.scan();
@@ -84,7 +92,7 @@ export class Scanner {
       }
 
       const symbol = this._checker.getSymbolAtLocation(node);
-      // console.log(!!symbol);
+
       set.add(node);
       this._nodeMap.set(node, symbol);
       this._symbolMap.set(symbol, node);
@@ -96,54 +104,72 @@ export class Scanner {
       let literalTypeNode: ts.TypeNode;
       let literalTypeText: string;
 
-      // console.log(ts.SyntaxKind[node.kind]);
-
       if (this._incompatibleKinds.indexOf(node.kind) === -1) {
         type = this._checker.getTypeAtLocation(node);
       }
 
       if (type) {
-        typeNode = this._checker.typeToTypeNode(type);
+        typeNode = this._checker.typeToTypeNode(type, node.parent);
         typeText = this._checker.typeToString(type);
       }
 
-      // TODO: determine
-      let isDeclaration: undefined = void 0;
-
       let isLiteral = util.isLiteral(node);
-      let isLiteralType = !typeNode ? false : util.isLiteral(typeNode);
+      let isTypeNode = util.isTypeNode(node);
+      let typeIsReference = type && typeNode ? typeNode.kind === ts.SyntaxKind.TypeReference : false;
+      let typeReferenceIsAmbient: boolean;
+      let typeReferenceIsAmbientDeclaration: boolean;
+      let typeReferenceIsExternal: boolean;
+      let typeReferenceDeclarationCount: number;
+      let typeIsLiteral = !typeNode ? false : util.isLiteral(typeNode);
 
-      if (isLiteralType && type) {
+      if (typeIsReference) {
+        if (type.symbol && type.symbol.declarations) {
+          typeReferenceDeclarationCount = type.symbol.declarations.length;
+
+          type.symbol.declarations.forEach(declaration => {
+            const sf = declaration.getSourceFile();
+            const isAmbient = util.isAmbient(declaration);
+            const isAmbientDeclaration = util.isAmbientDeclaration(declaration);
+            const isExternal = this.pathIsExternal(sf.fileName);
+
+            typeReferenceIsAmbient = !typeReferenceIsAmbient ? isAmbient : typeReferenceIsAmbient;
+            typeReferenceIsExternal = !typeReferenceIsExternal ? isExternal : typeReferenceIsExternal;
+            typeReferenceIsAmbientDeclaration = !typeReferenceIsAmbientDeclaration ? sf.isDeclarationFile || isAmbientDeclaration : typeReferenceIsAmbientDeclaration;
+          });
+        }
+      }
+
+      if (typeIsReference && typeReferenceIsAmbient && typeReferenceIsExternal) {
+        this.externalReferences.add(node);
+      }
+
+      if (typeIsLiteral && type) {
         literalType = this._checker.getBaseTypeOfLiteralType(type);
 
         if (literalType) {
-          literalTypeNode = this._checker.typeToTypeNode(literalType);
+          literalTypeNode = this._checker.typeToTypeNode(literalType, node.parent);
           literalTypeText = this._checker.typeToString(literalType);
         }
       }
 
       let scanProperties: ScanProperties = {
-        node, symbol, sourceFile, isDeclaration, isLiteral, isLiteralType,
-        type, typeNode, typeText, literalType, literalTypeNode, literalTypeText
+        node, symbol, sourceFile, isLiteral, isTypeNode, typeIsReference,
+        typeReferenceIsAmbient, typeReferenceIsAmbientDeclaration, typeReferenceIsExternal,
+        typeReferenceDeclarationCount, typeIsLiteral, type, typeNode, typeText,
+        literalType, literalTypeNode, literalTypeText
       };
 
       this._propertiesTable.set(node, scanProperties);
-
-      // // TODO: remove debug
-      // if (type) {
-      //   console.log(this._checker.typeToString(type));
-      // } else {
-      //   console.log('-');
-      // }
-      // if (symbol) {
-      //   console.log(ts.SymbolFlags[symbol.getFlags()]);
-      // }
-      // console.log();
 
       ts.forEachChild(node, scanNode);
     };
 
     ts.forEachChild(sourceFile, scanNode);
+  }
+
+  public pathIsExternal(fileName: string): boolean {
+    const rootDir = this.program.getCompilerOptions().rootDir;
+    return !fileName.startsWith(rootDir);
   }
 
   get program(): ts.Program {
@@ -176,6 +202,10 @@ export class Scanner {
 
   get incompatibeKinds(): ts.SyntaxKind[] {
     return this._incompatibleKinds;
+  }
+
+  get externalReferences(): Set<ts.Node> {
+    return this._externalReferences;
   }
 
 }

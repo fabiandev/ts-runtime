@@ -29,9 +29,7 @@ export class MutationContext {
   }
 
   public wasDeclared(node: ts.Node) {
-    while (node.kind === ts.SyntaxKind.QualifiedName) {
-      node = (node as ts.QualifiedName).left;
-    }
+    node = util.getIdentifierOfQualifiedName(node);
 
     const declarations = this.getDeclarations(node);
 
@@ -111,10 +109,6 @@ export class MutationContext {
     return symbol.getDeclarations();
   }
 
-  public isTypeNode(node: ts.Node): boolean {
-    return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
-  }
-
   public typesAreCompatible(node: ts.Node, other: ts.Node, strict = false): boolean {
     const nodeProperties = this.scanner.getPropertiesFromNode(node);
     const otherProperties = this.scanner.getPropertiesFromNode(other);
@@ -134,7 +128,7 @@ export class MutationContext {
       return true;
     }
 
-    if (!strict && !nodeProperties.isLiteralType && otherProperties.isLiteralType) {
+    if (!strict && !nodeProperties.typeIsLiteral && otherProperties.typeIsLiteral) {
       otherTypeText = otherProperties.literalTypeText;
     }
 

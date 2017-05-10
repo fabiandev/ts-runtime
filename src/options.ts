@@ -13,7 +13,7 @@ export interface Options {
 export const defaultOptions: Options = {
   compilerOptions: {
     skipLibCheck: true,
-    module: ts.ModuleKind.ES2015,
+    module: ts.ModuleKind.CommonJS,
     target: ts.ScriptTarget.ES2015,
     strictNullChecks: false,
     experimentalDecorators: true,
