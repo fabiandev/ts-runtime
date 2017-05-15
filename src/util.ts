@@ -8,11 +8,9 @@ export const LITERAL_KINDS = [
   ts.SyntaxKind.FalseKeyword
 ];
 
-export const AMBIENT_KINDS = [
-  // ts.SyntaxKind.ClassDeclaration,
+export const AMBIENT_DECLARATIONS = [
   ts.SyntaxKind.InterfaceDeclaration,
   ts.SyntaxKind.TypeAliasDeclaration,
-  ts.SyntaxKind.ModuleDeclaration
 ];
 
 export function asArray<T>(value: T | T[]): T[] {
@@ -50,23 +48,17 @@ export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
 }
 
 export function isAmbientDeclaration(node: ts.Node): boolean {
-  if (hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
-    return true;
-  }
-
-  while(node.parent) {
-    node = node.parent;
-
-    if (isKind(node, ts.SyntaxKind.ModuleDeclaration) && hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
+  do {
+    if (isAmbient(node)) {
       return true;
     }
-  }
+  } while(node = node.parent);
 
   return false
 }
 
 export function isAmbient(node: ts.Node) {
-  return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_KINDS);
+  return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_DECLARATIONS);
 }
 
 export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
