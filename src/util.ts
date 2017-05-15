@@ -8,7 +8,7 @@ export const LITERAL_KINDS = [
   ts.SyntaxKind.FalseKeyword
 ];
 
-export const AMBIENT_DECLARATIONS = [
+export const AMBIENT_KINDS = [
   ts.SyntaxKind.InterfaceDeclaration,
   ts.SyntaxKind.TypeAliasDeclaration,
 ];
@@ -58,7 +58,7 @@ export function isAmbientDeclaration(node: ts.Node): boolean {
 }
 
 export function isAmbient(node: ts.Node) {
-  return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_DECLARATIONS);
+  return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_KINDS);
 }
 
 export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
