@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck",
-    "build:tsr": "ts-node ./src/bin/index src/index.ts -fkc '{\"outDir\": \"dist-tsr\", \"module\": \"CommonJS\", \"target\": \"ES5\", \"skipLibCheck\": true}'",
+    "build:tsr": "ts-node ./src/bin/index src/index.ts -fkc '{\"outDir\": \"dist-tsr\", \"moduleResolution\": \"Node\", \"module\": \"ES6\", \"target\": \"ES6\", \"lib\": \"ESNext\"}'",
     "build:demo": "./node_modules/.bin/webpack docs/demo.js docs/bundle.js"
   },
   "dependencies": {
