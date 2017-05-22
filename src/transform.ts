@@ -76,7 +76,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program);
+    // scanner = new Scanner(program);
 
     emit(bus.events.TRANSFORM, sourceFiles);
     const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
@@ -197,6 +197,7 @@ function transformProgram(entryFile: string, options?: Options): void {
         case ts.SyntaxKind.ForOfStatement:
         case ts.SyntaxKind.ForInStatement:
         case ts.SyntaxKind.CatchClause:
+        case ts.SyntaxKind.ImportClause:
           return false;
       }
 
@@ -204,17 +205,22 @@ function transformProgram(entryFile: string, options?: Options): void {
     };
 
     const getImplicitTypeNode = (node: ts.Node) => {
-      return mutationContext.scanner.getPropertiesFromNode((node as any).name || node).typeNode;
+      const type = mutationContext.checker.getTypeAtLocation(node);
+      return type ? mutationContext.checker.typeToTypeNode(type): void 0;
+      // return mutationContext.scanner.getAttributes((node as any).name || node).typeNode;
     }
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (!node || mutationContext.wasVisited(node)) {
+      if (!node ||  mutationContext.wasVisited(node)) {
         return node;
       }
 
       if (node.kind === ts.SyntaxKind.AsExpression) {
-        mutationContext.addVisited(node);
-        return (node as ts.AsExpression).expression;
+        return mutationContext.addVisited(
+          mutationContext.factory.typeReflectionAndAssertion(
+            (node as ts.AsExpression).type,
+            (node as ts.AsExpression).expression
+          ), true);
       }
 
       if (node && !(node as any).type) {
@@ -265,9 +271,13 @@ function transformProgram(entryFile: string, options?: Options): void {
 
   function transformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      const parent = node.parent;
+      const original = node;
 
       node = ts.visitEachChild(node, visitor, context);
+
+      if (node !== original) {
+        mutationContext.scanner.mapNode(original, node);
+      }
 
       debugText('~~~~~~~~~~~~~~~~~~~~~');
       debugText('Before Mutation:');
@@ -283,7 +293,7 @@ function transformProgram(entryFile: string, options?: Options): void {
         return node;
       }
 
-      node.parent = parent;
+      node.parent = original.parent;
       util.setParent(node);
 
       mutationContext.addVisited(node);
@@ -370,7 +380,7 @@ function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): v
   if (!DEBUG) return;
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
-    console.log(`Implicit Type: ${mutationContext.scanner.getPropertiesFromNode(node).typeNode}`);
+    console.log(`Implicit Type: ${mutationContext.scanner.getAttributes(node).typeNode}`);
   } catch (e) {
     console.log('Implicit Type:');
   }

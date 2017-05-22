@@ -8,14 +8,16 @@ export class Factory {
   private _strictNullChecks: boolean;
   private _lib: string;
   private _namespace: string;
+  private _load: string;
 
   // TODO: check ts.SyntaxKind.QualifiedName (e.g. B.One if B is an enum)
 
-  constructor(context: MutationContext, strictNullChecks = false, lib = 't', namespace = '_') {
+  constructor(context: MutationContext, strictNullChecks = false, lib = 't', namespace = '_', load = 'ts-runtime/lib') {
     this._context = context;
     this._lib = lib;
     this._namespace = namespace;
     this._strictNullChecks = strictNullChecks;
+    this._load = load;
   }
 
   public typeReflection(node: ts.TypeNode): ts.Expression {
@@ -92,20 +94,90 @@ export class Factory {
   //   return node;
   // }
 
-  public typeAliasSubstitution(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  public typeAliasReflection(name: string | ts.Identifier, args: ts.Expression | ts.Expression[], keyword = 'type'): ts.Expression {
     args = util.asArray(args);
     args.unshift(ts.createLiteral(name as any));
-    return this.libCall('type', args);
+    return this.libCall(keyword, args);
   }
 
-  public interfaceSubstitution(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
-    return this.typeAliasSubstitution(name, args);
+  public classReflection(node: ts.ClassDeclaration): ts.Expression {
+    let args = util.asArray(this.typeLiteralReflection(node));
+
+    const implementsClause = util.getImplementsClause(node);
+    const extendsClause = util.getExtendsClause(node);
+
+    if (implementsClause && implementsClause.types && implementsClause.types.length > 0) {
+      args = util.asArray(this.intersect([...implementsClause.types.map(t => t.expression as ts.Expression), ...args]));
+    }
+
+    if (extendsClause && extendsClause.types && extendsClause.types.length > 0) {
+      args.unshift(this.libCall('extends', extendsClause.types[0].expression));
+    }
+
+    return this.typeAliasReflection(node.name, args, 'class');
   }
+
+  // public typeReflection(node: ts.InterfaceDeclaration | ts.ClassDeclaration | ts.LiteralType): ts.Expression {
+  //   let typeAliasExpressions: ts.Expression = this.asObject(
+  //     this.mergedElementsReflection(
+  //       this.getProperties(node) as ts.TypeElement[] | ts.ClassElement[]
+  //     )
+  //   );
+  //
+  //   if (this.context.hasSelfReference(node)) {
+  //     typeAliasExpressions = this.selfReference(node.name, typeAliasExpressions);
+  //   }
+  //
+  //   return typeAliasExpressions;
+  // }
+
+  // TODO: handle ComputedPropertyName
+  public typeLiteralReflection(node: ts.InterfaceDeclaration | ts.ClassDeclaration | ts.TypeLiteralNode): ts.Expression {
+    switch (node.kind) {
+      case ts.SyntaxKind.InterfaceDeclaration:
+      case ts.SyntaxKind.ClassDeclaration:
+        const elements = this.getProperties(node) as ts.TypeElement[] | ts.ClassElement[];
+
+        if (node.kind === ts.SyntaxKind.ClassDeclaration) {
+          for (let member of node.members) {
+            if (util.isStaticClassElement(member)) {
+              (elements as (ts.TypeElement | ts.ClassElement)[]).push(member)
+            }
+            if (member.kind === ts.SyntaxKind.IndexSignature) {
+              (elements as (ts.TypeElement | ts.ClassElement)[]).unshift(member)
+            }
+          }
+        }
+
+        let typeAliasExpressions: ts.Expression = this.asObject(
+          this.mergedElementsReflection(elements)
+        );
+
+        if (this.context.hasSelfReference(node)) {
+          typeAliasExpressions = this.selfReference(node.name, typeAliasExpressions);
+        }
+
+        return typeAliasExpressions;
+      case ts.SyntaxKind.TypeLiteral:
+        return this.nullable(this.libCall('object', this.elementsReflection(node.members)));
+      default:
+        throw new Error(`No possible type literal reflection for ${ts.SyntaxKind[(node as any).kind]} found.`);
+    }
+  }
+
+  // TODO: handle ComputedPropertyName
+  //   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
+  //   return this.nullable(this.libCall('object', this.elementsReflection(node.members)));
+  // }
+
+  // public interfaceReflection(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  //   return this.typeAliasReflection(name, args);
+  // }
 
   // public interfaceSubstitution(node: ts.InterfaceDeclaration): ts.Expression {
   //   return this.propertyAccessCall(this.lib, 'type', [
   //     ts.createLiteral(node.name),
-  //     this.nullify(this.libCall('object', this.typeElementsReflection(node.members)))
+  //     this.nullable(this.libCall('object', this.typeElementsReflection(node.members)))
   //   ])
   // }
 
@@ -126,27 +198,28 @@ export class Factory {
   }
 
   public numberTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('number'));
+    return this.nullable(this.libCall('number'));
   }
 
   public booleanTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('boolean'));
+    return this.nullable(this.libCall('boolean'));
   }
 
   public stringTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('string'));
+    return this.nullable(this.libCall('string'));
   }
 
   public symbolTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('symbol'));
+    return this.nullable(this.libCall('symbol'));
   }
 
   public objectTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('object'));
+    return this.nullable(this.libCall('object'));
   }
 
   public voidTypeReflection(): ts.Expression {
-    return this.libCall('union', [this.libCall('null'), this.libCall('void')]);
+    return this.libCall('void');
+    // return this.libCall('union', [this.libCall('null'), this.libCall('void')]);
   }
 
   public nullTypeReflection(): ts.Expression {
@@ -154,11 +227,11 @@ export class Factory {
   }
 
   public undefinedTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('void'));
+    return this.nullable(this.libCall('undef'));
   }
 
   public thisTypeReflection(): ts.Expression {
-    return this.nullify(this.libCall('this', ts.createThis()));
+    return this.nullable(this.libCall('this', ts.createThis()));
   }
 
   public literalTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
@@ -177,34 +250,34 @@ export class Factory {
   }
 
   public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.nullify(this.libCall('boolean', ts.createLiteral(
+    return this.nullable(this.libCall('boolean', ts.createLiteral(
       node.literal.kind === ts.SyntaxKind.TrueKeyword ? true : false
     )));
   }
 
   public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.nullify(this.libCall('number', ts.createNumericLiteral(node.literal.getText())));
+    return this.nullable(this.libCall('number', ts.createNumericLiteral(node.literal.getText())));
   }
 
   public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
     const str = node.literal.getText();
-    return this.nullify(this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1))));
+    return this.nullable(this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1))));
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
-    return this.nullify(this.libCall('array', this.typeReflection(node.elementType)));
+    return this.nullable(this.libCall('array', this.typeReflection(node.elementType)));
   }
 
   public tupleTypeReflection(node: ts.TupleTypeNode): ts.Expression {
-    return this.nullify(this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n))));
+    return this.nullable(this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n))));
   }
 
   public unionTypeReflection(node: ts.UnionTypeNode): ts.Expression {
-    return this.nullify(this.libCall('union', node.types.map(n => this.typeReflection(n))));
+    return this.nullable(this.libCall('union', node.types.map(n => this.typeReflection(n))));
   }
 
   public intersectionTypeReflection(node: ts.IntersectionTypeNode): ts.Expression {
-    return this.nullify(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
+    return this.nullable(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
   }
 
   // TODO: handle enums (annotate like functions?)
@@ -213,9 +286,9 @@ export class Factory {
 
     let asLiteral = false;
     const scanner = this.context.scanner;
-    const props = scanner.getPropertiesFromNode(node);
+    const nodeAttributes = scanner.getAttributes(node);
 
-    if (props.isTypeNode && props.typeIsReference && ((props.typeReferenceIsAmbient && props.typeReferenceIsExternal) || props.typeReferenceIsAmbientDeclaration)) {
+    if (nodeAttributes.isTypeNode && nodeAttributes.typeAttributes.TSR_DECLARATION) {
       asLiteral = true;
     }
 
@@ -226,7 +299,8 @@ export class Factory {
       let identifier: ts.Expression = asLiteral ? ts.createLiteral(typeNameText) : ts.createIdentifier(typeNameText);
 
       // TODO: check if self-referencing
-      if (!asLiteral && !this.context.wasDeclared(node.typeName)) {
+      // TODO: no tdz if exists
+      if (!asLiteral/* && !this.context.wasDeclared(node.typeName)*/) {
         identifier = this.tdz(identifier as ts.Identifier);
       }
 
@@ -234,13 +308,27 @@ export class Factory {
       args.unshift(identifier);
     }
 
-    return this.nullify(this.libCall(keyword, args));
+    return this.nullable(this.libCall(keyword, args));
   }
 
-  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature, noStrictNullCheck?: boolean): ts.Expression {
+  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration, isClass = false): ts.Expression {
+    const isStatic = util.isStaticClassElement(node as ts.ClassElement);
     const args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
     args.push(this.returnTypeReflection(node.type));
-    return this.nullify(this.libCall('function', args), noStrictNullCheck);
+
+    // if (isClass) {
+    //   const isStatic = util.isStaticClassElement(node as ts.ClassElement);
+    //
+    //   return this.libCall(isStatic ? 'staticMethod' : 'method', [
+    //     this.propertyNameToLiteralOrExpression(node.name),
+    //     ...args
+    //   ]);
+    // }
+
+    return this.libCall(isStatic ? 'staticProperty' : 'property', [
+      this.propertyNameToLiteralOrExpression(node.name),
+      this.nullable(this.libCall('function', args))
+    ]);
   }
 
   public parameterReflection(param: ts.ParameterDeclaration) {
@@ -256,343 +344,732 @@ export class Factory {
     return this.libCall(param.dotDotDotToken ? 'rest' : 'param', parameter);
   }
 
-  public classReflection(node: ts.ClassDeclaration): ts.Expression {
-    const args = node.members.map(member => this.classElementReflection(member)).filter(member => !!member);
-    args.unshift(ts.createLiteral(node.name));
-    return this.libCall('class', args);
+  public typeSubstitution(node: ts.InterfaceDeclaration | ts.ClassDeclaration): ts.Statement {
+    const typeAliasExpressions = this.typeLiteralReflection(node);
+
+    // const intersections = this.mergeExtendsClauses(nodeSymbol).map(intersection => this.factory.asRef(intersection));
+
+    // if (intersections.length >= 1) {
+    //   (intersections as ts.Expression[]).push(typeAliasExpressions)
+    //   typeAliasExpressions = this.factory.intersect(intersections);
+    // }
+
+    const substitution = ts.createVariableStatement(
+      node.modifiers,
+      ts.createVariableDeclarationList(
+        [
+          ts.createVariableDeclaration(
+            node.name,
+            undefined,
+            this.typeAliasReflection(node.name, typeAliasExpressions)
+          )
+        ],
+        ts.NodeFlags.Let
+      )
+    );
+
+    return substitution;
   }
 
-  public classElementReflection(node: ts.ClassElement): ts.Expression {
-    switch (node.kind) {
-      case ts.SyntaxKind.Constructor:
-        return this.constructorReflection(node as ts.ConstructorDeclaration)
-      case ts.SyntaxKind.MethodDeclaration:
-        return this.methodDeclarationReflection(node as ts.MethodDeclaration);
-      case ts.SyntaxKind.GetAccessor:
-        return this.getAccessorReflection(node as ts.GetAccessorDeclaration);
-      case ts.SyntaxKind.SetAccessor:
-        return this.setAccessorReflection(node as ts.SetAccessorDeclaration);
-      case ts.SyntaxKind.PropertyDeclaration:
-        return this.propertyDeclarationReflection(node as ts.PropertyDeclaration);
-      case ts.SyntaxKind.IndexSignature:
-        return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
-      default:
-        throw new Error(`No class class member reflection for syntax kind ${ts.SyntaxKind[node.kind]} found.`);
+  private getProperties(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): ts.TypeElement[] | ts.ClassElement[] {
+    const nodeAttributes = this.context.scanner.getAttributes(node);
+    const merged: Set<ts.TypeElement> = new Set();
+
+    if (!nodeAttributes.type) {
+      return node.members;
     }
+
+    (nodeAttributes.type.getProperties() || []).forEach(sym => {
+      for (let typeElement of ((sym.getDeclarations() || []) as ts.TypeElement[])) {
+        merged.add(typeElement);
+      }
+    });
+
+    return Array.from(merged);
   }
 
-  public isStaticClassElement(node: ts.ClassElement): boolean {
-    return !node.modifiers ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
-  }
+  // public classReflection(node: ts.ClassDeclaration): ts.Expression {
+  //   const args = this.mergedElementsReflection(
+  //     // this.getProperties(node) as ts.ClassElement[],
+  //     node.members,
+  //     true
+  //   );
+  //
+  //   let typeAliasExpressions = args;
+  //
+  //   if (this.context.hasSelfReference(node)) {
+  //     typeAliasExpressions = [this.selfReference(node.name, ts.createArrayLiteral(args))];
+  //   }
+  //
+  //   typeAliasExpressions.unshift(ts.createLiteral(node.name));
+  //
+  //   const extendsClause = util.getExtendsClause(node);
+  //
+  //   if (extendsClause) {
+  //     typeAliasExpressions.push(this.libCall('extends', extendsClause.types[0].expression));
+  //   }
+  //
+  //   return this.libCall('class', typeAliasExpressions);
+  // }
+
+  // public classReflection(node: ts.ClassDeclaration): ts.Expression {
+  //   const args = node.members.map(member => this.classElementReflection(member)).filter(member => !!member);
+  //   args.unshift(ts.createLiteral(node.name));
+  //   return this.libCall('class', args);
+  // }
+
+  // public classElementReflection(node: ts.ClassElement): ts.Expression {
+  //   switch (node.kind) {
+  //     case ts.SyntaxKind.Constructor:
+  //       return this.constructorReflection(node as ts.ConstructorDeclaration)
+  //     case ts.SyntaxKind.MethodDeclaration:
+  //       return this.methodDeclarationReflection(node as ts.MethodDeclaration);
+  //     case ts.SyntaxKind.GetAccessor:
+  //       return this.getAccessorReflection(node as ts.GetAccessorDeclaration);
+  //     case ts.SyntaxKind.SetAccessor:
+  //       return this.setAccessorReflection(node as ts.SetAccessorDeclaration);
+  //     case ts.SyntaxKind.PropertyDeclaration:
+  //       return this.propertyDeclarationReflection(node as ts.PropertyDeclaration);
+  //     case ts.SyntaxKind.IndexSignature:
+  //       return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
+  //     default:
+  //       // TODO: TypeElement can occur here on interface/class declaration merging
+  //       // throw new Error(`No class class member reflection for syntax kind ${ts.SyntaxKind[node.kind]} found.`);
+  //       console.log(`No class class member reflection for syntax kind ${ts.SyntaxKind[node.kind]} found.`);
+  //       return null;
+  //   }
+  // }
 
   // TODO: revisit
   public constructorReflection(node: ts.ConstructorDeclaration): null {
-    // When comparing two objects of a class type, only members of the instance are compared.
-    // Static members and constructors do not affect compatibility.
-    // https://www.typescriptlang.org/docs/handbook/type-compatibility.html
-    return null;
-  }
+  // When comparing two objects of a class type, only members of the instance are compared.
+  // Static members and constructors do not affect compatibility.
+  // https://www.typescriptlang.org/docs/handbook/type-compatibility.html
+  return null;
+}
 
   public methodDeclarationReflection(node: ts.MethodDeclaration): ts.Expression {
-    const isStatic = this.isStaticClassElement(node);
-    const args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
+  const isStatic = util.isStaticClassElement(node);
+  const args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
 
-    args.push(this.returnTypeReflection(node.type));
-    args.unshift(this.propertyNameToLiteralOrExpression(node.name));
+  args.push(this.returnTypeReflection(node.type));
+  args.unshift(this.propertyNameToLiteralOrExpression(node.name));
 
-    return this.libCall(isStatic ? 'staticMethod' : 'method', args);
-  }
+  return this.libCall(isStatic ? 'staticMethod' : 'method', args);
+}
 
   public getAccessorReflection(node: ts.GetAccessorDeclaration): ts.Expression {
-    return this.methodDeclarationReflection(node as any);
-  }
+  return this.methodDeclarationReflection(node as any);
+}
 
   public setAccessorReflection(node: ts.SetAccessorDeclaration): ts.Expression {
-    return this.methodDeclarationReflection(node as any);
-  }
+  return this.methodDeclarationReflection(node as any);
+}
 
   public propertyDeclarationReflection(node: ts.PropertyDeclaration): ts.Expression {
-    const isStatic = this.isStaticClassElement(node);
+  const isStatic = util.isStaticClassElement(node);
 
-    const args: ts.Expression[] = [
-      this.propertyNameToLiteralOrExpression(node.name),
-      this.typeReflection(node.type)
-    ];
+  const args: ts.Expression[] = [
+    this.propertyNameToLiteralOrExpression(node.name),
+    this.typeReflection(node.type)
+  ];
 
 
-    if (node.questionToken) {
-      args.push(ts.createTrue());
-    }
-
-    return this.libCall(isStatic ? 'staticProperty' : 'property', args);
+  if (node.questionToken) {
+    args.push(ts.createTrue());
   }
+
+  return this.libCall(isStatic ? 'staticProperty' : 'property', args);
+}
 
   public returnTypeReflection(node: ts.TypeNode): ts.Expression {
-    return this.libCall('return', this.typeReflection(node));
-  }
+  return this.libCall('return', this.typeReflection(node));
+}
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
-    return this.functionTypeReflection(node);
-  }
-
-  // TODO: handle ComputedPropertyName
-  public typeLiteralReflection(node: ts.TypeLiteralNode): ts.Expression {
-    return this.nullify(this.libCall('object', this.typeElementsReflection(node.members)));
-  }
+  return this.functionTypeReflection(node);
+}
 
   public typeQueryReflection(node: ts.TypeQueryNode): ts.Expression {
-    return this.nullify(this.libCall('typeOf', ts.createIdentifier(node.exprName.getText())));
-  }
+  return this.nullable(this.libCall('typeOf', ts.createIdentifier(node.exprName.getText())));
+}
 
-  public typeElementReflection(node: ts.TypeElement): ts.Expression {
-    switch (node.kind) {
-      case ts.SyntaxKind.IndexSignature:
-        return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
-      case ts.SyntaxKind.PropertySignature:
-        return this.propertySignatureReflection(node as ts.PropertySignature);
-      case ts.SyntaxKind.CallSignature:
-        return this.callSignatureReflection(node as ts.CallSignatureDeclaration);
-      case ts.SyntaxKind.ConstructSignature:
-        return this.constructSignatureReflection(node as ts.ConstructSignatureDeclaration);
-      case ts.SyntaxKind.MethodSignature:
-        return this.methodSignatureReflection(node as ts.MethodSignature);
-      default:
-        throw new Error(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
-    }
+public elementReflection(node: ts.TypeElement | ts.ClassElement, isClass = false): ts.Expression {
+  switch (node.kind) {
+    case ts.SyntaxKind.Constructor:
+      return this.constructorReflection(node as ts.ConstructorDeclaration);
+    case ts.SyntaxKind.IndexSignature:
+      return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
+    case ts.SyntaxKind.PropertySignature:
+    case ts.SyntaxKind.PropertyDeclaration:
+      return this.propertySignatureReflection(node as ts.PropertySignature, isClass);
+    case ts.SyntaxKind.CallSignature:
+      return this.callSignatureReflection(node as ts.CallSignatureDeclaration);
+    case ts.SyntaxKind.ConstructSignature:
+      return this.constructSignatureReflection(node as ts.ConstructSignatureDeclaration);
+    case ts.SyntaxKind.MethodSignature:
+    case ts.SyntaxKind.MethodDeclaration:
+    case ts.SyntaxKind.GetAccessor:
+    case ts.SyntaxKind.SetAccessor:
+      return this.functionTypeReflection(node as ts.MethodSignature, isClass);
+    default:
+      throw new Error(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
   }
+}
 
-  public typeElementsReflection(nodes: ts.TypeElement[], merge = false): ts.Expression[] {
-    if (merge) return this.mergedTypeElementsReflection(nodes);
-    return nodes.map(node => this.typeElementReflection(node));
-  }
+  public elementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], merge = true, isClass = false): ts.Expression[] {
+  if (merge) return this.mergedElementsReflection(nodes, isClass);
+  return nodes.map(node => this.elementReflection(node, isClass));
+}
+
+//   public typeElementReflection(node: ts.TypeElement | ts.ClassElement): ts.Expression {
+//   switch (node.kind) {
+//     case ts.SyntaxKind.IndexSignature:
+//       return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
+//     case ts.SyntaxKind.PropertySignature:
+//     case ts.SyntaxKind.PropertyDeclaration:
+//       return this.propertySignatureReflection(node as ts.PropertySignature);
+//     case ts.SyntaxKind.CallSignature:
+//       return this.callSignatureReflection(node as ts.CallSignatureDeclaration);
+//     case ts.SyntaxKind.ConstructSignature:
+//       return this.constructSignatureReflection(node as ts.ConstructSignatureDeclaration);
+//     case ts.SyntaxKind.MethodSignature:
+//     case ts.SyntaxKind.MethodDeclaration:
+//     case ts.SyntaxKind.GetAccessor:
+//     case ts.SyntaxKind.SetAccessor:
+//       return this.methodSignatureReflection(node as ts.MethodSignature);
+//     default:
+//       throw new Error(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
+//   }
+// }
+
+//   public typeElementsReflection(nodes: ts.TypeElement[], merge = true): ts.Expression[] {
+//   if (merge) return this.mergedTypeElementsReflection(nodes);
+//   return nodes.map(node => this.typeElementReflection(node));
+// }
 
   // TODO: Merge all function types (including construct signature and call signature)
-  public mergedTypeElementsReflection(nodes: ts.TypeElement[]): ts.Expression[] {
-    const mergeGroups: Map<string, ts.MethodSignature[]> = new Map();
+//   public mergedTypeElementsReflection(nodes: ts.TypeElement[]): ts.Expression[] {
+//   const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
+//
+//   let elements = nodes.map(node => {
+//     switch (node.kind) {
+//       case ts.SyntaxKind.MethodSignature:
+//       case ts.SyntaxKind.MethodDeclaration:
+//       case ts.SyntaxKind.GetAccessor:
+//       case ts.SyntaxKind.SetAccessor:
+//         {
+//           const text = node.name.getText();
+//
+//           if (!mergeGroups.has(text)) {
+//             mergeGroups.set(text, []);
+//           }
+//
+//           const elements = mergeGroups.get(text);
+//           elements.push(node as ts.MethodSignature);
+//
+//           return null;
+//         }
+//       case ts.SyntaxKind.CallSignature:
+//         {
+//           const text = '';
+//
+//           if (!mergeGroups.has(text)) {
+//             mergeGroups.set(text, []);
+//           }
+//
+//           const elements = mergeGroups.get(text);
+//           elements.push(node as ts.CallSignatureDeclaration);
+//
+//           return null;
+//         }
+//     }
+//
+//     return this.typeElementReflection(node);
+//   }).filter(element => !!element);
+//
+//   mergeGroups.forEach((group, name) => {
+//     const returnTypes: ts.TypeNode[] = [];
+//     const hasReturnTypes: string[] = [];
+//
+//     const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
+//     const hasParameterTypes: Map<number, string[]> = new Map();
+//
+//     const typeParameters: ts.TypeParameterDeclaration[] = [];
+//     const hasTypeParameters: string[] = [];
+//
+//     for (let node of group) {
+//       const returnTypeText = node.type.getText();
+//
+//       if (hasReturnTypes.indexOf(returnTypeText) === -1) {
+//         hasReturnTypes.push(returnTypeText);
+//         returnTypes.push(node.type);
+//       }
+//
+//       if (node.typeParameters) {
+//
+//       }
+//
+//       let parameterIndex = 0;
+//       for (let parameter of node.parameters) {
+//         // const parameterNameText = parameter.name.getText();
+//         const parameterTypeText = parameter.type.getText();
+//
+//         if (!hasParameterTypes.has(parameterIndex)) {
+//           hasParameterTypes.set(parameterIndex, []);
+//         }
+//
+//         const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
+//
+//         if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
+//           parameterTypeTexts.push(parameterTypeText);
+//
+//           if (!parameterTypes.has(parameterIndex)) {
+//             parameterTypes.set(parameterIndex, []);
+//           }
+//
+//           parameterTypes.get(parameterIndex).push(parameter.type);
+//         }
+//
+//         parameterIndex++;
+//       }
+//     }
+//
+//     let returnTypeNode = returnTypes[0];
+//     if (returnTypes.length > 1) {
+//       returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+//       (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+//     }
+//
+//     let parameterDeclarations: ts.ParameterDeclaration[] = [];
+//
+//     parameterTypes.forEach((paramTypes, index) => {
+//       const param = paramTypes[0].parent as ts.ParameterDeclaration;
+//
+//       let parameterTypeNode = paramTypes[0];
+//       if (paramTypes.length > 1) {
+//         parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+//         (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+//       }
+//
+//       const parameterDeclaration = ts.createParameter(
+//         param.decorators, param.modifiers, param.dotDotDotToken, param.name,
+//         param.questionToken, parameterTypeNode, param.initializer
+//       );
+//
+//       parameterDeclarations.push(parameterDeclaration);
+//     });
+//
+//     let mergedSignature: ts.TypeElement;
+//
+//     switch (group[0].kind) {
+//       case ts.SyntaxKind.MethodSignature:
+//       case ts.SyntaxKind.MethodDeclaration:
+//       case ts.SyntaxKind.GetAccessor:
+//       case ts.SyntaxKind.SetAccessor:
+//         mergedSignature = ts.createMethodSignature(
+//           group[0].typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
+//         );
+//         break;
+//       case ts.SyntaxKind.CallSignature:
+//         mergedSignature = ts.createCallSignature(group[0].typeParameters, parameterDeclarations, returnTypeNode);
+//         break;
+//     }
+//
+//     elements.push(this.typeElementReflection(mergedSignature));
+//   });
+//
+//   return elements;
+// }
 
-    let elements = nodes.map(node => {
-      if (node.kind === ts.SyntaxKind.MethodSignature) {
-        const text = node.name.getText();
+public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isClass = false): ts.Expression[] {
+  const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
 
-        if (!mergeGroups.has(text)) {
-          mergeGroups.set(text, []);
-        }
+  let elements = nodes.map(node => {
+    switch (node.kind) {
+      case ts.SyntaxKind.MethodSignature:
+      case ts.SyntaxKind.MethodDeclaration:
+      case ts.SyntaxKind.GetAccessor:
+      case ts.SyntaxKind.SetAccessor:
+        {
+          const text = node.name.getText();
 
-        const elements = mergeGroups.get(text);
-        elements.push(node as ts.MethodSignature);
-
-        return null;
-      }
-
-      return this.typeElementReflection(node);
-    }).filter(element => !!element);
-
-    mergeGroups.forEach((group, name) => {
-      const returnTypes: ts.TypeNode[] = [];
-      const hasReturnTypes: string[] = [];
-
-      const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
-      const hasParameterTypes: Map<number, string[]> = new Map();
-
-      const typeParameters: ts.TypeParameterDeclaration[] = [];
-      const hasTypeParameters: string[] = [];
-
-      for (let node of group) {
-        const returnTypeText = node.type.getText();
-
-        if (hasReturnTypes.indexOf(returnTypeText) === -1) {
-          hasReturnTypes.push(returnTypeText);
-          returnTypes.push(node.type);
-        }
-
-        if (node.typeParameters) {
-
-        }
-
-        let parameterIndex = 0;
-        for (let parameter of node.parameters) {
-          // const parameterNameText = parameter.name.getText();
-          const parameterTypeText = parameter.type.getText();
-
-          if (!hasParameterTypes.has(parameterIndex)) {
-            hasParameterTypes.set(parameterIndex, []);
+          if (!mergeGroups.has(text)) {
+            mergeGroups.set(text, []);
           }
 
-          const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
+          const elements = mergeGroups.get(text);
+          elements.push(node as ts.MethodSignature | ts.MethodDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration);
 
-          if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
-            parameterTypeTexts.push(parameterTypeText);
+          return null;
+        }
+      case ts.SyntaxKind.CallSignature:
+        {
+          const text = '';
 
-            if (!parameterTypes.has(parameterIndex)) {
-              parameterTypes.set(parameterIndex, []);
-            }
-
-            parameterTypes.get(parameterIndex).push(parameter.type);
+          if (!mergeGroups.has(text)) {
+            mergeGroups.set(text, []);
           }
 
-          parameterIndex++;
+          const elements = mergeGroups.get(text);
+          elements.push(node as ts.CallSignatureDeclaration);
+
+          return null;
         }
+    }
+
+    return this.elementReflection(node, isClass);
+  }).filter(element => !!element);
+
+  mergeGroups.forEach((group, name) => {
+    const returnTypes: ts.TypeNode[] = [];
+    const hasReturnTypes: string[] = [];
+
+    const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
+    const hasParameterTypes: Map<number, string[]> = new Map();
+
+    const typeParameters: ts.TypeParameterDeclaration[] = [];
+    const hasTypeParameters: string[] = [];
+
+    for (let node of group) {
+      const returnTypeText = node.type.getText();
+
+      if (hasReturnTypes.indexOf(returnTypeText) === -1) {
+        hasReturnTypes.push(returnTypeText);
+        returnTypes.push(node.type);
       }
 
-      let returnTypeNode = returnTypes[0];
-      if (returnTypes.length > 1) {
-        returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-        (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+      if (node.typeParameters) {
+
       }
 
-      let parameterDeclarations: ts.ParameterDeclaration[] = [];
+      let parameterIndex = 0;
+      for (let parameter of node.parameters) {
+        // const parameterNameText = parameter.name.getText();
+        const parameterTypeText = parameter.type.getText();
 
-      parameterTypes.forEach((paramTypes, index) => {
-        const param = paramTypes[0].parent as ts.ParameterDeclaration;
-
-        let parameterTypeNode = paramTypes[0];
-        if (paramTypes.length > 1) {
-          parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-          (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+        if (!hasParameterTypes.has(parameterIndex)) {
+          hasParameterTypes.set(parameterIndex, []);
         }
 
-        const parameterDeclaration = ts.createParameter(
-          param.decorators, param.modifiers, param.dotDotDotToken, param.name,
-          param.questionToken, parameterTypeNode, param.initializer
-        );
+        const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
 
-        parameterDeclarations.push(parameterDeclaration);
-      });
+        if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
+          parameterTypeTexts.push(parameterTypeText);
 
-      const mergedMethodSignature = ts.createMethodSignature(
-        group[0].typeParameters, parameterDeclarations, returnTypeNode, name, group[0].questionToken
+          if (!parameterTypes.has(parameterIndex)) {
+            parameterTypes.set(parameterIndex, []);
+          }
+
+          parameterTypes.get(parameterIndex).push(parameter.type);
+        }
+
+        parameterIndex++;
+      }
+    }
+
+    let returnTypeNode = returnTypes[0];
+    if (returnTypes.length > 1) {
+      returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+      (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+    }
+
+    let parameterDeclarations: ts.ParameterDeclaration[] = [];
+
+    parameterTypes.forEach((paramTypes, index) => {
+      const param = paramTypes[0].parent as ts.ParameterDeclaration;
+
+      let parameterTypeNode = paramTypes[0];
+      if (paramTypes.length > 1) {
+        parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+        (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+      }
+
+      const parameterDeclaration = ts.createParameter(
+        param.decorators, param.modifiers, param.dotDotDotToken, param.name,
+        param.questionToken, parameterTypeNode, param.initializer
       );
 
-      elements.push(this.typeElementReflection(mergedMethodSignature));
+      parameterDeclarations.push(parameterDeclaration);
     });
 
-    return elements;
-  }
+    let mergedSignature: ts.TypeElement | ts.ClassElement;
+
+    switch (group[0].kind) {
+      case ts.SyntaxKind.MethodSignature:
+        mergedSignature = ts.createMethodSignature(
+          group[0].typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
+        );
+        break;
+      case ts.SyntaxKind.MethodDeclaration:
+      case ts.SyntaxKind.GetAccessor:
+      case ts.SyntaxKind.SetAccessor:
+        mergedSignature = ts.createMethod(
+          group[0].decorators, group[0].modifiers, (group[0] as ts.MethodDeclaration).asteriskToken, name, (group[0] as ts.MethodDeclaration).questionToken, group[0].typeParameters, parameterDeclarations, returnTypeNode, undefined
+          // group[0].typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
+        );
+        break;
+      case ts.SyntaxKind.CallSignature:
+        mergedSignature = ts.createCallSignature(group[0].typeParameters, parameterDeclarations, returnTypeNode);
+        break;
+    }
+
+
+    elements.push(this.elementReflection(mergedSignature, isClass));
+  });
+
+  return elements;
+}
+
+// public classElementsReflection(nodes: ts.ClassElement[], merge = true): ts.Expression[] {
+// if (merge) return this.mergedClassElementsReflection(nodes);
+// return nodes.map(node => this.classElementReflection(node));
+// }
+//
+// // TODO: Merge all function types (including construct signature and call signature)
+// public mergedClassElementsReflection(nodes: ts.ClassElement[]): ts.Expression[] {
+// const mergeGroups: Map<string, (ts.MethodDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration)[]> = new Map();
+//
+// let elements = nodes.map(node => {
+//   switch (node.kind) {
+//     case ts.SyntaxKind.MethodDeclaration:
+//     case ts.SyntaxKind.GetAccessor:
+//     case ts.SyntaxKind.SetAccessor:
+//       {
+//         const text = node.name.getText();
+//
+//         if (!mergeGroups.has(text)) {
+//           mergeGroups.set(text, []);
+//         }
+//
+//         const elements = mergeGroups.get(text);
+//         elements.push(node as ts.MethodDeclaration);
+//
+//         return null;
+//       }
+//   }
+//
+//   return this.classElementReflection(node as ts.ClassElement);
+// }).filter(element => !!element);
+//
+// mergeGroups.forEach((group, name) => {
+//   const returnTypes: ts.TypeNode[] = [];
+//   const hasReturnTypes: string[] = [];
+//
+//   const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
+//   const hasParameterTypes: Map<number, string[]> = new Map();
+//
+//   const typeParameters: ts.TypeParameterDeclaration[] = [];
+//   const hasTypeParameters: string[] = [];
+//
+//   for (let node of group) {
+//     const returnTypeText = node.type.getText();
+//
+//     if (hasReturnTypes.indexOf(returnTypeText) === -1) {
+//       hasReturnTypes.push(returnTypeText);
+//       returnTypes.push(node.type);
+//     }
+//
+//     if (node.typeParameters) {
+//
+//     }
+//
+//     let parameterIndex = 0;
+//     for (let parameter of node.parameters) {
+//       // const parameterNameText = parameter.name.getText();
+//       const parameterTypeText = parameter.type.getText();
+//
+//       if (!hasParameterTypes.has(parameterIndex)) {
+//         hasParameterTypes.set(parameterIndex, []);
+//       }
+//
+//       const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
+//
+//       if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
+//         parameterTypeTexts.push(parameterTypeText);
+//
+//         if (!parameterTypes.has(parameterIndex)) {
+//           parameterTypes.set(parameterIndex, []);
+//         }
+//
+//         parameterTypes.get(parameterIndex).push(parameter.type);
+//       }
+//
+//       parameterIndex++;
+//     }
+//   }
+//
+//   let returnTypeNode = returnTypes[0];
+//   if (returnTypes.length > 1) {
+//     returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+//     (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+//   }
+//
+//   let parameterDeclarations: ts.ParameterDeclaration[] = [];
+//
+//   parameterTypes.forEach((paramTypes, index) => {
+//     const param = paramTypes[0].parent as ts.ParameterDeclaration;
+//
+//     let parameterTypeNode = paramTypes[0];
+//     if (paramTypes.length > 1) {
+//       parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+//       (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+//     }
+//
+//     const parameterDeclaration = ts.createParameter(
+//       param.decorators, param.modifiers, param.dotDotDotToken, param.name,
+//       param.questionToken, parameterTypeNode, param.initializer
+//     );
+//
+//     parameterDeclarations.push(parameterDeclaration);
+//   });
+//
+//   let mergedSignature: ts.ClassElement;
+//
+//   switch (group[0].kind) {
+//     case ts.SyntaxKind.MethodDeclaration:
+//     case ts.SyntaxKind.GetAccessor:
+//     case ts.SyntaxKind.SetAccessor:
+//       mergedSignature = ts.createMethod(
+//         group[0].decorators, group[0].modifiers, group[0].asteriskToken, name, group[0].questionToken, group[0].typeParameters, parameterDeclarations, returnTypeNode, undefined
+//         // group[0].typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
+//       );
+//       break;
+//   }
+//
+//   elements.push(this.classElementReflection(mergedSignature));
+// });
+//
+// return elements;
+// }
 
   public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
-    return this.libCall('indexer', [
-      this.declarationNameToLiteralOrExpression(node.parameters[0].name),
-      this.typeReflection(node.parameters[0].type),
-      this.typeReflection(node.type)
-    ]);
+  return this.libCall('indexer', [
+    this.declarationNameToLiteralOrExpression(node.parameters[0].name),
+    this.typeReflection(node.parameters[0].type),
+    this.typeReflection(node.type)
+  ]);
+}
+
+  public propertySignatureReflection(node: ts.PropertySignature | ts.PropertyDeclaration, isClass = false): ts.Expression {
+  const args: ts.Expression[] = [
+    this.propertyNameToLiteralOrExpression(node.name),
+    this.typeReflection(node.type)
+  ];
+
+
+  if (node.questionToken) {
+    args.push(ts.createTrue());
   }
 
-  public propertySignatureReflection(node: ts.PropertySignature): ts.Expression {
-    const args: ts.Expression[] = [
-      this.propertyNameToLiteralOrExpression(node.name),
-      this.typeReflection(node.type)
-    ];
-
-
-    if (node.questionToken) {
-      args.push(ts.createTrue());
-    }
-
-    return this.libCall('property', args);
-  }
+  return this.libCall(util.isStaticClassElement(node as ts.PropertyDeclaration) ? 'staticProperty' : 'property', args);
+}
 
   public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration, noStrictNullCheck = true): ts.Expression {
-    return this.libCall('callProperty', this.functionTypeReflection(node, noStrictNullCheck));
-  }
+  return this.libCall('callProperty', this.functionTypeReflection(node, noStrictNullCheck));
+}
 
   public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
-    return this.callSignatureReflection(node);
-  }
+  return this.callSignatureReflection(node);
+}
 
-  public methodSignatureReflection(node: ts.MethodSignature): ts.Expression {
-    return this.libCall('property', [
-      this.propertyNameToLiteralOrExpression(node.name),
-      this.functionTypeReflection(node)
-    ]);
-  }
+//   public methodSignatureReflection(node: ts.MethodSignature, isClass: boolean): ts.Expression {
+//   return this.libCall('property', [
+//     this.propertyNameToLiteralOrExpression(node.name),
+//     this.functionTypeReflection(node, isClass)
+//   ]);
+// }
 
   public propertyNameToLiteralOrExpression(node: ts.PropertyName): ts.Expression | ts.StringLiteral | ts.NumericLiteral {
-    // fixes TS compiler error (property kind does not exist on type never) if using ts.SyntaxKind[node.kind] in default clause.
-    const kind = node.kind;
-
-    switch (node.kind) {
-      case ts.SyntaxKind.Identifier:
-        return ts.createLiteral(node.text);
-      case ts.SyntaxKind.StringLiteral:
-        let str = node.text;
-        return ts.createLiteral(str.substring(1, str.length - 1));
-      case ts.SyntaxKind.NumericLiteral:
-        return ts.createNumericLiteral(node.text);
-      case ts.SyntaxKind.ComputedPropertyName:
-        return node.expression;
-      default:
-        throw new Error(`Property name for syntax kind '${ts.SyntaxKind[kind]}' could not be generated.`);
-    }
+  switch (node.kind) {
+    case ts.SyntaxKind.Identifier:
+      return ts.createLiteral(node.text);
+    case ts.SyntaxKind.StringLiteral:
+      let str = node.text;
+      return ts.createLiteral(str.substring(1, str.length - 1));
+    case ts.SyntaxKind.NumericLiteral:
+      return ts.createNumericLiteral(node.text);
+    case ts.SyntaxKind.ComputedPropertyName:
+      return node.expression;
+    default:
+      throw new Error(`Property name for syntax kind '${ts.SyntaxKind[(node as any).kind]}' could not be generated.`);
   }
+}
 
   public declarationNameToLiteralOrExpression(node: ts.DeclarationName): ts.Expression | ts.StringLiteral | ts.NumericLiteral {
-    switch (node.kind) {
-      case ts.SyntaxKind.Identifier:
-      case ts.SyntaxKind.StringLiteral:
-      case ts.SyntaxKind.NumericLiteral:
-      case ts.SyntaxKind.ComputedPropertyName:
-        return this.propertyNameToLiteralOrExpression(node as ts.PropertyName);
-      case ts.SyntaxKind.ObjectBindingPattern:
-      case ts.SyntaxKind.ArrayBindingPattern:
-      default:
-        throw new Error(`Declaration name for syntax kind '${ts.SyntaxKind[node.kind]}' could not be generated.`);
-    }
+  switch (node.kind) {
+    case ts.SyntaxKind.Identifier:
+    case ts.SyntaxKind.StringLiteral:
+    case ts.SyntaxKind.NumericLiteral:
+    case ts.SyntaxKind.ComputedPropertyName:
+      return this.propertyNameToLiteralOrExpression(node as ts.PropertyName);
+    case ts.SyntaxKind.ObjectBindingPattern:
+    case ts.SyntaxKind.ArrayBindingPattern:
+    default:
+      throw new Error(`Declaration name for syntax kind '${ts.SyntaxKind[node.kind]}' could not be generated.`);
   }
+}
 
   public decorate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
-    return this.libCall('decorate', expressions);
-  }
+  return this.libCall('decorate', expressions);
+}
 
   public annotate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
-    return this.libCall('annotate', expressions);
-  }
+  return this.libCall('annotate', expressions);
+}
 
-  // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
+  // public nullable(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
   //   return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
   // }
 
   // TODO: think about a more performant/readable/controlable way to handle strictNullChecks true/false
-  public nullify(reflection: ts.Expression, notNullable ?: boolean): ts.Expression {
-    return reflection;
-    // return this.strictNullChecks || notNullable ? reflection : this.libCall('n', reflection);
-  }
+  public nullable(reflection: ts.Expression, skip ?: boolean): ts.Expression {
+  // return reflection;
+  return this.strictNullChecks || skip ? reflection : this.libCall('nullable', reflection);
+}
 
   public intersect(args: ts.Expression | ts.Expression[]): ts.Expression {
-    return this.libCall('intersect', args);
-  }
+  return this.libCall('intersect', args);
+}
 
   // TODO: pass name as string as second parameter to tdz(cb, "Name")
-  public tdz(body: ts.Identifier): ts.Expression {
-    return this.libCall(
-      'tdz',
-      [
-        ts.createArrowFunction(
-          undefined, undefined, [], undefined,
-          ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-          body
-        ),
-        ts.createLiteral(body)
-      ]
-    );
-  }
-
-  public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.Expression): ts.Expression {
-    return ts.createArrowFunction(
-      undefined, undefined, [ts.createParameter(undefined, undefined, undefined, name)], undefined,
+  // TODO: no tdz if self reference
+  public tdz(body: ts.Identifier, name ?: string): ts.Expression {
+  const args = [
+    ts.createArrowFunction(
+      undefined, undefined, [], undefined,
       ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
       body
-    );
+    ),
+    ts.createLiteral(body)
+  ];
+
+  if (name) {
+    args.push(ts.createLiteral(name));
   }
+
+  return this.libCall(
+    'tdz', args
+  );
+}
+
+  public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.Expression): ts.Expression {
+  return ts.createArrowFunction(
+    undefined, undefined, [ts.createParameter(undefined, undefined, undefined, name)], undefined,
+    ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+    body
+  );
+}
 
   public asObject(nodes: ts.Expression[]): ts.Expression {
-    return this.libCall('object', nodes);
-  }
+  return this.libCall('object', nodes);
+}
 
   public asRef(arg: ts.Expression): ts.Expression {
-    return this.libCall('ref', arg);
-  }
+  return this.libCall('ref', arg);
+}
 
-  // public nullify(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
+  // public nullable(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
   //   return this.strictNullChecks || notNullable ? reflection : this.libCall('union', [
   //     this.libCall('null'),
   //     reflection
@@ -600,70 +1077,74 @@ export class Factory {
   // }
 
   public libCall(prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
-    return this.propertyAccessCall(this.lib, prop, args);
-  }
+  return this.propertyAccessCall(this.lib, prop, args);
+}
 
   public propertyAccessCall(id: string | ts.Expression, prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
-    id = typeof id === 'string' ? ts.createIdentifier(id) : id;
-    args = util.asArray(args);
+  id = typeof id === 'string' ? ts.createIdentifier(id) : id;
+  args = util.asArray(args);
 
-    return ts.createCall(ts.createPropertyAccess(id, prop), [], args);
-  }
+  return ts.createCall(ts.createPropertyAccess(id, prop), [], args);
+}
 
   public assertReturnStatements<T extends ts.Node>(node: T): T {
-    const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (node.kind === ts.SyntaxKind.FunctionDeclaration || node.kind === ts.SyntaxKind.FunctionExpression || node.kind === ts.SyntaxKind.ArrowFunction) {
-        return node;
-      }
+  const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
+    if (node.kind === ts.SyntaxKind.FunctionDeclaration || node.kind === ts.SyntaxKind.FunctionExpression || node.kind === ts.SyntaxKind.ArrowFunction) {
+      return node;
+    }
 
-      if (node.kind === ts.SyntaxKind.ReturnStatement) {
-        const assertion = this.typeAssertion(
-          this.context.getTypeDeclarationName('return'),
-          (node as ts.ReturnStatement).expression
-        );
+    if (node.kind === ts.SyntaxKind.ReturnStatement) {
+      const assertion = this.typeAssertion(
+        this.context.getTypeDeclarationName('return'),
+        (node as ts.ReturnStatement).expression
+      );
 
-        const substitution = ts.updateReturn((node as ts.ReturnStatement), assertion);
-        this.context.addVisited(substitution, true, (node as ts.ReturnStatement).expression);
+      const substitution = ts.updateReturn((node as ts.ReturnStatement), assertion);
+      this.context.addVisited(substitution, true, (node as ts.ReturnStatement).expression);
 
-        return substitution;
-      }
-
-      return ts.visitEachChild(node, visitor, this.context.transformationContext);
-    };
+      return substitution;
+    }
 
     return ts.visitEachChild(node, visitor, this.context.transformationContext);
-  }
+  };
 
-  get context(): MutationContext {
-    return this._context;
-  }
+  return ts.visitEachChild(node, visitor, this.context.transformationContext);
+}
 
-  set context(context: MutationContext) {
-    this._context = context;
-  }
+get context(): MutationContext {
+  return this._context;
+}
 
-  get strictNullChecks(): boolean {
-    return this._strictNullChecks;
-  }
+set context(context: MutationContext) {
+  this._context = context;
+}
 
-  set strictNullChecks(strictNullChecks: boolean) {
-    this._strictNullChecks = strictNullChecks;
-  }
+get strictNullChecks(): boolean {
+  return this._strictNullChecks;
+}
 
-  get lib(): string {
-    return `${this.namespace}${this._lib}`;
-  }
+set strictNullChecks(strictNullChecks: boolean) {
+  this._strictNullChecks = strictNullChecks;
+}
 
-  set lib(lib: string) {
-    this._lib = lib;
-  }
+get lib(): string {
+  return `${this.namespace}${this._lib}`;
+}
 
-  get namespace(): string {
-    return this._namespace;
-  }
+get package(): string {
+  return this._load;
+}
 
-  set namespace(namespace: string) {
-    this._namespace = namespace;
-  }
+set lib(lib: string) {
+  this._lib = lib;
+}
+
+get namespace(): string {
+  return this._namespace;
+}
+
+set namespace(namespace: string) {
+  this._namespace = namespace;
+}
 
 }

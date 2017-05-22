@@ -37,6 +37,22 @@ export function getIdentifierOfQualifiedName(node: ts.Node): ts.Node {
   return node;
 }
 
+export function getExtendsClause(node: ts.InterfaceDeclaration | ts.ClassDeclaration): ts.HeritageClause {
+  return node.heritageClauses && node.heritageClauses.find(clause => {
+    if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+      return true;
+    }
+  });
+}
+
+export function getImplementsClause(node: ts.InterfaceDeclaration | ts.ClassDeclaration): ts.HeritageClause {
+  return node.heritageClauses && node.heritageClauses.find(clause => {
+    if (clause.token === ts.SyntaxKind.ImplementsKeyword) {
+      return true;
+    }
+  });
+}
+
 export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
   for (let flag of node.modifiers || []) {
     if (flag.kind === modifier) {
@@ -47,9 +63,9 @@ export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
   return false;
 }
 
-export function isAmbientDeclaration(node: ts.Node): boolean {
+export function isAmbient(node: ts.Node): boolean {
   do {
-    if (isAmbient(node)) {
+    if (isKind(node, ...AMBIENT_KINDS)) {
       return true;
     }
   } while(node = node.parent);
@@ -57,9 +73,23 @@ export function isAmbientDeclaration(node: ts.Node): boolean {
   return false
 }
 
-export function isAmbient(node: ts.Node) {
-  return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_KINDS);
+export function isDeclaration(node: ts.Node): boolean {
+  do {
+    if (hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
+      return true;
+    }
+  } while(node = node.parent);
+
+  return false
 }
+
+export function isStaticClassElement(node: ts.ClassElement): boolean {
+  return !node.modifiers ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
+}
+
+// function isAmbientNode(node: ts.Node) {
+//   return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_KINDS);
+// }
 
 export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
   return kind.indexOf(node.kind) !== -1;

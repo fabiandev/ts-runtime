@@ -1,7 +1,13 @@
 import t from 'flow-runtime';
 
-t.n = (arg: any) => {
-  return t.union(t.null(), arg);
-};
+const voidType = t.void;
+
+t.undef = () => {
+  return t.voidType();
+}
+
+t.void = () => {
+  return t.union(t.null(), t.undef());
+}
 
 export default t;

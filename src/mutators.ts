@@ -5,6 +5,7 @@ import { BlockLikeMutator } from './mutators/BlockLikeMutator';
 import { ClassDeclarationMutator } from './mutators/ClassDeclarationMutator'
 import { FunctionExpressionMutator } from './mutators/FunctionExpressionMutator';
 import { InterfaceDeclarationMutator } from './mutators/InterfaceDeclararionMutator';
+import { SourceFileMutator } from './mutators/SourceFileMutator';
 import { TypeAliasDeclarationMutator } from './mutators/TypeAliasDeclararionMutator';
 import { VariableDeclarationListMutator } from './mutators/VariableDeclarationListMutator';
 
@@ -16,6 +17,7 @@ export {
   ClassDeclarationMutator,
   FunctionExpressionMutator,
   InterfaceDeclarationMutator,
+  SourceFileMutator,
   TypeAliasDeclarationMutator,
   VariableDeclarationListMutator,
 };
@@ -27,6 +29,7 @@ export const mutators: Mutator[] = [
   new ClassDeclarationMutator(),
   new FunctionExpressionMutator(),
   new InterfaceDeclarationMutator(),
+  new SourceFileMutator(),
   new TypeAliasDeclarationMutator(),
   new VariableDeclarationListMutator(),
 ];

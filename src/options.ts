@@ -12,12 +12,11 @@ export interface Options {
 
 export const defaultOptions: Options = {
   compilerOptions: {
-    skipLibCheck: true,
-    module: ts.ModuleKind.CommonJS,
-    target: ts.ScriptTarget.ES2015,
-    strictNullChecks: false,
+    module: ts.ModuleKind.ES2015,
+    target: ts.ScriptTarget.ESNext,
+    strictNullChecks: true,
     experimentalDecorators: true,
-    emitDecoratorMetadata: true,
+    // emitDecoratorMetadata: true,
   },
   finishOnError: false,
   keepTempFiles: true,

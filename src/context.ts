@@ -15,6 +15,7 @@ export class MutationContext {
   private _visited: ts.Node[];
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
+  private _processed: ts.Symbol[];
 
   constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext) {
     this._sourceFile = sourceFile;
@@ -26,6 +27,7 @@ export class MutationContext {
     this._visited = [];
     this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.libNamespace);
     this._transformationContext = context;
+    this._processed = [];
   }
 
   public wasDeclared(node: ts.Node) {
@@ -67,7 +69,7 @@ export class MutationContext {
     return false;
   }
 
-  public addVisited(node: ts.Node, recursive = false, ...exclude: ts.Node[]): void {
+  public addVisited(node: ts.Node, recursive = false, ...exclude: ts.Node[]): ts.Node {
     if (!this.wasVisited(node) && exclude.indexOf(node) === -1) {
       this._visited.push(node);
     }
@@ -77,6 +79,8 @@ export class MutationContext {
         this.addVisited(n, recursive, ...exclude);
       });
     }
+
+    return node;
   }
 
   public removeVisited(node: ts.Node): boolean {
@@ -109,16 +113,17 @@ export class MutationContext {
     return symbol.getDeclarations();
   }
 
-  public typesAreCompatible(node: ts.Node, other: ts.Node, strict = false): boolean {
-    const nodeProperties = this.scanner.getPropertiesFromNode(node);
-    const otherProperties = this.scanner.getPropertiesFromNode(other);
+  // TODO: also compare structural (e.g. Options = { /* structure that matches options */ })
+  public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
+    const nodeAttributes = this.scanner.getAttributes(node);
+    const otherAttributes = this.scanner.getAttributes(other);
 
-    if (!nodeProperties || !otherProperties) {
+    if (!nodeAttributes || !otherAttributes) {
       return false;
     }
 
-    let nodeTypeText = nodeProperties.typeText;
-    let otherTypeText = otherProperties.typeText;
+    let nodeTypeText = nodeAttributes.typeText;
+    let otherTypeText = otherAttributes.typeText;
 
     if (!nodeTypeText || !otherTypeText) {
       return false;
@@ -128,11 +133,15 @@ export class MutationContext {
       return true;
     }
 
-    if (!strict && !nodeProperties.typeIsLiteral && otherProperties.typeIsLiteral) {
-      otherTypeText = otherProperties.literalTypeText;
+    if (!strict && !nodeAttributes.typeAttributes.isLiteral && otherAttributes.typeAttributes.isLiteral) {
+      otherTypeText = otherAttributes.baseTypeText;
     }
 
     return nodeTypeText === otherTypeText;
+  }
+
+  public wasProcessed(symbol: ts.Symbol) {
+    return this.processed.indexOf(symbol) !== -1;
   }
 
   // public getImplicitType(node: ts.Node): ts.Type {
@@ -310,6 +319,10 @@ export class MutationContext {
 
   get factory(): Factory {
     return this._factory;
+  }
+
+  get processed(): ts.Symbol[] {
+    return this._processed;
   }
 
 }
