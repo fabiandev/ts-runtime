@@ -40,7 +40,7 @@ export class BinaryExpressionMutator extends Mutator {
     //   return node;
     // } 
 
-    if (this.context.typesAreCompatible(node.left, node.right)) {
+    if (this.context.isSafeAssignment(node.left, node.right)) {
       return node;
     } 
 

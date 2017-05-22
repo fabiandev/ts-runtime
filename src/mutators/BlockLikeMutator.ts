@@ -4,64 +4,60 @@ import { Mutator } from './Mutator';
 
 export class BlockLikeMutator extends Mutator {
 
-  protected kind = [
-    ts.SyntaxKind.SourceFile,
-    ts.SyntaxKind.Block,
-    ts.SyntaxKind.ModuleBlock,
-    ts.SyntaxKind.CaseClause,
-    ts.SyntaxKind.DefaultClause
-  ];
+  protected kind: ts.SyntaxKind[] = [];
 
   protected mutate(node: ts.BlockLike): ts.BlockLike {
-    const statements: ts.Statement[] = [];
-
-    let substitution: ts.BlockLike;
-    let needsUpdate = false;
-
-    for (let statement of node.statements) {
-      if (statement.kind === ts.SyntaxKind.FunctionDeclaration) {
-        statements.push(...this.mutateFunctionDeclaration(statement as ts.FunctionDeclaration));
-        needsUpdate = true;
-        continue;
-      }
-
-      statements.push(statement);
-    }
-
-    if (node.kind === ts.SyntaxKind.SourceFile) {
-      needsUpdate = true;
-
-      statements.unshift(ts.createImportDeclaration(
-        [], undefined, ts.createImportClause(
-          undefined, ts.createNamespaceImport(ts.createIdentifier('_t'))
-        ), ts.createLiteral('flow-runtime')
-      ));
-    }
-
-    switch (node.kind) {
-      case this.kind[0]:
-        substitution = ts.updateSourceFileNode(node as ts.SourceFile, statements);
-        break;
-      case this.kind[1]:
-        substitution = ts.updateBlock(node as ts.Block, statements);
-        break;
-      case this.kind[2]:
-        substitution = ts.updateModuleBlock(node as ts.ModuleBlock, statements);
-        break;
-      case this.kind[3]:
-        substitution = ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements);
-        break;
-      case this.kind[4]:
-        substitution = ts.updateDefaultClause(node as ts.DefaultClause, statements);
-        break;
-    }
-
-    return needsUpdate ? substitution : node;
+    return node;
   }
 
-  // TODO: implement
-  private mutateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
-    return [node];
-  }
+  // protected kind = [
+  //   ts.SyntaxKind.SourceFile,
+  //   ts.SyntaxKind.Block,
+  //   ts.SyntaxKind.ModuleBlock,
+  //   ts.SyntaxKind.CaseClause,
+  //   ts.SyntaxKind.DefaultClause
+  // ];
+
+  // protected mutate(node: ts.BlockLike): ts.BlockLike {
+  //   const statements: ts.Statement[] = [];
+  //
+  //   let substitution: ts.BlockLike;
+  //   let needsUpdate = false;
+  //
+  //   for (let statement of node.statements) {
+  //     if (statement.kind === ts.SyntaxKind.FunctionDeclaration) {
+  //       statements.push(...this.mutateFunctionDeclaration(statement as ts.FunctionDeclaration));
+  //       needsUpdate = true;
+  //       continue;
+  //     }
+  //
+  //     statements.push(statement);
+  //   }
+  //
+  //   switch (node.kind) {
+  //     case this.kind[0]:
+  //       if (needsUpdate) substitution = ts.updateSourceFileNode(node as ts.SourceFile, statements);
+  //       break;
+  //     case this.kind[1]:
+  //       if (needsUpdate) substitution = ts.updateBlock(node as ts.Block, statements);
+  //       break;
+  //     case this.kind[2]:
+  //       if (needsUpdate) substitution = ts.updateModuleBlock(node as ts.ModuleBlock, statements);
+  //       break;
+  //     case this.kind[3]:
+  //       if (needsUpdate) substitution = ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements);
+  //       break;
+  //     case this.kind[4]:
+  //       if (needsUpdate) substitution = ts.updateDefaultClause(node as ts.DefaultClause, statements);
+  //       break;
+  //   }
+  //
+  //   return needsUpdate ? substitution : node;
+  // }
+  //
+  // // TODO: implement (or possible to use parent and push annotation to its array?)
+  // private mutateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
+  //   return [node];
+  // }
 
 }

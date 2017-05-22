@@ -5,10 +5,22 @@ export class VariableDeclarationListMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.VariableDeclarationList;
 
+  private skip = [
+    ts.SyntaxKind.ForOfStatement,
+    ts.SyntaxKind.ForInStatement,
+    ts.SyntaxKind.CatchClause,
+    ts.SyntaxKind.ImportClause
+  ];
+
   private constDeclaration: boolean;
 
   protected mutate(node: ts.VariableDeclarationList): ts.Node {
     if (!node.declarations) {
+      return node;
+    }
+
+    // TODO: assert within loop; make ForOfLoopMutator etc.
+    if (node.parent && this.skip.indexOf(node.parent.kind) !== -1) {
       return node;
     }
 
@@ -91,7 +103,7 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private declarationTypeIsInitializerType(node: ts.VariableDeclaration): boolean {
-    return this.context.typesAreCompatible(node.name, node.initializer);
+    return this.context.isSafeAssignment(node.name, node.initializer);
   }
 
   // private transformUntypedDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {

@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import { Factory } from '../factory';
+import { Scanner } from '../scanner';
 import { MutationContext } from '../context';
 
 export abstract class Mutator {
@@ -25,6 +26,12 @@ export abstract class Mutator {
       return node;
     }
 
+    const nodeAttributes = context.scanner.getAttributes(node);
+
+    if (nodeAttributes && nodeAttributes.typeAttributes.TSR_DECLARATION) {
+      return node;
+    }
+
     const substitution = this.mutate(node, context);
     context.addVisited(substitution);
 
@@ -41,6 +48,10 @@ export abstract class Mutator {
 
   get factory(): Factory {
     return this.context.factory;
+  }
+
+  get scanner(): Scanner {
+    return this.context.scanner;
   }
 
 }

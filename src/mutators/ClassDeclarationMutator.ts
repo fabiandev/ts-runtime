@@ -10,9 +10,11 @@ export class ClassDeclarationMutator extends Mutator {
   protected kind = ts.SyntaxKind.ClassDeclaration;
 
   protected mutate(node: ts.ClassDeclaration): ts.Node {
-    const members: ts.ClassElement[] = [];
-    const classReflection = this.factory.classReflection(node);
+    const nodeAttributes = this.scanner.getAttributes(node);
 
+    const members: ts.ClassElement[] = [];
+
+    const classReflection = this.factory.classReflection(node);
     const decorators = util.asNewArray(node.decorators);
     const decorator = ts.createDecorator(this.factory.annotate(classReflection));
     this.context.addVisited(decorator, true);
@@ -23,12 +25,16 @@ export class ClassDeclarationMutator extends Mutator {
         continue;
       }
 
+      // TODO: ignore if e.g. methoddeclaration and no body
+
       switch (member.kind) {
         case ts.SyntaxKind.Constructor:
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
-          member = this.mutateMethodDeclaration(member as FunctionLikeProperty);
+          if ((member as FunctionLikeProperty).body) {
+            member = this.mutateMethodDeclaration(member as FunctionLikeProperty);
+          }
           members.push(member);
           break;
         case ts.SyntaxKind.PropertyDeclaration:
@@ -39,6 +45,8 @@ export class ClassDeclarationMutator extends Mutator {
           members.push(member);
       }
     }
+
+    this.context.processed.push(nodeAttributes.type.symbol);
 
     return ts.updateClassDeclaration(
       node, decorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, members
@@ -54,8 +62,6 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private mutateMethodDeclaration(node: FunctionLikeProperty): FunctionLikeProperty {
-    let bodyStatements = util.asNewArray(node.body.statements);
-
     const bodyDeclarations: ts.Statement[] = [];
     const bodyAssertions: ts.Statement[] = [];
 
@@ -92,6 +98,10 @@ export class ClassDeclarationMutator extends Mutator {
       )
     );
 
+
+    let body = ts.updateBlock(node.body, this.factory.assertReturnStatements(node.body).statements);
+    let bodyStatements = body.statements;
+
     bodyStatements.unshift(...bodyAssertions);
     bodyStatements.unshift(...bodyDeclarations);
 
@@ -103,13 +113,11 @@ export class ClassDeclarationMutator extends Mutator {
       this.context.addVisited(declaration, true);
     });
 
-
-    let body;
-    body = ts.updateBlock(node.body, bodyStatements);
-    body = ts.updateBlock(body, this.factory.assertReturnStatements(body).statements);
+    body = ts.updateBlock(body, bodyStatements);
 
     let method: FunctionLikeProperty;
-    switch(node.kind) {
+
+    switch (node.kind) {
       case ts.SyntaxKind.Constructor:
         method = ts.updateConstructor(node as ts.ConstructorDeclaration, node.decorators, node.modifiers, node.parameters, body);
         break;
