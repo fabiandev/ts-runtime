@@ -103,6 +103,20 @@ export class MutationContext {
     return `${this.options.libNamespace}${this.options.libIdentifier}`;
   }
 
+  public getTypeSymbolDeclarationName(node: string | ts.BindingName): string {
+    const name = typeof node === 'string' ? node : node.getText();
+    return `${this.options.libNamespace}${name}TypeParametersSymbol`;
+  }
+
+  public getTypeSymbolDeclarationInitializer(node: string | ts.BindingName): string {
+    const name = typeof node === 'string' ? node : node.getText();
+    return `${name}TypeParameters`;
+  }
+
+  public getTypeParametersDeclarationName(): string {
+    return `${this.options.libNamespace}typeParameters`;
+  }
+
   // public getSymbol(node: ts.Node): ts.Symbol {
   //   return this.checker.getSymbolAtLocation(node);
   // }

@@ -4,60 +4,81 @@ import { Mutator } from './Mutator';
 
 export class BlockLikeMutator extends Mutator {
 
-  protected kind: ts.SyntaxKind[] = [];
+  protected kind = [
+    ts.SyntaxKind.SourceFile,
+    ts.SyntaxKind.Block,
+    ts.SyntaxKind.ModuleBlock,
+    ts.SyntaxKind.CaseClause,
+    ts.SyntaxKind.DefaultClause
+  ];
 
   protected mutate(node: ts.BlockLike): ts.BlockLike {
-    return node;
+    const statements: ts.Statement[] = [];
+
+    let substitution: ts.BlockLike;
+    let needsUpdate = false;
+
+    for (let statement of node.statements) {
+      if (statement.kind === ts.SyntaxKind.FunctionDeclaration) {
+        statements.push(...this.mutateFunctionDeclaration(statement as ts.FunctionDeclaration));
+        needsUpdate = true;
+        continue;
+      }
+
+      if (statement.kind === ts.SyntaxKind.ClassDeclaration) {
+        const typeParameters = (statement as ts.ClassDeclaration).typeParameters;
+        if (typeParameters && typeParameters.length > 0) {
+          statements.push(...this.mutateClassDeclaration(statement as ts.ClassDeclaration));
+          needsUpdate = true;
+          continue;
+        }
+      }
+
+      statements.push(statement);
+    }
+
+    if (needsUpdate) {
+      switch (node.kind) {
+        case this.kind[0]:
+          substitution = ts.updateSourceFileNode(node as ts.SourceFile, statements);
+          break;
+        case this.kind[1]:
+          substitution = ts.updateBlock(node as ts.Block, statements);
+          break;
+        case this.kind[2]:
+          substitution = ts.updateModuleBlock(node as ts.ModuleBlock, statements);
+          break;
+        case this.kind[3]:
+          substitution = ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements);
+          break;
+        case this.kind[4]:
+          substitution = ts.updateDefaultClause(node as ts.DefaultClause, statements);
+          break;
+      }
+    }
+
+    return needsUpdate ? substitution : node;
   }
 
-  // protected kind = [
-  //   ts.SyntaxKind.SourceFile,
-  //   ts.SyntaxKind.Block,
-  //   ts.SyntaxKind.ModuleBlock,
-  //   ts.SyntaxKind.CaseClause,
-  //   ts.SyntaxKind.DefaultClause
-  // ];
+  // TODO: implement (or possible to use parent and push annotation to its array?)
+  private mutateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
+    return [node];
+  }
 
-  // protected mutate(node: ts.BlockLike): ts.BlockLike {
-  //   const statements: ts.Statement[] = [];
-  //
-  //   let substitution: ts.BlockLike;
-  //   let needsUpdate = false;
-  //
-  //   for (let statement of node.statements) {
-  //     if (statement.kind === ts.SyntaxKind.FunctionDeclaration) {
-  //       statements.push(...this.mutateFunctionDeclaration(statement as ts.FunctionDeclaration));
-  //       needsUpdate = true;
-  //       continue;
-  //     }
-  //
-  //     statements.push(statement);
-  //   }
-  //
-  //   switch (node.kind) {
-  //     case this.kind[0]:
-  //       if (needsUpdate) substitution = ts.updateSourceFileNode(node as ts.SourceFile, statements);
-  //       break;
-  //     case this.kind[1]:
-  //       if (needsUpdate) substitution = ts.updateBlock(node as ts.Block, statements);
-  //       break;
-  //     case this.kind[2]:
-  //       if (needsUpdate) substitution = ts.updateModuleBlock(node as ts.ModuleBlock, statements);
-  //       break;
-  //     case this.kind[3]:
-  //       if (needsUpdate) substitution = ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements);
-  //       break;
-  //     case this.kind[4]:
-  //       if (needsUpdate) substitution = ts.updateDefaultClause(node as ts.DefaultClause, statements);
-  //       break;
-  //   }
-  //
-  //   return needsUpdate ? substitution : node;
-  // }
-  //
-  // // TODO: implement (or possible to use parent and push annotation to its array?)
-  // private mutateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
-  //   return [node];
-  // }
+  private mutateClassDeclaration(node: ts.ClassDeclaration): ts.Statement[] {
+    const statement = ts.createVariableStatement(
+      undefined,
+      ts.createVariableDeclarationList([ts.createVariableDeclaration(
+        this.context.getTypeSymbolDeclarationName(node.name),
+        undefined,
+        ts.createCall(
+          ts.createIdentifier('Symbol'),
+          undefined,
+          [ts.createLiteral(this.context.getTypeSymbolDeclarationInitializer(node.name))]
+        )
+      )], ts.NodeFlags.Const));
+
+    return [statement, node];
+  }
 
 }

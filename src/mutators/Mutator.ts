@@ -33,7 +33,7 @@ export abstract class Mutator {
     }
 
     const substitution = this.mutate(node, context);
-    context.addVisited(substitution);
+    // context.addVisited(substitution);
 
     return substitution;
   }

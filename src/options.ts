@@ -12,10 +12,13 @@ export interface Options {
 
 export const defaultOptions: Options = {
   compilerOptions: {
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
     module: ts.ModuleKind.ES2015,
-    target: ts.ScriptTarget.ESNext,
+    target: ts.ScriptTarget.ES2015,
+    lib: ["lib.esnext.d.ts"],
     strictNullChecks: true,
     experimentalDecorators: true,
+    sourceMap: true,
     // emitDecoratorMetadata: true,
   },
   finishOnError: false,

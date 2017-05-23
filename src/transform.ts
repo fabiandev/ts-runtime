@@ -31,7 +31,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   let host: ts.CompilerHost;
   let program: ts.Program;
   let scanner: Scanner;
-  let mutationContext: MutationContext;
+  let context: MutationContext;
   let currentSourceFile: ts.SourceFile;
 
   return startTransformation();
@@ -172,14 +172,14 @@ function transformProgram(entryFile: string, options?: Options): void {
     return check(emitResult.diagnostics, options.log);
   }
 
-  function createMutationContext(node: ts.Node, context: ts.TransformationContext): void {
+  function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
     if (node.kind === ts.SyntaxKind.SourceFile && currentSourceFile !== node) {
       currentSourceFile = node as ts.SourceFile;
-      mutationContext = new MutationContext(node as ts.SourceFile, options, program, host, scanner, context);
+      context = new MutationContext(node as ts.SourceFile, options, program, host, scanner, transformationContext);
     }
   }
 
-  function firstPassTransformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
+  function firstPassTransformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visited: ts.Node[] = [];
 
     const declarationCanHaveType = (node: ts.Node) => {
@@ -205,19 +205,19 @@ function transformProgram(entryFile: string, options?: Options): void {
     };
 
     const getImplicitTypeNode = (node: ts.Node) => {
-      const type = mutationContext.checker.getTypeAtLocation(node);
-      return type ? mutationContext.checker.typeToTypeNode(type): void 0;
-      // return mutationContext.scanner.getAttributes((node as any).name || node).typeNode;
+      const type = context.checker.getTypeAtLocation(node);
+      return type ? context.checker.typeToTypeNode(type) : void 0;
+      // return context.scanner.getAttributes((node as any).name || node).typeNode;
     }
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (!node ||  mutationContext.wasVisited(node)) {
+      if (!node || context.wasVisited(node)) {
         return node;
       }
 
       if (node.kind === ts.SyntaxKind.AsExpression) {
-        return mutationContext.addVisited(
-          mutationContext.factory.typeReflectionAndAssertion(
+        return context.addVisited(
+          context.factory.typeReflectionAndAssertion(
             (node as ts.AsExpression).type,
             (node as ts.AsExpression).expression
           ), true);
@@ -255,62 +255,71 @@ function transformProgram(entryFile: string, options?: Options): void {
         if (type) {
           (node as any).type = type;
           util.setParent(node);
-          mutationContext.addVisited(type, true);
+          context.addVisited(type, true);
         }
       }
 
-      mutationContext.addVisited(node);
-      return ts.visitEachChild(node, visitor, context);
+      context.addVisited(node);
+      return ts.visitEachChild(node, visitor, transformationContext);
     };
 
     return (sf: ts.SourceFile) => {
-      createMutationContext(sf, context);
+      createMutationContext(sf, transformationContext);
       return ts.visitNode(sf, visitor);
     };
   }
 
-  function transformer(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
+  function transformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       const original = node;
 
-      node = ts.visitEachChild(node, visitor, context);
+      node = ts.visitEachChild(node, visitor, transformationContext);
 
       if (node !== original) {
-        mutationContext.scanner.mapNode(original, node);
+        context.scanner.mapNode(original, node);
       }
 
       debugText('~~~~~~~~~~~~~~~~~~~~~');
       debugText('Before Mutation:');
       debugText('~~~~~~~~~~~~~~~~~~~~~');
-      debugNodeAttributes(node, mutationContext);
-      debugNodeText(node, mutationContext);
+      debugNodeAttributes(node, context);
+      debugNodeText(node, context);
 
       for (let mutator of mutators) {
-        node = mutator.mutateNode(node, mutationContext);
+        node = mutator.mutateNode(node, context);
       }
 
       if (!node) {
         return node;
       }
 
-      node.parent = original.parent;
-      util.setParent(node);
+      if (!node.parent) {
+        node.parent = original.parent;
+      }
 
-      mutationContext.addVisited(node);
+      if (node.kind === ts.SyntaxKind.ClassDeclaration) {
+        console.log();
+        console.log((node as any).name.getText());
+        console.log(node.parent.getText());
+        console.log(!!node.parent, (node as any).parent.statements.length);
+      }
+
+      util.setParent(node);
+      // context.addVisited(node);
 
       debugSpaces();
       debugText('~~~~~~~~~~~~~~~~~~~~~');
       debugText('After Mutation:');
       debugText('~~~~~~~~~~~~~~~~~~~~~');
-      debugNodeAttributes(node, mutationContext);
-      debugNodeText(node, mutationContext);
+      debugNodeAttributes(node, context);
+      debugNodeText(node, context);
       debugSpaces(3);
 
       return node;
     };
 
     return (sf: ts.SourceFile) => {
-      createMutationContext(sf, context);
+      createMutationContext(sf, transformationContext);
       return ts.visitNode(sf, visitor);
     }
   }
@@ -376,18 +385,18 @@ function debugSpaces(spaces: number = 1): void {
   console.log(Array(Math.abs(spaces) + 1).join('\n'));
 }
 
-function debugNodeAttributes(node: ts.Node, mutationContext: MutationContext): void {
+function debugNodeAttributes(node: ts.Node, context: MutationContext): void {
   if (!DEBUG) return;
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
-    console.log(`Implicit Type: ${mutationContext.scanner.getAttributes(node).typeNode}`);
+    console.log(`Implicit Type: ${context.scanner.getAttributes(node).typeNode}`);
   } catch (e) {
     console.log('Implicit Type:');
   }
-  console.log(`Visited: ${mutationContext.wasVisited(node) ? 'Yes' : 'No'}`);
+  console.log(`Visited: ${context.wasVisited(node) ? 'Yes' : 'No'}`);
   // console.log(`Scope: ${scopeKind}`);
   console.log(`Synthesized: ${node.flags === ts.NodeFlags.Synthesized ? 'Yes' : 'No'}`);
-  console.log(`File: ${mutationContext.sourceFile.fileName}`);
+  console.log(`File: ${context.sourceFile.fileName}`);
 }
 
 function debugNodeText(node: ts.Node, mutstionContext: MutationContext): void {

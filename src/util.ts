@@ -83,8 +83,62 @@ export function isDeclaration(node: ts.Node): boolean {
   return false
 }
 
-export function isStaticClassElement(node: ts.ClassElement): boolean {
-  return !node.modifiers ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
+export function isStaticClassElement(node: ts.Node): boolean {
+  return !Array.isArray(node.modifiers) ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
+}
+
+export function isTypeParameter(node: ts.TypeReferenceNode): boolean {
+  const nodeName = node.getText();
+
+  while(node = node.parent as any) {
+    if ((node as any).typeParameters && (node as any).typeParameters.length > 0) {
+      if ((node as any).typeParameters.find((param: ts.TypeParameterDeclaration) => {
+        return param.name.getText() === nodeName;
+      })) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+export function isTypeParameterOf(node: ts.TypeNode, typeParameters: ts.TypeParameterDeclaration[]) {
+  if (node.kind !== ts.SyntaxKind.TypeReference) {
+    return false;
+  }
+
+  const nodeName = (node as ts.TypeReferenceNode).getText();
+
+  for (let typeParameter of typeParameters) {
+
+    if (typeParameter.name.getText() === nodeName) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isTypeParameterOfClass(node: ts.TypeReferenceNode): ts.ClassDeclaration {
+  let current = node as ts.Node;
+  while (current = current.parent) {
+    if (current.kind as ts.SyntaxKind === ts.SyntaxKind.ClassDeclaration) {
+      if (isTypeParameterOf(node, (current as ts.ClassDeclaration).typeParameters || [])) {
+        return current as ts.ClassDeclaration;
+      }
+
+      return null;
+    }
+  }
+
+  return null;
+}
+
+export function isSuperStatement(node: ts.Node): boolean {
+  return node.kind === ts.SyntaxKind.ExpressionStatement &&
+    (node as any).expression.kind === ts.SyntaxKind.CallExpression &&
+    (node as any).expression.expression.kind === ts.SyntaxKind.SuperKeyword;
 }
 
 // function isAmbientNode(node: ts.Node) {

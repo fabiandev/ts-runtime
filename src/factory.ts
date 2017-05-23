@@ -2,6 +2,11 @@ import * as ts from 'typescript';
 import * as util from './util';
 import { MutationContext } from './context';
 
+export enum ReflectionContext {
+  None,
+  Return
+}
+
 export class Factory {
 
   private _context: MutationContext;
@@ -9,6 +14,7 @@ export class Factory {
   private _lib: string;
   private _namespace: string;
   private _load: string;
+  private _reflectionContext: ReflectionContext;
 
   // TODO: check ts.SyntaxKind.QualifiedName (e.g. B.One if B is an enum)
 
@@ -18,9 +24,12 @@ export class Factory {
     this._namespace = namespace;
     this._strictNullChecks = strictNullChecks;
     this._load = load;
+    this._reflectionContext = undefined;
   }
 
-  public typeReflection(node: ts.TypeNode): ts.Expression {
+  public typeReflection(node: ts.TypeNode, reflectionContext: ReflectionContext = ReflectionContext.None): ts.Expression {
+    this._reflectionContext = reflectionContext;
+
     if (!node) {
       return this.anyTypeReflection();
     }
@@ -102,18 +111,6 @@ export class Factory {
 
   public classReflection(node: ts.ClassDeclaration): ts.Expression {
     let args = util.asArray(this.typeLiteralReflection(node));
-
-    const implementsClause = util.getImplementsClause(node);
-    const extendsClause = util.getExtendsClause(node);
-
-    if (implementsClause && implementsClause.types && implementsClause.types.length > 0) {
-      args = util.asArray(this.intersect([...implementsClause.types.map(t => t.expression as ts.Expression), ...args]));
-    }
-
-    if (extendsClause && extendsClause.types && extendsClause.types.length > 0) {
-      args.unshift(this.libCall('extends', extendsClause.types[0].expression));
-    }
-
     return this.typeAliasReflection(node.name, args, 'class');
   }
 
@@ -149,20 +146,81 @@ export class Factory {
           }
         }
 
-        let typeAliasExpressions: ts.Expression = this.asObject(
-          this.mergedElementsReflection(elements)
+        let reflection: ts.Expression = this.asObject(
+          this.elementsReflection(elements)
         );
 
-        if (this.context.hasSelfReference(node)) {
-          typeAliasExpressions = this.selfReference(node.name, typeAliasExpressions);
+        let args = [reflection];
+
+        if (node.kind === ts.SyntaxKind.ClassDeclaration) {
+          const implementsClause = util.getImplementsClause(node);
+          const extendsClause = util.getExtendsClause(node);
+
+          if (implementsClause && implementsClause.types && implementsClause.types.length > 0) {
+            args = util.asArray(this.intersect([...implementsClause.types.map(t => t.expression as ts.Expression), ...args]));
+          }
+
+          if (extendsClause && extendsClause.types && extendsClause.types.length > 0) {
+            args.unshift(this.libCall('extends', extendsClause.types[0].expression));
+          }
         }
 
-        return typeAliasExpressions;
+        if (node.kind as ts.SyntaxKind !== ts.SyntaxKind.TypeLiteral) {
+          const hasSelfReference = this.context.hasSelfReference(node);
+          const hasTypeParameters = node.typeParameters && node.typeParameters.length > 0;
+
+          if (hasSelfReference || hasTypeParameters) {
+            if (hasTypeParameters) {
+
+              const statements: ts.Statement[] = [];
+              const nodeName = node.name.getText();
+
+              for (let typeParameter of node.typeParameters) {
+                statements.push(this.typeParameterDeclaration(typeParameter, nodeName));
+              }
+
+              statements.push(ts.createReturn(ts.createArrayLiteral(args)));
+
+              const block = ts.createBlock(statements, true);
+
+              reflection = this.selfReference(node.name, block);
+            } else {
+              reflection = this.selfReference(node.name, ts.createArrayLiteral(args));
+            }
+          }
+        }
+
+        return reflection;
       case ts.SyntaxKind.TypeLiteral:
         return this.nullable(this.libCall('object', this.elementsReflection(node.members)));
       default:
         throw new Error(`No possible type literal reflection for ${ts.SyntaxKind[(node as any).kind]} found.`);
     }
+  }
+
+  public typeParameterReflection(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Expression {
+    const args: ts.Expression[] = [
+      ts.createLiteral(typeParameter.name)
+    ];
+
+    if (typeParameter.constraint) {
+      args.push(this.typeReflection(typeParameter.constraint))
+    }
+
+    if (typeParameter.default) {
+      if (!typeParameter.constraint) {
+        args.push(ts.createVoidZero());
+      }
+
+      args.push(this.typeReflection(typeParameter.default))
+    }
+
+    return this.propertyAccessCall(prop, 'typeParameter', args);
+  }
+
+  public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Statement {
+    const callExpression = this.typeParameterReflection(typeParameter, prop);
+    return ts.createVariableStatement(undefined, ts.createVariableDeclarationList([ts.createVariableDeclaration(typeParameter.name, undefined, callExpression)], ts.NodeFlags.Const));
   }
 
   // TODO: handle ComputedPropertyName
@@ -295,26 +353,85 @@ export class Factory {
     const typeNameText: string = node.typeName.getText();
     const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => this.typeReflection(n));
 
+    let isTypeParameter: boolean;
+    let isClassTypeParameter: boolean;
+    let isReturnContext: boolean;
+    let classTypeParameterReflection: ts.Expression;
+
     if (typeNameText.toLowerCase() !== 'array') {
       let identifier: ts.Expression = asLiteral ? ts.createLiteral(typeNameText) : ts.createIdentifier(typeNameText);
 
+      isTypeParameter = util.isTypeParameter(node);
+      isClassTypeParameter = false;
+      isReturnContext = this.reflectionContext === ReflectionContext.Return;
+
       // TODO: check if self-referencing
       // TODO: no tdz if exists
-      if (!asLiteral/* && !this.context.wasDeclared(node.typeName)*/) {
+      if (!isTypeParameter && !asLiteral && !this.context.wasDeclared(node.typeName)) {
         identifier = this.tdz(identifier as ts.Identifier);
       }
 
       keyword = 'ref';
+
+      if (isTypeParameter) {
+        const parentClass = util.isTypeParameterOfClass(node);
+
+        if (parentClass !== null) {
+          isClassTypeParameter = true;
+          classTypeParameterReflection = this.flowInto(
+                  ts.createPropertyAccess(
+                    ts.createElementAccess(
+                      ts.createThis(),
+                      ts.createIdentifier(this.context.getTypeSymbolDeclarationName(parentClass.name))
+                    ),
+                    typeNameText
+                  )
+              );
+        } else if (!isReturnContext) {
+          keyword = 'flowInto';
+        }
+      }
+
+      // if (isTypeParameter && !isReturnContext) {
+      //   keyword = 'flowInto';
+      // }
+
       args.unshift(identifier);
     }
 
-    return this.nullable(this.libCall(keyword, args));
+    return this.nullable(isClassTypeParameter ? classTypeParameterReflection : isTypeParameter && isReturnContext ? args[0] : this.libCall(keyword, args));
   }
 
-  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration, isClass = false): ts.Expression {
-    const isStatic = util.isStaticClassElement(node as ts.ClassElement);
-    const args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
+  public flowInto(args: ts.Expression | ts.Expression[]) {
+    return this.libCall('flowInto', args);
+  }
+
+  public methodTypeReflection(node: ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration): ts.Expression {
+    const isStatic = util.isStaticClassElement(node);
+
+    return this.libCall(isStatic ? 'staticProperty' : 'property', [
+      this.propertyNameToLiteralOrExpression(node.name),
+      this.functionTypeReflection(node)
+    ]);
+  }
+
+  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration): ts.Expression {
+    let args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
     args.push(this.returnTypeReflection(node.type));
+
+    if (node.typeParameters && node.typeParameters.length > 0) {
+      const statements: ts.Statement[] = [];
+
+      for (let typeParameter of node.typeParameters) {
+        statements.push(this.typeParameterDeclaration(typeParameter, `${this.namespace}fn`));
+      }
+
+      statements.push(ts.createReturn(ts.createArrayLiteral(args)));
+
+      const block = ts.createBlock(statements, true);
+
+      args = [this.selfReference(`${this.namespace}fn`, block)];
+    }
 
     // if (isClass) {
     //   const isStatic = util.isStaticClassElement(node as ts.ClassElement);
@@ -325,16 +442,13 @@ export class Factory {
     //   ]);
     // }
 
-    return this.libCall(isStatic ? 'staticProperty' : 'property', [
-      this.propertyNameToLiteralOrExpression(node.name),
-      this.nullable(this.libCall('function', args))
-    ]);
+    return this.nullable(this.libCall('function', args));
   }
 
-  public parameterReflection(param: ts.ParameterDeclaration) {
+  public parameterReflection(param: ts.ParameterDeclaration, reflectType = true) {
     const parameter: ts.Expression[] = [
       this.declarationNameToLiteralOrExpression(param.name),
-      this.typeReflection(param.type)
+      reflectType ? this.typeReflection(param.type) : ts.createIdentifier(this.context.getTypeDeclarationName(param.name))
     ];
 
     if (param.questionToken) {
@@ -483,18 +597,18 @@ export class Factory {
 }
 
   public returnTypeReflection(node: ts.TypeNode): ts.Expression {
-  return this.libCall('return', this.typeReflection(node));
+  return this.libCall('return', this.typeReflection(node, ReflectionContext.Return));
 }
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
-  return this.functionTypeReflection(node);
+  return this.methodTypeReflection(node);
 }
 
   public typeQueryReflection(node: ts.TypeQueryNode): ts.Expression {
   return this.nullable(this.libCall('typeOf', ts.createIdentifier(node.exprName.getText())));
 }
 
-public elementReflection(node: ts.TypeElement | ts.ClassElement, isClass = false): ts.Expression {
+public elementReflection(node: ts.TypeElement | ts.ClassElement): ts.Expression {
   switch (node.kind) {
     case ts.SyntaxKind.Constructor:
       return this.constructorReflection(node as ts.ConstructorDeclaration);
@@ -502,7 +616,7 @@ public elementReflection(node: ts.TypeElement | ts.ClassElement, isClass = false
       return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
     case ts.SyntaxKind.PropertySignature:
     case ts.SyntaxKind.PropertyDeclaration:
-      return this.propertySignatureReflection(node as ts.PropertySignature, isClass);
+      return this.propertySignatureReflection(node as ts.PropertySignature);
     case ts.SyntaxKind.CallSignature:
       return this.callSignatureReflection(node as ts.CallSignatureDeclaration);
     case ts.SyntaxKind.ConstructSignature:
@@ -511,15 +625,15 @@ public elementReflection(node: ts.TypeElement | ts.ClassElement, isClass = false
     case ts.SyntaxKind.MethodDeclaration:
     case ts.SyntaxKind.GetAccessor:
     case ts.SyntaxKind.SetAccessor:
-      return this.functionTypeReflection(node as ts.MethodSignature, isClass);
+      return this.methodTypeReflection(node as ts.MethodSignature);
     default:
       throw new Error(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
   }
 }
 
-  public elementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], merge = true, isClass = false): ts.Expression[] {
-  if (merge) return this.mergedElementsReflection(nodes, isClass);
-  return nodes.map(node => this.elementReflection(node, isClass));
+  public elementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], merge = true): ts.Expression[] {
+  if (merge) return this.mergedElementsReflection(nodes);
+  return nodes.map(node => this.elementReflection(node));
 }
 
 //   public typeElementReflection(node: ts.TypeElement | ts.ClassElement): ts.Expression {
@@ -682,7 +796,7 @@ public elementReflection(node: ts.TypeElement | ts.ClassElement, isClass = false
 //   return elements;
 // }
 
-public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isClass = false): ts.Expression[] {
+private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): ts.Expression[] {
   const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
 
   let elements = nodes.map(node => {
@@ -718,7 +832,7 @@ public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isC
         }
     }
 
-    return this.elementReflection(node, isClass);
+    return this.elementReflection(node);
   }).filter(element => !!element);
 
   mergeGroups.forEach((group, name) => {
@@ -815,7 +929,7 @@ public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isC
     }
 
 
-    elements.push(this.elementReflection(mergedSignature, isClass));
+    elements.push(this.elementReflection(mergedSignature));
   });
 
   return elements;
@@ -951,7 +1065,7 @@ public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isC
   ]);
 }
 
-  public propertySignatureReflection(node: ts.PropertySignature | ts.PropertyDeclaration, isClass = false): ts.Expression {
+  public propertySignatureReflection(node: ts.PropertySignature | ts.PropertyDeclaration): ts.Expression {
   const args: ts.Expression[] = [
     this.propertyNameToLiteralOrExpression(node.name),
     this.typeReflection(node.type)
@@ -966,7 +1080,7 @@ public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isC
 }
 
   public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration, noStrictNullCheck = true): ts.Expression {
-  return this.libCall('callProperty', this.functionTypeReflection(node, noStrictNullCheck));
+  return this.libCall('callProperty', this.methodTypeReflection(node));
 }
 
   public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
@@ -976,7 +1090,7 @@ public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isC
 //   public methodSignatureReflection(node: ts.MethodSignature, isClass: boolean): ts.Expression {
 //   return this.libCall('property', [
 //     this.propertyNameToLiteralOrExpression(node.name),
-//     this.functionTypeReflection(node, isClass)
+//     this.methodTypeReflection(node, isClass)
 //   ]);
 // }
 
@@ -1053,7 +1167,7 @@ public mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[], isC
   );
 }
 
-  public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.Expression): ts.Expression {
+  public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.ConciseBody): ts.Expression {
   return ts.createArrowFunction(
     undefined, undefined, [ts.createParameter(undefined, undefined, undefined, name)], undefined,
     ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
@@ -1145,6 +1259,10 @@ get namespace(): string {
 
 set namespace(namespace: string) {
   this._namespace = namespace;
+}
+
+private get reflectionContext(): ReflectionContext {
+  return this._reflectionContext;
 }
 
 }
