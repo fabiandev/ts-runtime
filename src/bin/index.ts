@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 Error.stackTraceLimit = Infinity;
+
 import './handlers';
 import * as path from 'path';
 import * as ts from 'typescript';
@@ -7,9 +8,10 @@ import * as program from 'commander';
 import { Options, defaultOptions } from '../options';
 import { transform, getOptions } from '../transform';
 import * as bus from '../bus';
+import * as util from './util';
 
 const pkg = require('../../package.json');
-const options: Options = { log: false, compilerOptions: {} };
+const options: Options = Object.assign({}, defaultOptions);
 let compilerOptions: string = '{}';
 
 function defaultAction() {
@@ -17,20 +19,26 @@ function defaultAction() {
     .filter(arg => typeof arg === 'string')
     .map(file => path.normalize(file));
 
+  // TODO: fail w/o stacktrace
   if (files.length === 0) {
-    // TODO: abort, no files
+    throw new util.TsrError('Missing entry file to transform.');
   }
 
   const entryFile: string = files[0];
   const basePath = path.dirname(entryFile);
 
+  options.log = false;
+
   const opts = ts.convertCompilerOptionsFromJson(JSON.parse(compilerOptions), basePath);
 
-  if (opts.errors.length > 0) {
-    // TODO: abort, compiler options error
-  }
-
   options.compilerOptions = opts.options;
+
+  bus.emitter.emit(bus.events.INTERNAL_OPTIONS, options);
+
+  // TODO: fail w/o stacktrace
+  if (opts.errors.length > 0) {
+    throw new util.TsrError('Could not parse compiler options.');
+  }
 
   transform(entryFile, options);
   process.exit();
@@ -60,6 +68,10 @@ function setCompilerOptions(opts: string) {
   compilerOptions = opts;
 }
 
+function setStackTrace(limit?: number) {
+  options.stackTrace = limit !== 0 && !limit ? 3 : limit;
+}
+
 program
   .version(pkg.version, '-v, --version')
   .description(`---------  ts-runtime  ---------
@@ -67,11 +79,12 @@ program
   your  TypeScript  applications.
   --------------------------------`)
   .usage('[options] <file>')
-  .option('-c --compiler-options <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
+  .option('-c, --compiler-options <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
   .option('-k, --keep-temp-files', 'keep temporary files. default to false', setKeepTempFiles)
-  .option('-l --lib <name>', 'lib import name. defaults to t', setLib)
-  .option('-n --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
+  .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
+  .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
+  .option('-s, --stack-trace [limit]', 'show stack trace of errors with an optional limit. defaults to 3', setStackTrace)
   .option('-t, --temp-folder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
   .on('--help', () => {
     console.log('  Examples:');

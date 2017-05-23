@@ -3,9 +3,16 @@ import * as path from 'path';
 import * as ts from 'typescript';
 import * as bus from '../bus';
 import * as util from './util';
+import { Options } from '../options';
 
 const child = cp.fork(path.join(__dirname, './status'));
 let childIsRunning = true;
+
+let options: Options;
+
+bus.emitter.on(bus.events.INTERNAL_OPTIONS, (opts: Options) => {
+  options = opts;
+});
 
 function killChild(exitOtherwise = true) {
   if (childIsRunning) {
@@ -34,7 +41,7 @@ child.on('exit', code => {
 
 function handleError(error: string | Error) {
   if (childIsRunning) {
-    child.send({ message: 'error', payload: util.getError(error) });
+    child.send({ message: 'error', payload: util.getError(error, options) });
   } else {
     process.exit(1);
   }
