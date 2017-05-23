@@ -9,6 +9,7 @@ export interface ScanTypeAttributes {
   isExternal: boolean;
   isAmbient: boolean;
   isDeclaration: boolean;
+  isInDeclarationFile: boolean;
   symbol: ts.Symbol;
   // type: ts.Type;
   // node: ts.TypeNode;
@@ -41,7 +42,7 @@ export class Scanner {
   private _symbolMap: Map<ts.Symbol, ts.Node>;
   private _sourceFileMap: Map<ts.SourceFile, Set<ts.Node>>;
   private _propertiesTable: Map<ts.Node, ScanAttributes>;
-  // private _declarationsTable: Array<ts.Node>;
+  private _declarationsTable: Map<ts.Symbol, string[]>;
 
   private _incompatibleKinds = [
     ts.SyntaxKind.ImportClause
@@ -53,7 +54,7 @@ export class Scanner {
     this._symbolMap = new Map();
     this._sourceFileMap = new Map();
     this._propertiesTable = new Map();
-    // this._declarationsTable = new Map();
+    this._declarationsTable = new Map();
 
     if (!defer) {
       this.scan();
@@ -114,35 +115,35 @@ export class Scanner {
       }
 
       if (type) {
-        if (node.kind === ts.SyntaxKind.ClassDeclaration || node.kind === ts.SyntaxKind.InterfaceDeclaration) {
-          try {
-            let t = type;
-            console.log(this._checker.typeToString(t));
-
-            t.getProperties().forEach(prop => {
-                 console.log(prop.getName());
-                 let resolvedPropertyType = this._checker.getTypeOfSymbolAtLocation(prop, node);
-                 let resolvedTypeNode = this._checker.typeToTypeNode(resolvedPropertyType);
-                 console.log(ts.SyntaxKind[resolvedTypeNode.kind]);
-                 // let refl = this._checker
-                 // console.log((resolvedTypeNode as ts.TypeLiteralNode));
-                 console.log(this._checker.typeToString(resolvedPropertyType));
-                 console.log();
-            });
-
-            // console.log(type.getApparentProperties().map(prop => {
-            //   // this._checker.getAugmentedPropertiesOfType()
-            //   //console.log(prop)
-            //   // console.log(this._checker.signatureToString(this._checker.getSignatureFromDeclaration(prop.valueDeclaration as ts.SignatureDeclaration)));
-            //   // console.log(this._checker.typeToString(this._checker.getDeclaredTypeOfSymbol(prop)));
-            //
-            //   return prop.getName();
-            // }));
-            // console.log(type.symbol.declarations.length);
-            console.log('---------');
-            console.log();
-          } catch (e) { }
-        }
+        // if (node.kind === ts.SyntaxKind.ClassDeclaration || node.kind === ts.SyntaxKind.InterfaceDeclaration) {
+        //   try {
+        //     let t = type;
+        //     console.log(this._checker.typeToString(t));
+        //
+        //     t.getProperties().forEach(prop => {
+        //          console.log(prop.getName());
+        //          let resolvedPropertyType = this._checker.getTypeOfSymbolAtLocation(prop, node);
+        //          let resolvedTypeNode = this._checker.typeToTypeNode(resolvedPropertyType);
+        //          console.log(ts.SyntaxKind[resolvedTypeNode.kind]);
+        //          // let refl = this._checker
+        //          // console.log((resolvedTypeNode as ts.TypeLiteralNode));
+        //          console.log(this._checker.typeToString(resolvedPropertyType));
+        //          console.log();
+        //     });
+        //
+        //     // console.log(type.getApparentProperties().map(prop => {
+        //     //   // this._checker.getAugmentedPropertiesOfType()
+        //     //   //console.log(prop)
+        //     //   // console.log(this._checker.signatureToString(this._checker.getSignatureFromDeclaration(prop.valueDeclaration as ts.SignatureDeclaration)));
+        //     //   // console.log(this._checker.typeToString(this._checker.getDeclaredTypeOfSymbol(prop)));
+        //     //
+        //     //   return prop.getName();
+        //     // }));
+        //     // console.log(type.symbol.declarations.length);
+        //     console.log('---------');
+        //     console.log();
+        //   } catch (e) { }
+        // }
         typeNode = this._checker.typeToTypeNode(type, node.parent);
         typeText = this._checker.typeToString(type);
       }
@@ -153,6 +154,7 @@ export class Scanner {
       let typeIsReference = type && typeNode ? typeNode.kind === ts.SyntaxKind.TypeReference : false;
       let typeReferenceIsAmbient = false;
       let typeReferenceIsDeclaration = false;
+      let typeReferenceIsInDeclarationFile = false;
       let typeReferenceIsExternal = false;
       let typeIsLiteral = !typeNode ? false : util.isLiteral(typeNode);
       let typeDeclarations: ts.Declaration[] = [];
@@ -172,8 +174,13 @@ export class Scanner {
         typeDeclarations = type.symbol.declarations;
 
         typeReferenceIsAmbient = util.isAmbient(firstDeclaration);
-        typeReferenceIsDeclaration = sf.isDeclarationFile || util.isDeclaration(firstDeclaration);
+        typeReferenceIsDeclaration = util.isDeclaration(firstDeclaration);
+        typeReferenceIsInDeclarationFile = sf.isDeclarationFile;
         typeReferenceIsExternal = this.pathIsExternal(sf.fileName);
+      }
+
+      if (typeReferenceIsInDeclarationFile) {
+
       }
 
       // if (typeIsReference && typeReferenceIsAmbient && typeReferenceIsExternal) {
@@ -181,12 +188,12 @@ export class Scanner {
       // }
 
       const TSR_DECLARATION = typeIsReference &&
-        ((typeReferenceIsExternal && (typeReferenceIsAmbient || typeReferenceIsDeclaration)) ||
-          (!typeReferenceIsExternal && typeReferenceIsDeclaration));
+        ((typeReferenceIsExternal && (typeReferenceIsAmbient || typeReferenceIsDeclaration || typeReferenceIsInDeclarationFile)) ||
+          (!typeReferenceIsExternal && (typeReferenceIsDeclaration || typeReferenceIsInDeclarationFile)));
 
       // if (TSR_DECLARATION) {
-      //   if (!this._declarationsTable.has(node)) {
-      //
+      //   if (!this._declarationsTable.has(type.symbol)) {
+      //     this._declarationsTable.set(type.symbol, [])
       //   }
       // }
 
@@ -197,6 +204,7 @@ export class Scanner {
         isLiteral: typeIsLiteral,
         isAmbient: typeReferenceIsAmbient,
         isDeclaration: typeReferenceIsDeclaration,
+        isInDeclarationFile: typeReferenceIsInDeclarationFile,
         isExternal: typeReferenceIsExternal,
         symbol: type ? type.symbol : void 0,
         // type: type,

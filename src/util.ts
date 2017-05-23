@@ -18,7 +18,7 @@ export function asArray<T>(value: T | T[]): T[] {
 }
 
 export function asNewArray<T>(value: T | T[]): T[] {
-  return Array.isArray(value) ? value.length > 1 ? [...value] : [] : !value ? [] : [value];
+  return Array.isArray(value) ? value.length > 0 ? [...value] : [] : !value ? [] : [value];
 }
 
 export function setParent(node: ts.Node): void {

@@ -11,8 +11,11 @@ export abstract class Mutator {
 
   protected context: MutationContext;
 
+  protected node: ts.Node;
+
   public mutateNode(node: ts.Node, context: MutationContext): ts.Node {
     this.context = context;
+    this.node = node;
 
     if (!node) {
       return node;

@@ -297,12 +297,12 @@ function transformProgram(entryFile: string, options?: Options): void {
         node.parent = original.parent;
       }
 
-      if (node.kind === ts.SyntaxKind.ClassDeclaration) {
-        console.log();
-        console.log((node as any).name.getText());
-        console.log(node.parent.getText());
-        console.log(!!node.parent, (node as any).parent.statements.length);
-      }
+      // if (node.kind === ts.SyntaxKind.ClassDeclaration) {
+      //   console.log();
+      //   console.log((node as any).name.getText());
+      //   console.log(node.parent.getText());
+      //   console.log(!!node.parent, (node as any).parent.statements.length);
+      // }
 
       util.setParent(node);
       // context.addVisited(node);

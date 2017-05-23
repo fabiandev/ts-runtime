@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import * as util from '../util';
 import { Mutator } from './Mutator';
 
-type FunctionLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
+type MethodLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
 export class ClassDeclarationMutator extends Mutator {
@@ -10,15 +10,7 @@ export class ClassDeclarationMutator extends Mutator {
   protected kind = ts.SyntaxKind.ClassDeclaration;
 
   protected mutate(node: ts.ClassDeclaration): ts.Node {
-    const nodeAttributes = this.scanner.getAttributes(node);
-
-    let members: ts.ClassElement[] = [];
-
-    const classReflection = this.factory.classReflection(node);
-    const decorators = util.asNewArray(node.decorators);
-    const decorator = ts.createDecorator(this.factory.annotate(classReflection));
-    this.context.addVisited(decorator, true);
-    decorators.unshift(decorator);
+    const members: ts.ClassElement[] = [];
 
     for (let member of node.members) {
       switch (member.kind) {
@@ -26,10 +18,7 @@ export class ClassDeclarationMutator extends Mutator {
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
-          if ((member as FunctionLikeProperty).body) {
-            member = this.mutateMethodDeclaration(member as FunctionLikeProperty, node);
-          }
-          members.push(member);
+          members.push(this.mutateMethodDeclaration(member as MethodLikeProperty, node));
           break;
         case ts.SyntaxKind.PropertyDeclaration:
           members.push(this.mutatePropertyDeclaration(member as ts.PropertyDeclaration));
@@ -40,86 +29,70 @@ export class ClassDeclarationMutator extends Mutator {
       }
     }
 
-    members = this.assertImplementing(node, members);
-
-    if (node.typeParameters && node.typeParameters.length > 0) {
-      members = this.declareTypeParameters(node, members);
-    }
-
-    this.context.processed.push(nodeAttributes.type.symbol);
+    this.assertImplementing(node, members);
+    this.declareTypeParameters(node, members);
+    this.setProcessed(node);
 
     return ts.updateClassDeclaration(
-      node, decorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, members
+      node, this.reflectClass(node), node.modifiers, node.name,
+      node.typeParameters, node.heritageClauses, members
     );
+  }
+
+  private setProcessed(node: ts.ClassDeclaration) {
+    const nodeAttributes = this.scanner.getAttributes(node);
+    this.context.processed.push(nodeAttributes.type.symbol);
+  }
+
+  private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
+    const classReflection = this.factory.classReflection(node);
+    const decorators = util.asNewArray(node.decorators);
+    const decorator = ts.createDecorator(this.factory.annotate(classReflection));
+
+    decorators.unshift(decorator);
+    this.context.addVisited(decorator, true);
+
+    return decorators;
   }
 
   private assertImplementing(node: ts.ClassDeclaration, members: ts.ClassElement[]): ts.ClassElement[] {
     const implementsClause = util.getImplementsClause(node);
-    const isImplementing = !!implementsClause;
 
-    if (!isImplementing) {
+    if (!implementsClause) {
       return members;
     }
 
-    const extendsClause = util.getExtendsClause(node);
-    const isExtending = !!extendsClause;
-    const constructorIndex = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
-    const hasConstructor = constructorIndex !== -1;
-
-    let constructor: ts.ConstructorDeclaration;
-    let statements: ts.Statement[] = [];
-
-    if (hasConstructor) {
-      constructor = members[constructorIndex] as ts.ConstructorDeclaration;
-    } else {
-      constructor = ts.createConstructor(undefined, undefined,
-        isExtending ? [ts.createParameter(undefined, undefined, ts.createToken(ts.SyntaxKind.DotDotDotToken), 'args')] : undefined,
-        ts.createBlock([], true)
-      );
-
-      if (isExtending) {
-        statements.push(
-          ts.createStatement(
-            ts.createCall(ts.createSuper(), undefined, [ts.createSpread(ts.createIdentifier('args'))])
-          )
-        );
-      }
-    }
+    let constructor = this.getConstructor(members);
+    let statements: ts.Statement[] = util.asNewArray(constructor.body.statements);
 
     for (let impl of implementsClause.types || []) {
-      statements.push(ts.createStatement(this.factory.typeAssertion(this.factory.asRef(impl.expression), ts.createThis())));
+      statements.push(
+        ts.createStatement(
+          this.factory.typeAssertion(this.factory.asRef(impl.expression),
+          ts.createThis())
+        )
+      );
     }
 
-    let newStatements = util.asNewArray(constructor.body.statements);
-    newStatements.unshift(...statements);
-
-    constructor = ts.updateConstructor(
-      constructor,
-      constructor.decorators,
-      constructor.modifiers,
-      constructor.parameters,
-      ts.updateBlock(constructor.body, newStatements)
-    );
-
-    if (hasConstructor) {
-      members[constructorIndex] = constructor;
-    } else {
-      members.unshift(constructor);
-    }
+    this.updateConstructor(members, constructor, statements);
 
     return members;
   }
 
   private declareTypeParameters(node: ts.ClassDeclaration, members: ts.ClassElement[]): ts.ClassElement[] {
-    const constructorIndex = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
-    const hasConstructor = constructorIndex !== -1;
+    if (!node.typeParameters || node.typeParameters.length < 1) {
+      return members;
+    }
+
     const extendsClause = util.getExtendsClause(node);
-    const isExtending = !!extendsClause;
+    let constructor = this.getConstructor(members);
+    let statements: ts.Statement[] = util.asNewArray(constructor.body.statements);
 
-    let constructor: ts.ConstructorDeclaration;
-    let statements: ts.Statement[] = [];
+    let typeParametersStatement: ts.Statement;
+    let thisStatement: ts.Statement;
+    let bindStatement: ts.Statement;
 
-    const typeParametersStatement: ts.Statement = ts.createVariableStatement(
+    typeParametersStatement = ts.createVariableStatement(
       undefined,
       ts.createVariableDeclarationList(
         [
@@ -138,26 +111,7 @@ export class ClassDeclarationMutator extends Mutator {
       )
     );
 
-    statements.push(typeParametersStatement);
-
-    if (hasConstructor) {
-      constructor = members[constructorIndex] as ts.ConstructorDeclaration;
-    } else {
-      constructor = ts.createConstructor(undefined, undefined,
-        isExtending ? [ts.createParameter(undefined, undefined, ts.createToken(ts.SyntaxKind.DotDotDotToken), 'args')] : undefined,
-        ts.createBlock([], true)
-      );
-
-      if (isExtending) {
-        statements.push(
-          ts.createStatement(
-            ts.createCall(ts.createSuper(), undefined, [ts.createSpread(ts.createIdentifier('args'))])
-          )
-        );
-      }
-    }
-
-    const thisStatement = ts.createStatement(
+    thisStatement = ts.createStatement(
       ts.createBinary(
         ts.createElementAccess(ts.createThis(), ts.createIdentifier(this.context.getTypeSymbolDeclarationName(node.name))),
         ts.SyntaxKind.EqualsToken,
@@ -165,9 +119,7 @@ export class ClassDeclarationMutator extends Mutator {
       )
     );
 
-    let bindStatement: ts.Statement;
-
-    if (isExtending && extendsClause.types[0].typeArguments) {
+    if (extendsClause && extendsClause.types[0] && extendsClause.types[0].typeArguments) {
       const extender = extendsClause.types[0];
 
       if (extender.typeArguments.length > 0) {
@@ -187,33 +139,9 @@ export class ClassDeclarationMutator extends Mutator {
       }
     }
 
-    let newStatements = util.asNewArray(constructor.body.statements);
-    newStatements.unshift(...statements);
-
-    const superIndex = newStatements.findIndex(statement => util.isSuperStatement(statement));
-
-    let toInsert: ts.Statement[] = [thisStatement];
-    if (bindStatement) toInsert.push(bindStatement);
-
-    if (superIndex !== -1) {
-      newStatements.splice(superIndex + 1, 0, ...toInsert);
-    } else {
-      newStatements.splice(statements.length, 0, ...toInsert);
-    }
-
-    constructor = ts.updateConstructor(
-      constructor,
-      constructor.decorators,
-      constructor.modifiers,
-      constructor.parameters,
-      ts.updateBlock(constructor.body, newStatements)
-    );
-
-    if (hasConstructor) {
-      members[constructorIndex] = constructor;
-    } else {
-      members.unshift(constructor);
-    }
+    this.insertBeforeSuper(statements, typeParametersStatement);
+    this.insertAfterSuper(statements, [thisStatement, bindStatement].filter(statement => !!statement));
+    this.updateConstructor(members, constructor, statements);
 
     members.unshift(ts.createProperty(
       undefined,
@@ -234,13 +162,25 @@ export class ClassDeclarationMutator extends Mutator {
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
     const decorators = util.asNewArray(node.decorators);
-    const decorator = ts.createDecorator(this.factory.decorate(this.factory.typeReflection(node.type)));
+
+    // TODO: only wrap in function for generics
+    const decorator = ts.createDecorator(this.factory.decorate(
+      ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
+        ts.createBlock([ts.createReturn(this.factory.typeReflection(node.type))], true)
+      )
+    ));
+
     decorators.unshift(decorator);
     this.context.addVisited(decorator, true);
+
     return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
   }
 
-  private mutateMethodDeclaration(node: FunctionLikeProperty, parent: ts.ClassDeclaration): FunctionLikeProperty {
+  private mutateMethodDeclaration(node: MethodLikeProperty, parent: ts.ClassDeclaration): MethodLikeProperty {
+    if (!node.body) {
+      return node;
+    }
+
     const bodyDeclarations: ts.Statement[] = [];
     const bodyAssertions: ts.Statement[] = [];
 
@@ -269,14 +209,14 @@ export class ClassDeclarationMutator extends Mutator {
       bodyAssertions.push(ts.createStatement(this.factory.typeAssertion(this.factory.parameterReflection(param, false), ts.createIdentifier(param.name.getText()))));
     }
 
-    const returnNameDeclaration = this.context.getTypeDeclarationName('return');
-
     bodyDeclarations.push(
       ts.createVariableStatement(
         [], ts.createVariableDeclarationList(
           [
             ts.createVariableDeclaration(
-              returnNameDeclaration, undefined, this.factory.returnTypeReflection(node.type)
+              this.context.getReturnTypeDeclarationName(),
+              undefined,
+              this.factory.returnTypeReflection(node.type)
             )
           ], ts.NodeFlags.Const
         )
@@ -300,7 +240,7 @@ export class ClassDeclarationMutator extends Mutator {
 
     body = ts.updateBlock(body, bodyStatements);
 
-    let method: FunctionLikeProperty;
+    let method: MethodLikeProperty;
 
     switch (node.kind) {
       case ts.SyntaxKind.Constructor:
@@ -317,6 +257,77 @@ export class ClassDeclarationMutator extends Mutator {
     }
 
     return method;
+  }
+
+  private getConstructor(members: ts.ClassElement[], create = true): ts.ConstructorDeclaration {
+    const index = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
+    const exists = index !== -1;
+
+    if (exists) {
+      return members[index] as ts.ConstructorDeclaration;
+    }
+
+    if (!create) {
+      return null;
+    }
+
+    const extendsClause = util.getExtendsClause(this.node as ts.ClassDeclaration);
+    const isExtending = !!extendsClause;
+
+    const constructor = ts.createConstructor(
+      undefined, undefined,
+      isExtending
+        ? [ts.createParameter(undefined, undefined, ts.createToken(ts.SyntaxKind.DotDotDotToken), 'args')]
+        : undefined,
+      ts.createBlock(
+        isExtending
+        ? [ts.createStatement(
+          ts.createCall(ts.createSuper(), undefined, [ts.createSpread(ts.createIdentifier('args'))])
+        )] : [],
+        true
+      )
+    );
+
+    return constructor;
+  }
+
+  private insertBeforeSuper(statements: ts.Statement[], insert: ts.Statement | ts.Statement[], offset = 0): ts.Statement[] {
+    const index = statements.findIndex(statement => util.isSuperStatement(statement));
+
+    insert = util.asArray(insert);
+
+    if (index !== -1) {
+      statements.splice(index + offset, 0, ...insert)
+    } else {
+      statements.splice(statements.length, 0, ...insert);
+    }
+
+    return statements;
+  }
+
+  private insertAfterSuper(statements: ts.Statement[], insert: ts.Statement | ts.Statement[], offset = 0): ts.Statement[] {
+    return this.insertBeforeSuper(statements, insert, 1);
+  }
+
+  private updateConstructor(members: ts.ClassElement[], constructor: ts.ConstructorDeclaration, statements: ts.Statement[]): ts.ClassElement[] {
+    const index = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
+    const exists = index !== -1;
+
+    constructor = ts.updateConstructor(
+      constructor,
+      constructor.decorators,
+      constructor.modifiers,
+      constructor.parameters,
+      ts.updateBlock(constructor.body, statements)
+    );
+
+    if (exists) {
+      members[index] = constructor;
+    } else {
+      members.unshift(constructor);
+    }
+
+    return members;
   }
 
 }

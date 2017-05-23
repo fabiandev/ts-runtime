@@ -8,6 +8,7 @@ export interface Options {
   libIdentifier?: string;
   libNamespace?: string;
   log?: boolean;
+  stackTrace?: number;
 }
 
 export const defaultOptions: Options = {
@@ -27,4 +28,5 @@ export const defaultOptions: Options = {
   libIdentifier: 't',
   libNamespace: '_',
   log: true,
+  stackTrace: 3
 };

@@ -99,6 +99,10 @@ export class MutationContext {
     return `${this.options.libNamespace}${name}Type`;
   }
 
+  public getReturnTypeDeclarationName(): string {
+    return this.getTypeDeclarationName('return');
+  }
+
   public getLibDeclarationName(): string {
     return `${this.options.libNamespace}${this.options.libIdentifier}`;
   }
