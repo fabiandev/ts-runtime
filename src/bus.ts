@@ -10,6 +10,7 @@ export const events = {
   TRANSFORM_DONE: Symbol('transform.done'),
   CLEANUP: Symbol('cleanup'),
   CLEANUP_DONE: Symbol('cleanup.done'),
+  INTERNAL_OPTIONS: Symbol('internal.options'),
 };
 
 export const emitter = new EventEmitter();
