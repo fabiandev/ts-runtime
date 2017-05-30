@@ -40,9 +40,13 @@ export class BinaryExpressionMutator extends Mutator {
     //   return node;
     // } 
 
-    if (this.context.isSafeAssignment(node.left, node.right)) {
+    // if (this.context.isSafeAssignment(node.left, node.right)) {
+    //   return node;
+    // } 
+
+    if (this.context.isAny(node.left)) {
       return node;
-    } 
+    }
 
     const nodeName = this.context.getTypeDeclarationName(node.left as ts.BindingName);
     const right = this.factory.typeAssertion(nodeName, node.right);

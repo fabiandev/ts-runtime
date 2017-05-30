@@ -18,7 +18,7 @@ export class ClassDeclarationMutator extends Mutator {
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
-          members.push(this.mutateMethodDeclaration(member as MethodLikeProperty, node));
+          members.push(this.mutateMethodDeclaration(member as MethodLikeProperty));
           break;
         case ts.SyntaxKind.PropertyDeclaration:
           members.push(this.mutatePropertyDeclaration(member as ts.PropertyDeclaration));
@@ -69,7 +69,7 @@ export class ClassDeclarationMutator extends Mutator {
       statements.push(
         ts.createStatement(
           this.factory.typeAssertion(this.factory.asRef(impl.expression),
-          ts.createThis())
+            ts.createThis())
         )
       );
     }
@@ -92,24 +92,7 @@ export class ClassDeclarationMutator extends Mutator {
     let thisStatement: ts.Statement;
     let bindStatement: ts.Statement;
 
-    typeParametersStatement = ts.createVariableStatement(
-      undefined,
-      ts.createVariableDeclarationList(
-        [
-          ts.createVariableDeclaration(
-            this.context.getTypeParametersDeclarationName(),
-            undefined,
-            ts.createObjectLiteral(
-              node.typeParameters.map(param => {
-                return ts.createPropertyAssignment(param.name, this.factory.typeParameterReflection(param));
-              }),
-              true
-            )
-          )
-        ],
-        ts.NodeFlags.Const
-      )
-    );
+    typeParametersStatement = this.factory.typeParametersLiteralDeclaration(node.typeParameters);
 
     thisStatement = ts.createStatement(
       ts.createBinary(
@@ -143,6 +126,10 @@ export class ClassDeclarationMutator extends Mutator {
     this.insertAfterSuper(statements, [thisStatement, bindStatement].filter(statement => !!statement));
     this.updateConstructor(members, constructor, statements);
 
+    this.context.addVisited(typeParametersStatement, true);
+    this.context.addVisited(thisStatement, true);
+    this.context.addVisited(bindStatement, true);
+
     members.unshift(ts.createProperty(
       undefined,
       [ts.createToken(ts.SyntaxKind.StaticKeyword)],
@@ -160,15 +147,30 @@ export class ClassDeclarationMutator extends Mutator {
     return members;
   }
 
-  private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
-    const decorators = util.asNewArray(node.decorators);
+  private getClassTypeParametersDeclaration(node: ts.ClassElement) {
 
-    // TODO: only wrap in function for generics
-    const decorator = ts.createDecorator(this.factory.decorate(
-      ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
-        ts.createBlock([ts.createReturn(this.factory.typeReflection(node.type))], true)
-      )
-    ));
+  }
+
+  private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
+    if (node.type.kind === ts.SyntaxKind.AnyKeyword) {
+      return node;
+    }
+
+    const decorators = util.asNewArray(node.decorators);
+    const typeReflection = this.factory.typeReflection(node.type);
+    let decorator: ts.Decorator;
+
+    if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
+      decorator = ts.createDecorator(this.factory.decorate(
+        ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
+          ts.createBlock([ts.createReturn(typeReflection)], true)
+        )
+      ));
+    } else {
+      decorator = ts.createDecorator(this.factory.decorate(typeReflection));
+    }
+
+    this.context.addVisited(decorator, true);
 
     decorators.unshift(decorator);
     this.context.addVisited(decorator, true);
@@ -176,87 +178,8 @@ export class ClassDeclarationMutator extends Mutator {
     return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
   }
 
-  private mutateMethodDeclaration(node: MethodLikeProperty, parent: ts.ClassDeclaration): MethodLikeProperty {
-    if (!node.body) {
-      return node;
-    }
-
-    const bodyDeclarations: ts.Statement[] = [];
-    const bodyAssertions: ts.Statement[] = [];
-
-    if (node.typeParameters && node.typeParameters.length > 0) {
-      for (let typeParameter of node.typeParameters) {
-        bodyDeclarations.push(this.factory.typeParameterDeclaration(typeParameter));
-      }
-    }
-
-    for (let param of node.parameters) {
-      const paramNameDeclaration = this.context.getTypeDeclarationName(param.name.getText());
-
-      bodyDeclarations.push(
-        ts.createVariableStatement(
-          [], ts.createVariableDeclarationList(
-            [
-              ts.createVariableDeclaration(
-                paramNameDeclaration, undefined, this.factory.typeReflection(param.type)
-              )
-            ], ts.NodeFlags.Let
-          )
-        )
-      );
-
-      // TODO: pass BindingName (param.name)
-      bodyAssertions.push(ts.createStatement(this.factory.typeAssertion(this.factory.parameterReflection(param, false), ts.createIdentifier(param.name.getText()))));
-    }
-
-    bodyDeclarations.push(
-      ts.createVariableStatement(
-        [], ts.createVariableDeclarationList(
-          [
-            ts.createVariableDeclaration(
-              this.context.getReturnTypeDeclarationName(),
-              undefined,
-              this.factory.returnTypeReflection(node.type)
-            )
-          ], ts.NodeFlags.Const
-        )
-      )
-    );
-
-
-    let body = ts.updateBlock(node.body, this.factory.assertReturnStatements(node.body).statements);
-    let bodyStatements = body.statements;
-
-    bodyStatements.unshift(...bodyAssertions);
-    bodyStatements.unshift(...bodyDeclarations);
-
-    bodyAssertions.forEach(assertion => {
-      this.context.addVisited(assertion, true);
-    });
-
-    bodyDeclarations.forEach(declaration => {
-      this.context.addVisited(declaration, true);
-    });
-
-    body = ts.updateBlock(body, bodyStatements);
-
-    let method: MethodLikeProperty;
-
-    switch (node.kind) {
-      case ts.SyntaxKind.Constructor:
-        method = ts.updateConstructor(node as ts.ConstructorDeclaration, node.decorators, node.modifiers, node.parameters, body);
-        break;
-      case ts.SyntaxKind.MethodDeclaration:
-        method = ts.updateMethod(node as ts.MethodDeclaration, node.decorators, node.modifiers, node.asteriskToken, node.name, node.questionToken, node.typeParameters, node.parameters, node.type, body);
-        break;
-      case ts.SyntaxKind.GetAccessor:
-        method = ts.updateGetAccessor(node as ts.GetAccessorDeclaration, node.decorators, node.modifiers, node.name, node.parameters, node.type, body);
-        break;
-      case ts.SyntaxKind.SetAccessor:
-        method = ts.updateSetAccessor(node as ts.SetAccessorDeclaration, node.decorators, node.modifiers, node.name, node.parameters, body);
-    }
-
-    return method;
+  private mutateMethodDeclaration(node: MethodLikeProperty): MethodLikeProperty {
+    return this.factory.mutateFunctionBody(node) as MethodLikeProperty;
   }
 
   private getConstructor(members: ts.ClassElement[], create = true): ts.ConstructorDeclaration {
@@ -281,9 +204,9 @@ export class ClassDeclarationMutator extends Mutator {
         : undefined,
       ts.createBlock(
         isExtending
-        ? [ts.createStatement(
-          ts.createCall(ts.createSuper(), undefined, [ts.createSpread(ts.createIdentifier('args'))])
-        )] : [],
+          ? [ts.createStatement(
+            ts.createCall(ts.createSuper(), undefined, [ts.createSpread(ts.createIdentifier('args'))])
+          )] : [],
         true
       )
     );

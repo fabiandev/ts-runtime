@@ -3,6 +3,7 @@ import { ArrowFunctionMutator } from './mutators/ArrowFunctionMutator';
 import { BinaryExpressionMutator } from './mutators/BinaryExpressionMutator';
 import { BlockLikeMutator } from './mutators/BlockLikeMutator';
 import { ClassDeclarationMutator } from './mutators/ClassDeclarationMutator'
+import { FunctionDeclarationMutator } from './mutators/FunctionDeclarationMutator';
 import { FunctionExpressionMutator } from './mutators/FunctionExpressionMutator';
 import { InterfaceDeclarationMutator } from './mutators/InterfaceDeclararionMutator';
 import { SourceFileMutator } from './mutators/SourceFileMutator';
@@ -15,6 +16,7 @@ export {
   BinaryExpressionMutator,
   BlockLikeMutator,
   ClassDeclarationMutator,
+  FunctionDeclarationMutator,
   FunctionExpressionMutator,
   InterfaceDeclarationMutator,
   SourceFileMutator,
@@ -27,6 +29,7 @@ export const mutators: Mutator[] = [
   new BinaryExpressionMutator(),
   new BlockLikeMutator(),
   new ClassDeclarationMutator(),
+  new FunctionDeclarationMutator(),
   new FunctionExpressionMutator(),
   new InterfaceDeclarationMutator(),
   new SourceFileMutator(),

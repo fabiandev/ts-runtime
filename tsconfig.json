@@ -25,6 +25,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    "src/playground",
     "src/_archived"
   ]
 }

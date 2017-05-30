@@ -26,6 +26,7 @@ function transformProgram(entryFile: string, options?: Options): void {
 
   const basePath = path.dirname(entryFile);
   options.compilerOptions.rootDir = path.resolve(basePath);
+  options.compilerOptions.preserveConstEnums = true;
 
   let tempEntryFile: string = entryFile;
   let host: ts.CompilerHost;
@@ -76,14 +77,13 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    // scanner = new Scanner(program);
+    scanner = new Scanner(program);
 
     emit(bus.events.TRANSFORM, sourceFiles);
-    const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
 
+    const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
     writeTempFiles(typedResult);
     typedResult.dispose();
-
     createProgramFromTempFiles();
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
@@ -109,8 +109,14 @@ function transformProgram(entryFile: string, options?: Options): void {
       deleteTempFiles();
     }
 
+    emitDeclarations();
+
     emit(bus.events.END);
   };
+
+  function getOutDir(): string {
+    return options.compilerOptions.outDir || path.resolve(path.dirname(entryFile));
+  }
 
   function deleteTempFiles(): void {
     const tempPath = getTempPath(basePath, options.tempFolderName);
@@ -146,9 +152,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   function emitTransformed(): boolean {
     options.compilerOptions.rootDir = undefined;
 
-    if (!options.compilerOptions.outDir) {
-      options.compilerOptions.outDir = path.resolve(path.dirname(entryFile));
-    }
+    options.compilerOptions.outDir = getOutDir();
 
     createProgramFromTempFiles();
 
@@ -170,6 +174,17 @@ function transformProgram(entryFile: string, options?: Options): void {
     // check final result (post-diagnostics)
 
     return check(emitResult.diagnostics, options.log);
+  }
+
+  function emitDeclarations() {
+    const filename = 'tsr-declarations.js';
+    const outDir = path.join(getOutDir(), filename);
+    const printer = ts.createPrinter();
+
+    let sf = ts.createSourceFile(filename, '', ts.ScriptTarget.ES5, true, ts.ScriptKind.JS);
+
+    sf = ts.updateSourceFileNode(sf, scanner.getDeclarations())
+    ts.sys.writeFile(outDir, printer.printFile(sf));
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
@@ -205,9 +220,14 @@ function transformProgram(entryFile: string, options?: Options): void {
     };
 
     const getImplicitTypeNode = (node: ts.Node) => {
+      // TODO: get widened/apparent type?
       const type = context.checker.getTypeAtLocation(node);
-      return type ? context.checker.typeToTypeNode(type) : void 0;
-      // return context.scanner.getAttributes((node as any).name || node).typeNode;
+      const typeNode = type ? context.checker.typeToTypeNode(type, node.parent) : void 0;
+
+      //console.log(context.checker.typeToString(context.checker.getTypeFromTypeNode(typeNode), node.parent))
+      return typeNode;
+      // const typeNode = context.scanner.getAttributes((node as any).name || node).typeNode;
+      // return typeNode;
     }
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
@@ -220,7 +240,7 @@ function transformProgram(entryFile: string, options?: Options): void {
           context.factory.typeReflectionAndAssertion(
             (node as ts.AsExpression).type,
             (node as ts.AsExpression).expression
-          ), true);
+          ), true, (node as ts.AsExpression).expression);
       }
 
       if (node && !(node as any).type) {
@@ -233,11 +253,13 @@ function transformProgram(entryFile: string, options?: Options): void {
           case ts.SyntaxKind.CallSignature:
           case ts.SyntaxKind.ConstructSignature:
           case ts.SyntaxKind.IndexSignature:
-            type = getImplicitTypeNode(node);
+            // type = getImplicitTypeNode(node);
+            type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
             break;
           case ts.SyntaxKind.VariableDeclaration:
             if (declarationCanHaveType(node)) {
-              type = getImplicitTypeNode(node);
+              // type = getImplicitTypeNode(node);
+              type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
             }
             break;
           case ts.SyntaxKind.MethodDeclaration:
@@ -247,17 +269,41 @@ function transformProgram(entryFile: string, options?: Options): void {
           case ts.SyntaxKind.FunctionExpression:
           case ts.SyntaxKind.ArrowFunction:
           case ts.SyntaxKind.FunctionDeclaration:
-            type = getImplicitTypeNode(node);
-            type = (type as any).type || type;
+            // type = getImplicitTypeNode(node);
+            // type = type && ((type as any).type || type);
+            type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
             break;
         }
 
         if (type) {
           (node as any).type = type;
           util.setParent(node);
-          context.addVisited(type, true);
         }
       }
+
+      // if (node.kind === ts.SyntaxKind.TypeReference) {
+      //   const ref = node as ts.TypeReferenceNode;
+      //   const isDeclared = context.isDeclared(ref.typeName);
+      //
+      //   if (!isDeclared) {
+      //     const sourceFile = node.getSourceFile();
+      //     let lastImport = -1;
+      //     let reflection: ts.Expression;
+      //
+      //     for (let i = 0; i < sourceFile.statements.length; i++) {
+      //       if (sourceFile.statements[i].kind === ts.SyntaxKind.ImportDeclaration) {
+      //         lastImport = i;
+      //       }
+      //     }
+      //
+      //     console.log(ref.typeName);
+      //     console.log(node.getSourceFile().fileName);
+      //     console.log();
+      //
+      //     // splice(lastImport + 1, 0, item)
+      //   }
+      //
+      // }
 
       context.addVisited(node);
       return ts.visitEachChild(node, visitor, transformationContext);
@@ -286,7 +332,13 @@ function transformProgram(entryFile: string, options?: Options): void {
       debugNodeText(node, context);
 
       for (let mutator of mutators) {
+        let previous = node;
+
         node = mutator.mutateNode(node, context);
+
+        if (node !== previous) {
+          context.scanner.mapNode(previous, node);
+        }
       }
 
       if (!node) {
@@ -355,7 +407,7 @@ export function toTempFilePath(file: string, basePath: string, tempFolderName: s
 export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
   if (diagnostics && diagnostics.length > 0) {
 
-    emit(bus.events.DIAGNOSTICS, diagnostics);
+    emit(bus.events.DIAGNOSTICS, diagnostics.slice(0, 15), diagnostics.length);
 
     if (log) {
       console.error(ts.formatDiagnostics(diagnostics, {

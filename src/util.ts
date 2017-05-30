@@ -45,6 +45,40 @@ export function getExtendsClause(node: ts.InterfaceDeclaration | ts.ClassDeclara
   });
 }
 
+export function hasKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
+  if (!node) {
+    return false;
+  }
+
+  if (node.kind === kind) {
+    return true;
+  }
+
+  return ts.forEachChild(node, n => hasKind(n, kind)) || false;
+}
+
+export function declarationCanHaveTypeAnnotation(node: ts.Node) {
+  let current: ts.Node = node;
+
+    if (current.kind === ts.SyntaxKind.VariableDeclaration && current.parent) {
+      current = current.parent;
+    }
+
+    if (current.kind === ts.SyntaxKind.VariableDeclarationList && current.parent) {
+      current = current.parent;
+    }
+
+    switch (current.kind) {
+      case ts.SyntaxKind.ForOfStatement:
+      case ts.SyntaxKind.ForInStatement:
+      case ts.SyntaxKind.CatchClause:
+      case ts.SyntaxKind.ImportClause:
+        return false;
+    }
+
+    return true;
+}
+
 export function getImplementsClause(node: ts.InterfaceDeclaration | ts.ClassDeclaration): ts.HeritageClause {
   return node.heritageClauses && node.heritageClauses.find(clause => {
     if (clause.token === ts.SyntaxKind.ImplementsKeyword) {

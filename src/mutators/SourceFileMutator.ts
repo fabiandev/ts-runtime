@@ -10,10 +10,17 @@ export class SourceFileMutator extends Mutator {
     const statements = util.asNewArray(node.statements);
 
     statements.unshift(ts.createImportDeclaration(
-      [], undefined, ts.createImportClause(
-        undefined, ts.createNamespaceImport(ts.createIdentifier(this.context.factory.lib))
-      ), ts.createLiteral(this.context.factory.package)
-    ));
+      undefined, undefined, ts.createImportClause(
+        ts.createIdentifier(this.context.factory.lib), undefined),
+        ts.createLiteral(this.context.factory.package)
+      )
+    );
+
+    // statements.unshift(ts.createImportDeclaration(
+    //   [], undefined, ts.createImportClause(
+    //     undefined, ts.createNamespaceImport(ts.createIdentifier(this.context.factory.lib))
+    //   ), ts.createLiteral(this.context.factory.package)
+    // ));
 
     return ts.updateSourceFileNode(node, statements);
   }

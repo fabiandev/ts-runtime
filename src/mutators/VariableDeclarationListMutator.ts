@@ -70,7 +70,11 @@ export class VariableDeclarationListMutator extends Mutator {
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
     const typeDefinition = this.factory.typeDeclaration(nodeName, node.type);
 
-    if (!node.initializer || this.declarationTypeIsInitializerType(node)) {
+    if (this.context.isAny(node.type)) {
+      return [node];
+    }
+
+    if (!node.initializer /*|| this.declarationTypeIsInitializerType(node)*/) {
       return [typeDefinition, node];
     }
 
@@ -88,7 +92,11 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    if (!node.type || this.declarationTypeIsInitializerType(node)) {
+    if (this.context.isAny(node.type)) {
+      return [node];
+    }
+
+    if (!node.type /*|| this.declarationTypeIsInitializerType(node)*/) {
       return [node];
     }
 

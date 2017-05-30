@@ -1,6 +1,10 @@
 import * as ts from 'typescript';
 import * as util from './util';
+import { ProgramError } from './errors';
 import { MutationContext } from './context';
+
+export type FunctionLikeNode = ts.ArrowFunction | ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction | ts.ConstructorDeclaration | ts.MethodDeclaration |
+  ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
 export enum ReflectionContext {
   None,
@@ -17,7 +21,6 @@ export class Factory {
   private _reflectionContext: ReflectionContext;
 
   // TODO: check ts.SyntaxKind.QualifiedName (e.g. B.One if B is an enum)
-
   constructor(context: MutationContext, strictNullChecks = false, lib = 't', namespace = '_', load = 'ts-runtime/lib') {
     this._context = context;
     this._lib = lib;
@@ -77,17 +80,26 @@ export class Factory {
         return this.typeLiteralReflection(node as ts.TypeLiteralNode);
       case ts.SyntaxKind.TypeQuery:
         return this.typeQueryReflection(node as ts.TypeQueryNode);
-      case ts.SyntaxKind.TypeParameter: // generics // TODO: implement
-      case ts.SyntaxKind.TypePredicate: // function a(pet: Fish | Bird) pet is Fish // TODO: implement
+      // case ts.SyntaxKind.TypeParameter:
+      case ts.SyntaxKind.TypePredicate:
+        return this.booleanTypeReflection();
       case ts.SyntaxKind.MappedType: // TODO: implement
+        throw new ProgramError('Mapped types are not yet supported.')
       // type Readonly<T> = {
       //   readonly [P in keyof T]: T[P];
       // }
       case ts.SyntaxKind.IndexedAccessType: // TODO: implement
+        throw new ProgramError('Indexed acces types are not yet supported.')
+      // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
+      //     return o[name]; // o[name] is of type T[K]
+      // }
       case ts.SyntaxKind.ExpressionWithTypeArguments: // TODO: implement (extends SomeType)
+        throw new ProgramError('Expressions with type arguments are not yet supported.')
       case ts.SyntaxKind.TypeOperator: // TODO: implement
+        throw new ProgramError('Type operators are not yet supported.')
+      // keyof
       default:
-        throw new Error(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
+        throw new ProgramError(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
   }
 
@@ -112,6 +124,12 @@ export class Factory {
   public classReflection(node: ts.ClassDeclaration): ts.Expression {
     let args = util.asArray(this.typeLiteralReflection(node));
     return this.typeAliasReflection(node.name, args, 'class');
+  }
+
+  public enumReflection(node: ts.EnumDeclaration): ts.Expression {
+    return this.libCall('union', (node.members || [] as ts.EnumMember[]).map(member => {
+      return this.libCall('number', ts.createLiteral(this.context.checker.getConstantValue(member)));
+    }));
   }
 
   // public typeReflection(node: ts.InterfaceDeclaration | ts.ClassDeclaration | ts.LiteralType): ts.Expression {
@@ -157,7 +175,16 @@ export class Factory {
           const extendsClause = util.getExtendsClause(node);
 
           if (implementsClause && implementsClause.types && implementsClause.types.length > 0) {
-            args = util.asArray(this.intersect([...implementsClause.types.map(t => t.expression as ts.Expression), ...args]));
+            args = util.asArray(
+              this.intersect(
+                [
+                  ...implementsClause.types
+                    .map(t => t.expression as ts.Expression)
+                    .filter(t => t.getText() !== node.name.getText()),
+                  ...args
+                ]
+              )
+            );
           }
 
           if (extendsClause && extendsClause.types && extendsClause.types.length > 0) {
@@ -221,6 +248,35 @@ export class Factory {
   public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Statement {
     const callExpression = this.typeParameterReflection(typeParameter, prop);
     return ts.createVariableStatement(undefined, ts.createVariableDeclarationList([ts.createVariableDeclaration(typeParameter.name, undefined, callExpression)], ts.NodeFlags.Const));
+  }
+
+  public typeParametersLiteral(typeParameters: ts.TypeParameterDeclaration[], asStatement = false): ts.Expression {
+    return ts.createObjectLiteral(
+      typeParameters.map(param => {
+        return ts.createPropertyAssignment(param.name, this.typeParameterReflection(param));
+      }),
+      true
+    );
+  }
+
+  public typeParametersLiteralDeclaration(typeParameters: ts.TypeParameterDeclaration[]): ts.Statement {
+    return ts.createVariableStatement(
+      undefined,
+      ts.createVariableDeclarationList(
+        [
+          ts.createVariableDeclaration(
+            this.context.getTypeParametersDeclarationName(),
+            undefined,
+            this.typeParametersLiteral(typeParameters)
+          )
+        ],
+        ts.NodeFlags.Const
+      )
+    );
+  }
+
+  public asStatement(expression: ts.Expression): ts.Statement {
+    return ts.createStatement(expression);
   }
 
   // TODO: handle ComputedPropertyName
@@ -344,9 +400,9 @@ export class Factory {
 
     let asLiteral = false;
     const scanner = this.context.scanner;
-    const nodeAttributes = scanner.getAttributes(node);
+    const nodeAttributes = scanner ? scanner.getAttributes(node) : void 0;
 
-    if (nodeAttributes.isTypeNode && nodeAttributes.typeAttributes.TSR_DECLARATION) {
+    if (nodeAttributes && nodeAttributes.isTypeNode && nodeAttributes.typeAttributes.TSR_DECLARATION) {
       asLiteral = true;
     }
 
@@ -365,12 +421,6 @@ export class Factory {
       isClassTypeParameter = false;
       isReturnContext = this.reflectionContext === ReflectionContext.Return;
 
-      // TODO: check if self-referencing
-      // TODO: no tdz if exists
-      if (!isTypeParameter && !asLiteral && !this.context.wasDeclared(node.typeName)) {
-        identifier = this.tdz(identifier as ts.Identifier);
-      }
-
       keyword = 'ref';
 
       if (isTypeParameter) {
@@ -378,18 +428,44 @@ export class Factory {
 
         if (parentClass !== null) {
           isClassTypeParameter = true;
-          classTypeParameterReflection = this.flowInto(
-                  ts.createPropertyAccess(
-                    ts.createElementAccess(
-                      ts.createThis(),
-                      ts.createIdentifier(this.context.getTypeSymbolDeclarationName(parentClass.name))
-                    ),
-                    typeNameText
-                  )
-              );
+
+          classTypeParameterReflection = ts.createPropertyAccess(
+            ts.createElementAccess(
+              ts.createThis(),
+              ts.createIdentifier(this.context.getTypeSymbolDeclarationName(parentClass.name))
+            ),
+            typeNameText
+          );
+
+          if (!isReturnContext) {
+            classTypeParameterReflection = this.flowInto(classTypeParameterReflection);
+          }
         } else if (!isReturnContext) {
           keyword = 'flowInto';
         }
+      }
+
+      if ((nodeAttributes.typeAttributes.symbol && nodeAttributes.typeAttributes.symbol.flags) & ts.SymbolFlags.RegularEnum) {
+        keyword = asLiteral ? 'ref' : 'typeOf';
+      } else if ((nodeAttributes.typeAttributes.symbol && nodeAttributes.typeAttributes.symbol.flags) & ts.SymbolFlags.ConstEnum) {
+        keyword = asLiteral ? 'ref' : 'typeOf';
+      } else if ((nodeAttributes.typeAttributes.symbol && nodeAttributes.typeAttributes.symbol.flags) & ts.SymbolFlags.EnumMember) {
+        keyword = 'number';
+      }
+
+      // TODO: check if self-referencing
+      // TODO: no tdz if exists
+      // TODO: what if changes due to declaration merging
+
+      const isDeclared = this.context.isDeclared(node.typeName);
+      const wasDeclared = this.context.wasDeclared(node.typeName);
+
+      if (!isTypeParameter && !asLiteral && !wasDeclared && isDeclared) {
+        identifier = this.tdz(identifier as ts.Identifier);
+      }
+
+      if (!isDeclared && !asLiteral) {
+        identifier = ts.createIdentifier(this.context.getInlineTypeName(typeNameText));
       }
 
       // if (isTypeParameter && !isReturnContext) {
@@ -402,7 +478,25 @@ export class Factory {
     return this.nullable(isClassTypeParameter ? classTypeParameterReflection : isTypeParameter && isReturnContext ? args[0] : this.libCall(keyword, args));
   }
 
-  public flowInto(args: ts.Expression | ts.Expression[]) {
+  public inlineTypeReference(node: ts.TypeReferenceNode) {
+    const sourceFile = node.getSourceFile();
+    let lastImport = -1;
+    let reflection: ts.Expression;
+
+    for (let i = 0; i < sourceFile.statements.length; i++) {
+      if (sourceFile.statements[i].kind === ts.SyntaxKind.ImportDeclaration) {
+        lastImport = i;
+      }
+    }
+
+    const type = this.context.checker.getSymbolAtLocation(node);
+
+    console.log(type);
+
+    // splice(lastImport + 1, 0, item)
+  }
+
+  public flowInto(args: ts.Expression | ts.Expression[]) {
     return this.libCall('flowInto', args);
   }
 
@@ -415,7 +509,7 @@ export class Factory {
     ]);
   }
 
-  public functionTypeReflection(node: ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration): ts.Expression {
+  public functionTypeReflection(node: ts.FunctionExpression | ts.ArrowFunction |  ts.FunctionDeclaration | ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration): ts.Expression {
     let args: ts.Expression[] = node.parameters.map(param => this.parameterReflection(param));
     args.push(this.returnTypeReflection(node.type));
 
@@ -525,13 +619,13 @@ export class Factory {
   //
   //   return this.libCall('class', typeAliasExpressions);
   // }
-
+  //
   // public classReflection(node: ts.ClassDeclaration): ts.Expression {
   //   const args = node.members.map(member => this.classElementReflection(member)).filter(member => !!member);
   //   args.unshift(ts.createLiteral(node.name));
   //   return this.libCall('class', args);
   // }
-
+  //
   // public classElementReflection(node: ts.ClassElement): ts.Expression {
   //   switch (node.kind) {
   //     case ts.SyntaxKind.Constructor:
@@ -554,7 +648,7 @@ export class Factory {
   //   }
   // }
 
-  // TODO: revisit
+
   public constructorReflection(node: ts.ConstructorDeclaration): null {
   // When comparing two objects of a class type, only members of the instance are compared.
   // Static members and constructors do not affect compatibility.
@@ -616,6 +710,7 @@ public elementReflection(node: ts.TypeElement | ts.ClassElement): ts.Expression 
       return this.indexSignatureReflection(node as ts.IndexSignatureDeclaration);
     case ts.SyntaxKind.PropertySignature:
     case ts.SyntaxKind.PropertyDeclaration:
+    case ts.SyntaxKind.Parameter:
       return this.propertySignatureReflection(node as ts.PropertySignature);
     case ts.SyntaxKind.CallSignature:
       return this.callSignatureReflection(node as ts.CallSignatureDeclaration);
@@ -846,13 +941,17 @@ private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): t
     const hasTypeParameters: string[] = [];
 
     for (let node of group) {
-      const returnTypeText = node.type.getText();
 
-      if (hasReturnTypes.indexOf(returnTypeText) === -1) {
-        hasReturnTypes.push(returnTypeText);
-        returnTypes.push(node.type);
+      if (node.type) {
+        const returnTypeText = node.type.getText();
+
+        if (hasReturnTypes.indexOf(returnTypeText) === -1) {
+          hasReturnTypes.push(returnTypeText);
+          returnTypes.push(node.type);
+        }
       }
 
+      // TODO: ???
       if (node.typeParameters) {
 
       }
@@ -1146,7 +1245,6 @@ private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): t
   return this.libCall('intersect', args);
 }
 
-  // TODO: pass name as string as second parameter to tdz(cb, "Name")
   // TODO: no tdz if self reference
   public tdz(body: ts.Identifier, name ?: string): ts.Expression {
   const args = [
@@ -1201,13 +1299,25 @@ private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): t
   return ts.createCall(ts.createPropertyAccess(id, prop), [], args);
 }
 
-  public assertReturnStatements<T extends ts.Node>(node: T): T {
+  public assertReturnStatements<T extends ts.Node>(node: T, type ?: ts.TypeNode): T {
   const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
+    if (type && type.kind === ts.SyntaxKind.AnyKeyword) {
+      return node;
+    }
+
+    if ((node as any).type && (node as any).type.kind === ts.SyntaxKind.AnyKeyword) {
+      return node;
+    }
+
     if (node.kind === ts.SyntaxKind.FunctionDeclaration || node.kind === ts.SyntaxKind.FunctionExpression || node.kind === ts.SyntaxKind.ArrowFunction) {
       return node;
     }
 
     if (node.kind === ts.SyntaxKind.ReturnStatement) {
+      // if (this.context.isSafeAssignment(type, (node as ts.ReturnStatement).expression)) {
+      //   return node;
+      // }
+
       const assertion = this.typeAssertion(
         this.context.getTypeDeclarationName('return'),
         (node as ts.ReturnStatement).expression
@@ -1223,6 +1333,113 @@ private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): t
   };
 
   return ts.visitEachChild(node, visitor, this.context.transformationContext);
+}
+
+public mutateFunctionBody(node: FunctionLikeNode): FunctionLikeNode {
+  if (!node.body) {
+    return node;
+  }
+
+  if (node.kind === ts.SyntaxKind.ArrowFunction && node.body.kind !== ts.SyntaxKind.Block) {
+    const body = ts.createBlock([ts.createReturn(node.body as ts.Expression)], true)
+    node = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body);
+  }
+
+  const bodyDeclarations: ts.Statement[] = [];
+  const bodyAssertions: ts.Statement[] = [];
+
+  if (node.typeParameters && node.typeParameters.length > 0) {
+    for (let typeParameter of node.typeParameters) {
+      bodyDeclarations.push(this.typeParameterDeclaration(typeParameter));
+    }
+  }
+
+  for (let param of node.parameters) {
+    if (param.type.kind === ts.SyntaxKind.AnyKeyword) {
+      continue;
+    }
+
+    const paramNameDeclaration = this.context.getTypeDeclarationName(param.name.getText());
+
+    bodyDeclarations.push(
+      ts.createVariableStatement(
+        [], ts.createVariableDeclarationList(
+          [
+            ts.createVariableDeclaration(
+              paramNameDeclaration, undefined, this.typeReflection(param.type)
+            )
+          ], ts.NodeFlags.Let
+        )
+      )
+    );
+
+    // TODO: pass BindingName (param.name)
+    bodyAssertions.push(ts.createStatement(this.typeAssertion(this.parameterReflection(param, false), ts.createIdentifier(param.name.getText()))));
+  }
+
+  if (node.type.kind !== ts.SyntaxKind.AnyKeyword) {
+    bodyDeclarations.push(
+      ts.createVariableStatement(
+        [], ts.createVariableDeclarationList(
+          [
+            ts.createVariableDeclaration(
+              this.context.getReturnTypeDeclarationName(),
+              undefined,
+              this.returnTypeReflection(node.type)
+            )
+          ], ts.NodeFlags.Const
+        )
+      )
+    );
+  }
+
+
+  let body = ts.updateBlock(node.body as ts.Block, this.assertReturnStatements(node.body as ts.Block, node.type).statements);
+  let bodyStatements = body.statements;
+
+  bodyStatements.unshift(...bodyAssertions);
+  bodyStatements.unshift(...bodyDeclarations);
+
+  bodyAssertions.forEach(assertion => {
+    this.context.addVisited(assertion, true);
+  });
+
+  bodyDeclarations.forEach(declaration => {
+    this.context.addVisited(declaration, true);
+  });
+
+  body = ts.updateBlock(body, bodyStatements);
+
+  let method: FunctionLikeNode;
+
+  switch (node.kind) {
+    case ts.SyntaxKind.Constructor:
+      method = ts.updateConstructor(node, node.decorators, node.modifiers, node.parameters, body);
+      break;
+    case ts.SyntaxKind.MethodDeclaration:
+      method = ts.updateMethod(node, node.decorators, node.modifiers, node.asteriskToken, node.name, node.questionToken, node.typeParameters, node.parameters, node.type, body);
+      break;
+    case ts.SyntaxKind.GetAccessor:
+      method = ts.updateGetAccessor(node, node.decorators, node.modifiers, node.name, node.parameters, node.type, body);
+      break;
+    case ts.SyntaxKind.SetAccessor:
+      method = ts.updateSetAccessor(node, node.decorators, node.modifiers, node.name, node.parameters, body);
+      break;
+    case ts.SyntaxKind.FunctionExpression:
+      method = ts.updateFunctionExpression(node, node.modifiers, node.asteriskToken, node.name as ts.Identifier, node.typeParameters, node.parameters, node.type, body);
+      break;
+    case ts.SyntaxKind.FunctionDeclaration:
+      method = ts.updateFunctionDeclaration(node, node.decorators, node.modifiers, node.asteriskToken, node.name as ts.Identifier, node.typeParameters, node.parameters, node.type, body);
+      break;
+    case ts.SyntaxKind.ArrowFunction:
+      method = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body);
+      break;
+  }
+
+  this.context.scanner.mapNode(node.body, body);
+  this.context.scanner.mapNode(node, method);
+
+  return method;
 }
 
 get context(): MutationContext {

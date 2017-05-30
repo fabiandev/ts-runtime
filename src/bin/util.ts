@@ -1,12 +1,10 @@
 import * as chalk from 'chalk';
 import { Options } from '../options';
-
-export class TsrError extends Error {
-
-}
+import { ProgramError } from '../errors';
 
 export function getError(error: string | Error, options?: Options): string {
   let err = typeof error === 'string' ? error : '';
+  let isProgramError = false;
 
   if (error instanceof Error) {
     if (error.stack) {
@@ -16,10 +14,19 @@ export function getError(error: string | Error, options?: Options): string {
     if (error.message && err.indexOf(error.message) === -1) {
       err = err ? `${error.message} ${err}` : error.message;
     }
+
+    if (error.name === ProgramError.id) {
+      isProgramError = true;
+      err = err.replace(`${ProgramError.id}: `, '');
+    }
   }
 
+  if (isProgramError) {
+    const split = err.split('\n');
+    const result = split.slice(0, 1);
 
-  if (options) {
+    return result[0];
+  } else if (options) {
     let limit = options.stackTrace;
     limit = typeof limit === 'string' ? parseInt(limit) : limit;
     limit = limit < 0 ? 0 : limit;

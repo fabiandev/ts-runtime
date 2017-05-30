@@ -5,6 +5,7 @@ import './handlers';
 import * as path from 'path';
 import * as ts from 'typescript';
 import * as program from 'commander';
+import { ProgramError } from '../errors';
 import { Options, defaultOptions } from '../options';
 import { transform, getOptions } from '../transform';
 import * as bus from '../bus';
@@ -19,9 +20,8 @@ function defaultAction() {
     .filter(arg => typeof arg === 'string')
     .map(file => path.normalize(file));
 
-  // TODO: fail w/o stacktrace
   if (files.length === 0) {
-    throw new util.TsrError('Missing entry file to transform.');
+    throw new ProgramError('No entry file passed to transform.');
   }
 
   const entryFile: string = files[0];
@@ -35,9 +35,10 @@ function defaultAction() {
 
   bus.emitter.emit(bus.events.INTERNAL_OPTIONS, options);
 
-  // TODO: fail w/o stacktrace
   if (opts.errors.length > 0) {
-    throw new util.TsrError('Could not parse compiler options.');
+    bus.emitter.emit(bus.events.DIAGNOSTICS, [opts.errors]);
+    bus.emitter.emit(bus.events.ERROR);
+    return;
   }
 
   transform(entryFile, options);

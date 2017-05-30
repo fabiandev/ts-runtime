@@ -20,7 +20,7 @@ export class BlockLikeMutator extends Mutator {
 
     for (let statement of node.statements) {
       if (statement.kind === ts.SyntaxKind.FunctionDeclaration) {
-        statements.push(...this.mutateFunctionDeclaration(statement as ts.FunctionDeclaration));
+        statements.push(...this.annotateFunctionDeclaration(statement as ts.FunctionDeclaration));
         needsUpdate = true;
         continue;
       }
@@ -28,10 +28,16 @@ export class BlockLikeMutator extends Mutator {
       if (statement.kind === ts.SyntaxKind.ClassDeclaration) {
         const typeParameters = (statement as ts.ClassDeclaration).typeParameters;
         if (typeParameters && typeParameters.length > 0) {
-          statements.push(...this.mutateClassDeclaration(statement as ts.ClassDeclaration));
+          statements.push(...this.annotateClassDeclaration(statement as ts.ClassDeclaration));
           needsUpdate = true;
           continue;
         }
+      }
+
+      if (statement.kind === ts.SyntaxKind.EnumDeclaration) {
+        statements.push(...this.annotateEnumDeclaration(statement as ts.EnumDeclaration));
+        needsUpdate = true;
+        continue;
       }
 
       statements.push(statement);
@@ -60,13 +66,22 @@ export class BlockLikeMutator extends Mutator {
     return needsUpdate ? substitution : node;
   }
 
-  // TODO: implement (or possible to use parent and push annotation to its array?)
-  private mutateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
-    return [node];
+  private annotateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
+    const annotation = ts.createStatement(this.factory.libCall(
+      'annotate',
+      [
+        node.name,
+        this.factory.functionTypeReflection(node)
+      ]
+    ));
+
+    this.context.addVisited(annotation, true);
+
+    return [node, annotation];
   }
 
-  private mutateClassDeclaration(node: ts.ClassDeclaration): ts.Statement[] {
-    const statement = ts.createVariableStatement(
+  private annotateClassDeclaration(node: ts.ClassDeclaration): ts.Statement[] {
+    const annotation = ts.createVariableStatement(
       undefined,
       ts.createVariableDeclarationList([ts.createVariableDeclaration(
         this.context.getTypeSymbolDeclarationName(node.name),
@@ -78,7 +93,23 @@ export class BlockLikeMutator extends Mutator {
         )
       )], ts.NodeFlags.Const));
 
-    return [statement, node];
+    this.context.addVisited(annotation, true);
+
+    return [annotation, node];
+  }
+
+  private annotateEnumDeclaration(node: ts.EnumDeclaration): ts.Statement[] {
+    const annotation = ts.createStatement(this.factory.libCall(
+      'annotate',
+      [
+        node.name,
+        this.factory.enumReflection(node)
+      ]
+    ));
+
+    this.context.addVisited(annotation, true);
+
+    return [node, annotation];
   }
 
 }

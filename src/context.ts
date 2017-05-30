@@ -30,6 +30,12 @@ export class MutationContext {
     this._processed = [];
   }
 
+  public map(node: ts.Node, original?: ts.Node): ts.Node {
+    this.addVisited(node, true);
+    if (original) this.scanner.mapNode(original, node);
+    return node;
+  }
+
   public wasDeclared(node: ts.Node) {
     node = util.getIdentifierOfQualifiedName(node);
 
@@ -39,6 +45,18 @@ export class MutationContext {
       if (declaration.getEnd() < node.getEnd()) {
         return true;
       }
+    }
+
+    return false;
+  }
+
+  public isDeclared(node: ts.Node) {
+    node = util.getIdentifierOfQualifiedName(node);
+
+    const declarations = this.getDeclarations(node);
+
+    for (let declaration of declarations) {
+        return true;
     }
 
     return false;
@@ -99,6 +117,11 @@ export class MutationContext {
     return `${this.options.libNamespace}${name}Type`;
   }
 
+  public getInlineTypeName(node: string | ts.BindingName): string {
+    const name = typeof node === 'string' ? node : node.getText();
+    return `${this.options.libNamespace}${name}TypeInline`;
+  }
+
   public getReturnTypeDeclarationName(): string {
     return this.getTypeDeclarationName('return');
   }
@@ -129,6 +152,20 @@ export class MutationContext {
     const symbol = this.scanner.getSymbolFromNode(node);
     if (!symbol || !symbol.declarations) return [];
     return symbol.getDeclarations();
+  }
+
+  public isAny(node: ts.Node): boolean {
+    const nodeAttributes = this.scanner.getAttributes(node);
+
+    if (!nodeAttributes || !nodeAttributes.typeNode) {
+      return false;
+    }
+
+    if (nodeAttributes.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
+      return true;
+    }
+
+    return false;
   }
 
   // TODO: also compare structural (e.g. Options = { /* structure that matches options */ })

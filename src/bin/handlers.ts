@@ -77,7 +77,7 @@ bus.emitter.on(bus.events.DIAGNOSTICS, (args: any[]) => {
 
   const diags = formatted.filter(str => str.trim().length > 0);
 
-  child.send({ message: 'diagnostics', payload: diags });
+  child.send({ message: 'diagnostics', payload: diags, info: args[1] });
 });
 
 bus.emitter.on(bus.events.CLEANUP, (args: any[]) => {

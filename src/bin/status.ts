@@ -28,9 +28,9 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-process.on('message', (data: { message: string, payload: any }) => {
+process.on('message', (data: { message: string, payload: any, info?: any }) => {
   if (typeof status[data.message] === 'function') {
-    status[data.message](data.payload);
+    status[data.message](data.payload, data.info);
   }
 });
 
@@ -65,14 +65,18 @@ status.cleanup = (args: any[]) => {
   return spinner;
 };
 
-status.diagnostics = (diags: string[]) => {
+status.diagnostics = (diags: string[], total?: number) => {
   const text = spinner.text;
-  numDiagnostics += diags.length;
+  numDiagnostics += total || diags.length;
 
-  spinner.fail(chalk.red(`${diags.length} TypeScript Compiler Diagnostics:`));
+  spinner.fail(chalk.red(`${total || diags.length} TypeScript Compiler Diagnostics:`));
 
   for (let diag of diags) {
     spinner.fail(diag);
+  }
+
+  if (total > diags.length) {
+    spinner.fail(chalk.bold(`Only showing first ${diags.length} diagnistics, ${total - diags.length} were hidden.`))
   }
 
   spinner.text = text;
