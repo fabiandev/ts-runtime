@@ -6,12 +6,6 @@ export class TypeAliasDeclarationMutator extends Mutator {
   protected kind = ts.SyntaxKind.TypeAliasDeclaration;
 
   protected mutate(node: ts.TypeAliasDeclaration): ts.Node {
-    let typeReflection = this.factory.typeReflection(node.type);
-
-    if (this.context.hasSelfReference(node)) {
-      typeReflection = this.factory.selfReference(node.name, typeReflection);
-    }
-
     const substitution = ts.createVariableStatement(
       node.modifiers,
       ts.createVariableDeclarationList(
@@ -19,7 +13,7 @@ export class TypeAliasDeclarationMutator extends Mutator {
           ts.createVariableDeclaration(
             node.name,
             undefined,
-            this.factory.typeAliasReflection(node.name, typeReflection)
+            this.factory.typeAliasDeclarationReflection(node)
           )
         ],
         ts.NodeFlags.Const

@@ -29,6 +29,10 @@ export function setParent(node: ts.Node): void {
   });
 }
 
+export function getHash(s: string): number {
+  return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
+}
+
 export function getIdentifierOfQualifiedName(node: ts.Node): ts.Node {
   while (node.kind === ts.SyntaxKind.QualifiedName) {
     node = (node as ts.QualifiedName).left;

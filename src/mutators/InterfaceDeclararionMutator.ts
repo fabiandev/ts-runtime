@@ -1,15 +1,14 @@
 import * as ts from 'typescript';
 import { Mutator } from './Mutator';
-import { ScanAttributes } from '../scanner';
 
 export class InterfaceDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.InterfaceDeclaration;
 
   protected mutate(node: ts.InterfaceDeclaration): ts.Node {
-    const nodeAttributes = this.scanner.getAttributes(node);
+    const nodeInfo = this.scanner.getInfo(node);
 
-    if (this.willBeDeclaredInClass(nodeAttributes.typeAttributes.declarations) || this.context.wasProcessed(nodeAttributes.typeAttributes.symbol)) {
+    if (this.willBeDeclaredInClass(nodeInfo.typeInfo.declarations) || this.context.wasProcessed(nodeInfo.typeInfo.symbol)) {
       return null;
     }
 
@@ -52,7 +51,7 @@ export class InterfaceDeclarationMutator extends Mutator {
     const substitution = this.factory.typeSubstitution(node);
 
     this.context.addVisited(substitution, true);
-    this.context.processed.push(nodeAttributes.type.symbol);
+    this.context.processed.push(nodeInfo.typeInfo.symbol);
 
     return substitution;
   }

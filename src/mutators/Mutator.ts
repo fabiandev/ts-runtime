@@ -29,9 +29,9 @@ export abstract class Mutator {
       return node;
     }
 
-    const nodeAttributes = context.scanner.getAttributes(node);
+    const nodeInfo = context.scanner.getInfo(node);
 
-    if (nodeAttributes && nodeAttributes.typeAttributes.TSR_DECLARATION) {
+    if (nodeInfo && nodeInfo.typeInfo.TSR_DECLARATION) {
       return node;
     }
 

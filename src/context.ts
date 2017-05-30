@@ -63,11 +63,15 @@ export class MutationContext {
   }
 
   public hasSelfReference(node: ts.Node): boolean {
-    const symbol = this.scanner.getSymbolFromNode((node as any).name || node);
+    let symbol = this.scanner.getSymbolFromNode((node as any).name || node);
+
+    // if (!symbol) {
+    //   this.checker.getSymbolAtLocation((node as any).name || node);
+    // }
 
     const search = (node: ts.Node): boolean => {
       const isTypeReference = node.kind === ts.SyntaxKind.TypeReference;
-      const isSelfReference = symbol === this.scanner.getSymbolFromNode((node as ts.TypeReferenceNode).typeName);
+      const isSelfReference = symbol === (this.scanner.getSymbolFromNode((node as ts.TypeReferenceNode).typeName) /*|| this.checker.getSymbolAtLocation((node as ts.TypeReferenceNode).typeName)*/);
 
       if (isTypeReference && isSelfReference) {
         return true;
@@ -155,13 +159,13 @@ export class MutationContext {
   }
 
   public isAny(node: ts.Node): boolean {
-    const nodeAttributes = this.scanner.getAttributes(node);
+    const nodeInfo = this.scanner.getInfo(node);
 
-    if (!nodeAttributes || !nodeAttributes.typeNode) {
+    if (!nodeInfo || !nodeInfo.typeNode) {
       return false;
     }
 
-    if (nodeAttributes.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
+    if (nodeInfo.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
       return true;
     }
 
@@ -170,15 +174,15 @@ export class MutationContext {
 
   // TODO: also compare structural (e.g. Options = { /* structure that matches options */ })
   public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
-    const nodeAttributes = this.scanner.getAttributes(node);
-    const otherAttributes = this.scanner.getAttributes(other);
+    const nodeInfo = this.scanner.getInfo(node);
+    const otherInfo = this.scanner.getInfo(other);
 
-    if (!nodeAttributes || !otherAttributes) {
+    if (!nodeInfo || !otherInfo) {
       return false;
     }
 
-    let nodeTypeText = nodeAttributes.typeText;
-    let otherTypeText = otherAttributes.typeText;
+    let nodeTypeText = nodeInfo.typeText;
+    let otherTypeText = otherInfo.typeText;
 
     if (!nodeTypeText || !otherTypeText) {
       return false;
@@ -188,8 +192,8 @@ export class MutationContext {
       return true;
     }
 
-    if (!strict && !nodeAttributes.typeAttributes.isLiteral && otherAttributes.typeAttributes.isLiteral) {
-      otherTypeText = otherAttributes.baseTypeText;
+    if (!strict && !nodeInfo.typeInfo.isLiteral && otherInfo.typeInfo.isLiteral) {
+      otherTypeText = otherInfo.baseTypeText;
     }
 
     return nodeTypeText === otherTypeText;

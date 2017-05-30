@@ -3,12 +3,19 @@ import * as rimraf from 'rimraf';
 import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
+import { ProgramError } from './errors';
 import { MutationContext } from './context';
 import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
 import { Scanner } from './scanner';
 
 const DEBUG = false;
+
+export enum ProgramState {
+  None,
+  FirstPass,
+  Transform
+}
 
 export function transform(entryFile: string, options?: Options): void {
   return transformProgram(entryFile, options) as void;
@@ -77,22 +84,21 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program);
+    scanner = new Scanner(program, ProgramState.FirstPass);
 
     emit(bus.events.TRANSFORM, sourceFiles);
 
     const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
     writeTempFiles(typedResult);
-    typedResult.dispose();
+
     createProgramFromTempFiles();
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program);
+    scanner = new Scanner(program, ProgramState.Transform);
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
     writeTempFiles(result);
-    result.dispose();
 
     // do not check post-diagnostics of temp file
     // check(result.diagnostics, options.log)
@@ -110,6 +116,9 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     emitDeclarations();
+
+    typedResult.dispose();
+    result.dispose();
 
     emit(bus.events.END);
   };
@@ -151,7 +160,6 @@ function transformProgram(entryFile: string, options?: Options): void {
 
   function emitTransformed(): boolean {
     options.compilerOptions.rootDir = undefined;
-
     options.compilerOptions.outDir = getOutDir();
 
     createProgramFromTempFiles();
@@ -177,13 +185,92 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function emitDeclarations() {
-    const filename = 'tsr-declarations.js';
+    const filename = '_tsr-declarations.js';
     const outDir = path.join(getOutDir(), filename);
     const printer = ts.createPrinter();
 
-    let sf = ts.createSourceFile(filename, '', ts.ScriptTarget.ES5, true, ts.ScriptKind.JS);
+    let sf = ts.createSourceFile(filename, '', ts.ScriptTarget.ES2015, true, ts.ScriptKind.JS);
 
-    sf = ts.updateSourceFileNode(sf, scanner.getDeclarations())
+    const declarations = scanner.getDeclarations();
+    const expressions: ts.Expression[] = [];
+
+
+    declarations.forEach((ids, key) => {
+      let firstDeclaration: ts.Declaration = key.getDeclarations()[0];
+      let expression: ts.Expression;
+
+      switch (firstDeclaration.kind) {
+        case ts.SyntaxKind.InterfaceDeclaration:
+          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.typeLiteralReflection(firstDeclaration as ts.InterfaceDeclaration)));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+          }
+
+          break;
+        case ts.SyntaxKind.ClassDeclaration:
+          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.typeLiteralReflection(firstDeclaration as ts.InterfaceDeclaration), 'class'));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0])), 'class'));
+          }
+
+          break;
+        case ts.SyntaxKind.TypeLiteral:
+          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.typeLiteralReflection(firstDeclaration as ts.InterfaceDeclaration)));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+          }
+
+          break;
+        case ts.SyntaxKind.EnumDeclaration:
+          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.enumReflection(firstDeclaration as ts.EnumDeclaration)));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+          }
+
+          break;
+        case ts.SyntaxKind.EnumMember:
+          expression = context.factory.enumMemberReflection(firstDeclaration as ts.EnumMember);
+        case ts.SyntaxKind.FunctionDeclaration:
+          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.functionTypeReflection(firstDeclaration as ts.FunctionTypeNode)));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+          }
+
+          break;
+        case ts.SyntaxKind.VariableDeclaration:
+          expressions.push(context.factory.libCall('var', [ts.createLiteral((firstDeclaration as ts.VariableDeclaration).name.getText()), context.factory.typeReflection((firstDeclaration as ts.VariableDeclaration).type)]));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+          }
+
+          break;
+        case ts.SyntaxKind.TypeAliasDeclaration:
+          expressions.push(context.factory.typeAliasDeclarationReflection(firstDeclaration as ts.TypeAliasDeclaration, ids[0]));
+
+          for (let i = 1; i < ids.length; i++) {
+            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+          }
+
+          break;
+        case ts.SyntaxKind.TypeParameter:
+          console.log(firstDeclaration.parent.getText())
+          break;
+        default:
+          throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[firstDeclaration.kind]}`);
+      }
+
+    });
+
+    sf = ts.updateSourceFileNode(sf, expressions.map(exp => {
+      return ts.createStatement(context.factory.libCall('declare', exp));
+    }))
+
     ts.sys.writeFile(outDir, printer.printFile(sf));
   }
 
@@ -441,7 +528,7 @@ function debugNodeAttributes(node: ts.Node, context: MutationContext): void {
   if (!DEBUG) return;
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
-    console.log(`Implicit Type: ${context.scanner.getAttributes(node).typeNode}`);
+    console.log(`Implicit Type: ${context.scanner.getInfo(node).typeNode}`);
   } catch (e) {
     console.log('Implicit Type:');
   }

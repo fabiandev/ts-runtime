@@ -40,8 +40,8 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private setProcessed(node: ts.ClassDeclaration) {
-    const nodeAttributes = this.scanner.getAttributes(node);
-    this.context.processed.push(nodeAttributes.type.symbol);
+    const nodeInfo = this.scanner.getInfo(node);
+    this.context.processed.push(nodeInfo.typeInfo.symbol);
   }
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
