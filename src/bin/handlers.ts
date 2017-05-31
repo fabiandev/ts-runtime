@@ -23,7 +23,7 @@ function killChild(exitOtherwise = true) {
 }
 
 process.on('exit', () => {
-  killChild(false);
+  killChild();
 });
 
 process.on('SIGINT', () => {

@@ -45,16 +45,34 @@ function defaultAction() {
   process.exit();
 }
 
+function setCompilerOptions(opts: string) {
+  compilerOptions = opts;
+}
+
+function setDeclarationFileName(fileName: string) {
+  const ext = path.extname(fileName);
+
+  if (ext) {
+    if (ext !== '.ts') {
+      throw new ProgramError('Declaration file name must be .ts or omitted.');
+    } else {
+      fileName = fileName.slice(0, ext.length * -1);
+    }
+  }
+
+  if (path.basename(fileName) !== fileName) {
+    throw new ProgramError('Declaration file name must not be a path.');
+  }
+
+  options.declarationFile = fileName;
+}
+
 function setFinishOnError() {
   options.finishOnError = true;
 }
 
 function setKeepTempFiles() {
-  options.keepTempFiles = true;
-}
-
-function setTempFolder(name: string) {
-  options.tempFolderName = name;
+  options.keepTemp = true;
 }
 
 function setLib(lib: string) {
@@ -65,24 +83,25 @@ function setNamespace(namespace: string) {
   options.libNamespace = namespace;
 }
 
-function setCompilerOptions(opts: string) {
-  compilerOptions = opts;
-}
-
 function setStackTrace(limit?: number) {
   options.stackTrace = limit !== 0 && !limit ? 3 : limit;
+}
+
+function setTempFolder(name: string) {
+  options.tempFolderName = name;
 }
 
 program
   .version(pkg.version, '-v, --version')
   .description(`---------  ts-runtime  ---------
-  Inserts runtime type checks for
-  your  TypeScript  applications.
+  Turns TypeScript type assertions
+  into runtime type checks for you
   --------------------------------`)
   .usage('[options] <file>')
   .option('-c, --compiler-options <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
+  .option('-d, --declaration-file <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
-  .option('-k, --keep-temp-files', 'keep temporary files. default to false', setKeepTempFiles)
+  .option('-k, --keep-temp', 'keep temporary files. default to false', setKeepTempFiles)
   .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
   .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
   .option('-s, --stack-trace [limit]', 'show stack trace of errors with an optional limit. defaults to 3', setStackTrace)
@@ -92,7 +111,7 @@ program
     console.log();
     console.log('    $ tsr entry.ts');
     console.log('    $ tsr entry.ts --force');
-    console.log('    $ tsr -c \'{ "strictNullChecks": "true" }\' entry.ts');
+    console.log('    $ tsr -c \'{ "outDir": "dist" }\' entry.ts');
     console.log();
   });
 
