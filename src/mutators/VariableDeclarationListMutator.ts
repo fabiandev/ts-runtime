@@ -76,7 +76,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return false;
     }
 
-    if (this.incompatibleParents.indexOf(node.parent.kind) !== -1) {
+    if (!node.parent || this.incompatibleParents.indexOf(node.parent.kind) !== -1) {
       return false;
     }
 
