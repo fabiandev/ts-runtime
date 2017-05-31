@@ -39,7 +39,8 @@ export class Scanner {
 
   private _incompatibleKinds = [
     ts.SyntaxKind.ImportClause,
-    ts.SyntaxKind.SourceFile
+    ts.SyntaxKind.SourceFile,
+    ts.SyntaxKind.BinaryExpression
   ];
 
   constructor(private _program: ts.Program, state = ProgramState.None, defer = true, scanDeclarationFiles = false) {
@@ -104,6 +105,17 @@ export class Scanner {
     if (!node || this._incompatibleKinds.indexOf(node.kind) !== -1) {
       return;
     }
+
+    if (node.flags & ts.NodeFlags.Synthesized) {
+      return;
+    }
+
+    console.log(ts.SyntaxKind[node.kind]);
+    console.log(node.getSourceFile().fileName);
+    console.log('------------------------------');
+    console.log(node.getText());
+    console.log();
+    console.log();
 
     let type: ts.Type;
     let typeNode: ts.TypeNode;

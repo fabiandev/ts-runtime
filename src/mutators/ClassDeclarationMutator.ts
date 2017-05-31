@@ -41,6 +41,11 @@ export class ClassDeclarationMutator extends Mutator {
 
   private setProcessed(node: ts.ClassDeclaration) {
     const nodeInfo = this.scanner.getInfo(node);
+
+    if (!nodeInfo) {
+      return;
+    }
+
     this.context.processed.push(nodeInfo.typeInfo.symbol);
   }
 

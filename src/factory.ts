@@ -1438,7 +1438,7 @@ public mutateFunctionBody(node: FunctionLikeNode): FunctionLikeNode {
     bodyAssertions.push(ts.createStatement(this.typeAssertion(this.parameterReflection(param, false), ts.createIdentifier(param.name.getText()))));
   }
 
-  if (node.type.kind !== ts.SyntaxKind.AnyKeyword) {
+  if (node.type && node.type.kind !== ts.SyntaxKind.AnyKeyword) {
     bodyDeclarations.push(
       ts.createVariableStatement(
         [], ts.createVariableDeclarationList(
