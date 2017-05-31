@@ -76,7 +76,7 @@ status.diagnostics = (diags: string[], total?: number) => {
   }
 
   if (total > diags.length) {
-    spinner.fail(chalk.bold(`Only showing first ${diags.length} diagnistics, ${total - diags.length} were hidden.`))
+    spinner.fail(chalk.bold(`Showing first ${diags.length} diagnistics, ${total - diags.length} were hidden.`))
   }
 
   spinner.text = text;
