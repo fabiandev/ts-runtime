@@ -36,27 +36,32 @@ export class MutationContext {
     return node;
   }
 
-  public wasDeclared(node: ts.Node) {
+  // TODO: check if in scope
+  public wasDeclared(node: ts.EntityName) {
     node = util.getIdentifierOfQualifiedName(node);
 
     const declarations = this.getDeclarations(node);
 
     for (let declaration of declarations) {
       if (declaration.getEnd() < node.getEnd()) {
-        return true;
+        if (node.getSourceFile().fileName === declaration.getSourceFile().fileName) {
+          return true;
+        }
       }
     }
 
     return false;
   }
 
-  public isDeclared(node: ts.Node) {
+  public isDeclared(node: ts.EntityName) {
     node = util.getIdentifierOfQualifiedName(node);
 
     const declarations = this.getDeclarations(node);
 
     for (let declaration of declarations) {
+      if (node.getSourceFile().fileName === declaration.getSourceFile().fileName) {
         return true;
+      }
     }
 
     return false;

@@ -511,9 +511,9 @@ export class Factory {
         identifier = this.tdz(identifier as ts.Identifier);
       }
 
-      if (!isDeclared && !asLiteral) {
-        identifier = ts.createIdentifier(this.context.getInlineTypeName(typeNameText));
-      }
+      // if (!isDeclared && !asLiteral) {
+      //   identifier = ts.createIdentifier(this.context.getInlineTypeName(typeNameText));
+      // }
 
       // if (isTypeParameter && !isReturnContext) {
       //   keyword = 'flowInto';

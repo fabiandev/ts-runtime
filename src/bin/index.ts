@@ -29,7 +29,7 @@ function defaultAction() {
 
   options.log = false;
 
-  const opts = ts.convertCompilerOptionsFromJson(JSON.parse(compilerOptions), basePath);
+  const opts = ts.convertCompilerOptionsFromJson(JSON.parse(compilerOptions), '.');
 
   options.compilerOptions = opts.options;
 

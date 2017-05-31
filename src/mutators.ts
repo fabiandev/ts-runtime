@@ -1,5 +1,6 @@
 import { Mutator } from './mutators/Mutator';
 import { ArrowFunctionMutator } from './mutators/ArrowFunctionMutator';
+import { AsExpressionMutator } from './mutators/AsExpressionMutator';
 import { BinaryExpressionMutator } from './mutators/BinaryExpressionMutator';
 import { BlockLikeMutator } from './mutators/BlockLikeMutator';
 import { ClassDeclarationMutator } from './mutators/ClassDeclarationMutator'
@@ -13,6 +14,7 @@ import { VariableDeclarationListMutator } from './mutators/VariableDeclarationLi
 export {
   Mutator,
   ArrowFunctionMutator,
+  AsExpressionMutator,
   BinaryExpressionMutator,
   BlockLikeMutator,
   ClassDeclarationMutator,
@@ -26,6 +28,7 @@ export {
 
 export const mutators: Mutator[] = [
   new ArrowFunctionMutator(),
+  new AsExpressionMutator(),
   new BinaryExpressionMutator(),
   new BlockLikeMutator(),
   new ClassDeclarationMutator(),

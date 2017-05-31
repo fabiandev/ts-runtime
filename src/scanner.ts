@@ -110,12 +110,18 @@ export class Scanner {
       return;
     }
 
-    console.log(ts.SyntaxKind[node.kind]);
-    console.log(node.getSourceFile().fileName);
-    console.log('------------------------------');
-    console.log(node.getText());
-    console.log();
-    console.log();
+    // console.log(ts.SyntaxKind[node.kind]);
+    // console.log(node.getSourceFile().fileName);
+    // console.log('------------------------------');
+    // console.log(node.getText());
+    // console.log();
+    // console.log();
+
+    if (node.kind === ts.SyntaxKind.AsExpression) {
+      let expression = (node as ts.AsExpression).expression;
+      this.mapNode(node, expression);
+      node = expression;
+    }
 
     let type: ts.Type;
     let typeNode: ts.TypeNode;
@@ -173,7 +179,7 @@ export class Scanner {
       }
     }
 
-    const TSR_DECLARATION = typeIsReference && isTypeNode && node.kind !== ts.SyntaxKind.TypeParameter && typeNode.kind !== ts.SyntaxKind.TypeParameter &&
+    const TSR_DECLARATION = typeIsReference && isTypeNode && node.kind !== ts.SyntaxKind.TypeParameter &&
       ((typeReferenceIsExternal && (typeReferenceIsAmbient || typeReferenceIsDeclaration || typeReferenceIsInDeclarationFile)) ||
         (!typeReferenceIsExternal && (typeReferenceIsDeclaration || typeReferenceIsInDeclarationFile)));
 

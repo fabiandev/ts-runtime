@@ -31,16 +31,21 @@ function transformProgram(entryFile: string, options?: Options): void {
   entryFile = path.normalize(entryFile);
   options = getOptions(options);
 
-  const basePath = path.dirname(entryFile);
-  options.compilerOptions.rootDir = path.resolve(basePath);
+  options.compilerOptions.rootDir = options.compilerOptions.rootDir || path.dirname(entryFile);
   options.compilerOptions.preserveConstEnums = true;
 
+  const basePath = options.compilerOptions.rootDir;
+
   let tempEntryFile: string = entryFile;
+  let tempBasePath: string = basePath;
   let host: ts.CompilerHost;
   let program: ts.Program;
   let scanner: Scanner;
   let context: MutationContext;
   let currentSourceFile: ts.SourceFile;
+
+  // console.log('basePath', basePath);
+  // console.log('entryFile', entryFile);
 
   return startTransformation();
 
@@ -133,7 +138,22 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function createProgramFromTempFiles(): void {
-    tempEntryFile = toTempFilePath(tempEntryFile, path.dirname(tempEntryFile), options.tempFolderName);
+    // console.log()
+    // console.log()
+    // console.log(path.resolve(getTempPath(basePath, options.tempFolderName)))
+    // console.log(path.resolve(tempEntryFile))
+
+    tempEntryFile = toTempFilePath(tempEntryFile, basePath, options.tempFolderName);
+    tempBasePath = getTempPath(tempBasePath, options.tempFolderName);
+    // console.log(tempBasePath);
+    // console.log(tempEntryFile);
+
+    // console.log('---')
+    // console.log(path.resolve(basePath))
+    // console.log(path.resolve(tempEntryFile))
+    // console.log();
+    options.compilerOptions.rootDir = tempBasePath;
+
     host = ts.createCompilerHost(options.compilerOptions);
     program = ts.createProgram([tempEntryFile], options.compilerOptions, host, undefined);
   }
@@ -159,7 +179,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function emitTransformed(): boolean {
-    options.compilerOptions.rootDir = undefined;
+    // options.compilerOptions.rootDir = tempBasePath;
     options.compilerOptions.outDir = getOutDir();
 
     createProgramFromTempFiles();
@@ -197,72 +217,14 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     declarations.forEach((ids, key) => {
       let firstDeclaration: ts.Declaration = key.getDeclarations()[0];
-      let expression: ts.Expression;
+      let expression: ts.Expression = getDeclaration(firstDeclaration, ids[0]);
 
-      switch (firstDeclaration.kind) {
-        case ts.SyntaxKind.InterfaceDeclaration:
-          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.typeLiteralReflection(firstDeclaration as ts.InterfaceDeclaration)));
+      if (expression) {
+        expressions.push(expression);
 
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-          }
-
-          break;
-        case ts.SyntaxKind.ClassDeclaration:
-          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.typeLiteralReflection(firstDeclaration as ts.InterfaceDeclaration), 'class'));
-
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0])), 'class'));
-          }
-
-          break;
-        case ts.SyntaxKind.TypeLiteral:
-          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.typeLiteralReflection(firstDeclaration as ts.InterfaceDeclaration)));
-
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-          }
-
-          break;
-        case ts.SyntaxKind.EnumDeclaration:
-          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.enumReflection(firstDeclaration as ts.EnumDeclaration)));
-
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-          }
-
-          break;
-        case ts.SyntaxKind.EnumMember:
-          expression = context.factory.enumMemberReflection(firstDeclaration as ts.EnumMember);
-        case ts.SyntaxKind.FunctionDeclaration:
-          expressions.push(context.factory.typeAliasReflection(ids[0], context.factory.functionTypeReflection(firstDeclaration as ts.FunctionTypeNode)));
-
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-          }
-
-          break;
-        case ts.SyntaxKind.VariableDeclaration:
-          expressions.push(context.factory.libCall('var', [ts.createLiteral((firstDeclaration as ts.VariableDeclaration).name.getText()), context.factory.typeReflection((firstDeclaration as ts.VariableDeclaration).type)]));
-
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-          }
-
-          break;
-        case ts.SyntaxKind.TypeAliasDeclaration:
-          expressions.push(context.factory.typeAliasDeclarationReflection(firstDeclaration as ts.TypeAliasDeclaration, ids[0]));
-
-          for (let i = 1; i < ids.length; i++) {
-            expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-          }
-
-          break;
-        case ts.SyntaxKind.TypeParameter:
-          console.log(firstDeclaration.parent.getText())
-          break;
-        default:
-          throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[firstDeclaration.kind]}`);
+        for (let i = 1; i < ids.length; i++) {
+          expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
+        }
       }
 
     });
@@ -272,6 +234,32 @@ function transformProgram(entryFile: string, options?: Options): void {
     }))
 
     ts.sys.writeFile(outDir, printer.printFile(sf));
+  }
+
+  function getDeclaration(declaration: ts.Declaration, name: string): ts.Expression {
+    switch (declaration.kind) {
+      case ts.SyntaxKind.InterfaceDeclaration:
+        return context.factory.typeAliasReflection(name, context.factory.typeLiteralReflection(declaration as ts.InterfaceDeclaration));
+      case ts.SyntaxKind.ClassDeclaration:
+        return context.factory.typeAliasReflection(name, context.factory.typeLiteralReflection(declaration as ts.InterfaceDeclaration), 'class');
+      case ts.SyntaxKind.TypeLiteral:
+        return context.factory.typeAliasReflection(name, context.factory.typeLiteralReflection(declaration as ts.InterfaceDeclaration));
+      case ts.SyntaxKind.EnumDeclaration:
+        return context.factory.typeAliasReflection(name, context.factory.enumReflection(declaration as ts.EnumDeclaration));
+      case ts.SyntaxKind.EnumMember:
+        return context.factory.enumMemberReflection(declaration as ts.EnumMember);
+      case ts.SyntaxKind.FunctionDeclaration:
+        context.factory.typeAliasReflection(name, context.factory.functionTypeReflection(declaration as ts.FunctionTypeNode));
+      case ts.SyntaxKind.VariableDeclaration:
+        return context.factory.libCall('var', [ts.createLiteral((declaration as ts.VariableDeclaration).name.getText()), context.factory.typeReflection((declaration as ts.VariableDeclaration).type)]);
+      case ts.SyntaxKind.TypeAliasDeclaration:
+        return context.factory.typeAliasDeclarationReflection(declaration as ts.TypeAliasDeclaration, name);
+      case ts.SyntaxKind.TypeParameter:
+        console.log(declaration.parent.getText())
+        return null;
+      default:
+        throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
+    }
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
@@ -310,6 +298,11 @@ function transformProgram(entryFile: string, options?: Options): void {
       // TODO: get widened/apparent type?
       const type = context.checker.getTypeAtLocation(node);
       const typeNode = type ? context.checker.typeToTypeNode(type, node.parent) : void 0;
+      //
+      // type.symbol && type.symbol.members && type.symbol.members.forEach(s => {
+      //   console.log(context.checker.getDeclaredTypeOfSymbol(s))
+      // })
+      // console.log(type.symbol.getDeclarations().map(d => ));
 
       //console.log(context.checker.typeToString(context.checker.getTypeFromTypeNode(typeNode), node.parent))
       return typeNode;
@@ -322,13 +315,13 @@ function transformProgram(entryFile: string, options?: Options): void {
         return node;
       }
 
-      if (node.kind === ts.SyntaxKind.AsExpression) {
-        return context.addVisited(
-          context.factory.typeReflectionAndAssertion(
-            (node as ts.AsExpression).type,
-            (node as ts.AsExpression).expression
-          ), true, (node as ts.AsExpression).expression);
-      }
+      // if (node.kind === ts.SyntaxKind.AsExpression) {
+      //   return context.addVisited(
+      //     context.factory.typeReflectionAndAssertion(
+      //       (node as ts.AsExpression).type,
+      //       (node as ts.AsExpression).expression
+      //     ), true, (node as ts.AsExpression).expression);
+      // }
 
       if (node && !(node as any).type) {
         let type: ts.TypeNode;
@@ -368,10 +361,19 @@ function transformProgram(entryFile: string, options?: Options): void {
         }
       }
 
+      // check if isDeclared
+      // if not add to top with name
+      // if yes, rename type reference
+      // add to top
       // if (node.kind === ts.SyntaxKind.TypeReference) {
+      //   console.log();
       //   const ref = node as ts.TypeReferenceNode;
-      //   const isDeclared = context.isDeclared(ref.typeName);
       //
+      //   let name = util.getIdentifierOfQualifiedName(ref.typeName);
+      //   console.log(name.getText());
+      //
+      //   const isDeclared = context.isDeclared(name);
+      //   console.log(!!isDeclared);
       //   if (!isDeclared) {
       //     const sourceFile = node.getSourceFile();
       //     let lastImport = -1;
@@ -383,12 +385,13 @@ function transformProgram(entryFile: string, options?: Options): void {
       //       }
       //     }
       //
-      //     console.log(ref.typeName);
+      //     // console.log(ref.typeName);
       //     console.log(node.getSourceFile().fileName);
-      //     console.log();
+      //
       //
       //     // splice(lastImport + 1, 0, item)
       //   }
+      //   console.log();
       //
       // }
 
