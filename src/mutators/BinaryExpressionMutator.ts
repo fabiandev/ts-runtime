@@ -22,13 +22,12 @@ export class BinaryExpressionMutator extends Mutator {
     ts.SyntaxKind.GreaterThanGreaterThanEqualsToken
   ];
 
-  // TODO: check spec (e.g. destructuring, rest element,...)
   protected mutate(node: ts.BinaryExpression): ts.Node {
     if (node.left.kind !== ts.SyntaxKind.Identifier) {
       return node;
     }
 
-    if (this.assignmentOperators.indexOf(node.operatorToken.kind as any) === -1) {
+    if (this.isAssignmentOperator(node)) {
       return node;
     }
 
@@ -44,6 +43,10 @@ export class BinaryExpressionMutator extends Mutator {
     const right = this.factory.typeAssertion(name, node.right);
 
     return ts.updateBinary(node, node.left, right);
+  }
+
+  private isAssignmentOperator(node: ts.BinaryExpression): boolean {
+    return this.assignmentOperators.indexOf(node.operatorToken.kind as any) !== -1;
   }
 
 }
