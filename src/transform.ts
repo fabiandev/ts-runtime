@@ -255,7 +255,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       case ts.SyntaxKind.TypeAliasDeclaration:
         return context.factory.typeAliasDeclarationReflection(declaration as ts.TypeAliasDeclaration, name);
       case ts.SyntaxKind.TypeParameter:
-        console.log(declaration.parent.getText())
+        // console.log(declaration.parent.getText())
         return null;
       default:
         throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);

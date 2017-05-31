@@ -16,7 +16,7 @@ export class MutationContext {
   private _visited: ts.Node[];
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
-  private _processed: ts.Symbol[];
+  private _merged: Set<ts.Symbol>;
 
   constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext, entryFilePath: string) {
     if (!entryFilePath.endsWith('.ts')) {
@@ -33,7 +33,7 @@ export class MutationContext {
     this._visited = [];
     this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.libNamespace);
     this._transformationContext = context;
-    this._processed = [];
+    this._merged = new Set();
   }
 
   public map(node: ts.Node, original?: ts.Node): ts.Node {
@@ -210,8 +210,16 @@ export class MutationContext {
     return nodeTypeText === otherTypeText;
   }
 
-  public wasProcessed(symbol: ts.Symbol) {
-    return this.processed.indexOf(symbol) !== -1;
+  public setMerged(symbol: ts.Symbol) {
+    return this._merged.add(symbol);
+  }
+
+  public wasMerged(symbol: ts.Symbol) {
+    return this._merged.has(symbol);
+  }
+
+  public isEntryFile(node: ts.SourceFile) {
+    return node.fileName === this.entryFilePath;
   }
 
   // public getImplicitType(node: ts.Node): ts.Type {
@@ -389,10 +397,6 @@ export class MutationContext {
 
   get factory(): Factory {
     return this._factory;
-  }
-
-  get processed(): ts.Symbol[] {
-    return this._processed;
   }
 
   get entryFilePath(): string {

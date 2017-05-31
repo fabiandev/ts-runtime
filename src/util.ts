@@ -21,6 +21,10 @@ export function asNewArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value.length > 0 ? [...value] : [] : !value ? [] : [value];
 }
 
+export function hasTypeParameters(node: ts.Node): boolean {
+  return Array.isArray((node as any).typeParameters) && (node as any).typeParameters.length > 0;
+}
+
 export function setParent(node: ts.Node): void {
   if (!node) return;
   ts.forEachChild(node, n => {
@@ -126,6 +130,14 @@ export function isDeclaration(node: ts.Node): boolean {
   } while(node = node.parent);
 
   return false
+}
+
+export function hasFlag(node: ts.Node, flag: ts.NodeFlags) {
+  return !!(node.flags & flag);
+}
+
+export function isBindingPattern(node: ts.Node): boolean {
+  return isKind(node, ts.SyntaxKind.ArrayBindingPattern, ts.SyntaxKind.ObjectBindingPattern);
 }
 
 export function isStaticClassElement(node: ts.Node): boolean {

@@ -117,8 +117,24 @@ export class Factory {
   //   return node;
   // }
 
+  public typeAliasDeclaration(node: ts.TypeAliasDeclaration): ts.Statement {
+    return ts.createVariableStatement(
+      node.modifiers,
+      ts.createVariableDeclarationList(
+        [
+          ts.createVariableDeclaration(
+            node.name,
+            undefined,
+            this.typeAliasDeclarationReflection(node)
+          )
+        ],
+        ts.NodeFlags.Const
+      )
+    );
+  }
+
   public typeAliasDeclarationReflection(node: ts.TypeAliasDeclaration, name?: string): ts.Expression {
-    name = name || node.name.getText();
+    name = name ||  node.name.getText();
     const hasSelfReference = this.context.hasSelfReference(node);
     const hasTypeParameters = node.typeParameters && node.typeParameters.length > 0;
     const typeReflection = this.typeReflection(node.type);
@@ -158,6 +174,18 @@ export class Factory {
     return this.typeAliasReflection(name || node.name.getText(), args, 'class');
   }
 
+  public classTypeParameterSymbolDeclaration(name: string | ts.Identifier): ts.VariableDeclarationList {
+    return ts.createVariableDeclarationList([ts.createVariableDeclaration(
+      this.context.getTypeSymbolDeclarationName(name),
+      undefined,
+      ts.createCall(
+        ts.createIdentifier('Symbol'),
+        undefined,
+        [ts.createLiteral(this.context.getTypeSymbolDeclarationInitializer(name))]
+      )
+    )], ts.NodeFlags.Const);
+  }
+
   public enumReflection(node: ts.EnumDeclaration): ts.Expression {
     return this.libCall('union', (node.members || [] as ts.EnumMember[]).map(member => {
       return this.enumMemberReflection(member);
@@ -166,6 +194,20 @@ export class Factory {
 
   public enumMemberReflection(node: ts.EnumMember): ts.Expression {
     return this.libCall('number', ts.createLiteral(this.context.checker.getConstantValue(node)));
+  }
+
+  public importLibStatement(): ts.Statement {
+    return ts.createImportDeclaration(
+      undefined, undefined, ts.createImportClause(
+        ts.createIdentifier(this.context.factory.lib), undefined),
+      ts.createLiteral(this.context.factory.package)
+    );
+  }
+
+  public importDeclarationsStatement(): ts.Statement {
+    return ts.createImportDeclaration(
+      undefined, undefined, undefined, ts.createLiteral(`./${this.context.options.declarationFile}`)
+    );
   }
 
   // public typeReflection(node: ts.InterfaceDeclaration | ts.ClassDeclaration | ts.LiteralType): ts.Expression {
@@ -189,14 +231,14 @@ export class Factory {
       case ts.SyntaxKind.ClassDeclaration:
         const elements = this.getProperties(node) as ts.TypeElement[] | ts.ClassElement[];
 
-          for (let member of node.members) {
-            if (node.kind === ts.SyntaxKind.ClassDeclaration && util.isStaticClassElement(member)) {
-              (elements as (ts.TypeElement | ts.ClassElement)[]).push(member)
-            }
-            if (member.kind === ts.SyntaxKind.IndexSignature) {
-              (elements as (ts.TypeElement | ts.ClassElement)[]).unshift(member)
-            }
+        for (let member of node.members) {
+          if (node.kind === ts.SyntaxKind.ClassDeclaration && util.isStaticClassElement(member)) {
+            (elements as (ts.TypeElement | ts.ClassElement)[]).push(member)
           }
+          if (member.kind === ts.SyntaxKind.IndexSignature) {
+            (elements as (ts.TypeElement | ts.ClassElement)[]).unshift(member)
+          }
+        }
 
         let reflection: ts.Expression = this.asObject(
           this.elementsReflection(elements)
@@ -556,7 +598,7 @@ export class Factory {
     ]);
   }
 
-  public functionTypeReflection(node: ts.FunctionExpression | ts.ArrowFunction |  ts.FunctionDeclaration | ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration): ts.Expression {
+  public functionTypeReflection(node: ts.FunctionExpression | ts.ArrowFunction | ts.FunctionDeclaration | ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration): ts.Expression {
     const parameters = node.parameters || [] as ts.ParameterDeclaration[];
     let args: ts.Expression[] = parameters.map(param => this.parameterReflection(param));
     args.push(this.returnTypeReflection(node.type));

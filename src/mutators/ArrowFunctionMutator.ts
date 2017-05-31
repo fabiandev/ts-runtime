@@ -13,7 +13,7 @@ export class ArrowFunctionMutator extends Mutator {
       node.parameters, node.type, (substitution as ts.ArrowFunction).body
     );
 
-    let annotation = this.factory.libCall('annotate', [
+    let annotation = this.factory.annotate([
       substitution, this.factory.functionTypeReflection(node)
     ]);
 

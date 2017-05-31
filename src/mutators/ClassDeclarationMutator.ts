@@ -31,7 +31,7 @@ export class ClassDeclarationMutator extends Mutator {
 
     this.assertImplementing(node, members);
     this.declareTypeParameters(node, members);
-    this.setProcessed(node);
+    this.setMerged(node);
 
     return ts.updateClassDeclaration(
       node, this.reflectClass(node), node.modifiers, node.name,
@@ -39,14 +39,14 @@ export class ClassDeclarationMutator extends Mutator {
     );
   }
 
-  private setProcessed(node: ts.ClassDeclaration) {
+  private setMerged(node: ts.ClassDeclaration) {
     const nodeInfo = this.scanner.getInfo(node);
 
     if (!nodeInfo) {
       return;
     }
 
-    this.context.processed.push(nodeInfo.typeInfo.symbol);
+    this.context.setMerged(nodeInfo.typeInfo.symbol);
   }
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
