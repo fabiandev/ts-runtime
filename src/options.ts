@@ -3,10 +3,11 @@ import * as ts from 'typescript';
 export interface Options {
   compilerOptions?: ts.CompilerOptions;
   finishOnError?: boolean;
-  keepTempFiles?: boolean;
+  keepTemp?: boolean;
   tempFolderName?: string;
   libIdentifier?: string;
   libNamespace?: string;
+  declarationFile?: string;
   log?: boolean;
   stackTrace?: number;
 }
@@ -20,14 +21,15 @@ export const defaultOptions: Options = {
     strictNullChecks: true,
     experimentalDecorators: true,
     sourceMap: false,
-    // preserveConstEnums: true,
-    // emitDecoratorMetadata: true,
+    removeComments: true,
+    preserveConstEnums: true,
   },
   finishOnError: false,
-  keepTempFiles: true,
+  keepTemp: true,
   tempFolderName: '.tsr',
   libIdentifier: 't',
   libNamespace: '_',
+  declarationFile: 'tsr-declarations',
   log: true,
   stackTrace: 3
 };

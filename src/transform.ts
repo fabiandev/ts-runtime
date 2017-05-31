@@ -83,7 +83,7 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     // Check original file (pre-diagnostics)
     if (!check(diagnostics, options.log) && !options.finishOnError) {
-      if (!options.keepTempFiles) deleteTempFiles();
+      if (!options.keepTemp) deleteTempFiles();
       emit(bus.events.STOP);
       return;
     }
@@ -108,19 +108,19 @@ function transformProgram(entryFile: string, options?: Options): void {
     // do not check post-diagnostics of temp file
     // check(result.diagnostics, options.log)
 
+    emitDeclarations();
+
     if (!emitTransformed() && !options.finishOnError) {
-      if (!options.keepTempFiles) deleteTempFiles();
+      if (!options.keepTemp) deleteTempFiles();
       emit(bus.events.STOP);
       return;
     }
 
     emit(bus.events.CLEANUP);
 
-    if (!options.keepTempFiles) {
+    if (!options.keepTemp) {
       deleteTempFiles();
     }
-
-    emitDeclarations();
 
     typedResult.dispose();
     result.dispose();
@@ -205,11 +205,11 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function emitDeclarations() {
-    const filename = '_tsr-declarations.js';
-    const outDir = path.join(getOutDir(), filename);
+    const filename = `${options.declarationFile}.ts`;
+    const outDir = path.dirname(toTempFilePath(tempEntryFile, basePath, options.tempFolderName));
     const printer = ts.createPrinter();
 
-    let sf = ts.createSourceFile(filename, '', ts.ScriptTarget.ES2015, true, ts.ScriptKind.JS);
+    let sf = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
 
     const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
@@ -233,7 +233,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       return ts.createStatement(context.factory.libCall('declare', exp));
     }))
 
-    ts.sys.writeFile(outDir, printer.printFile(sf));
+    ts.sys.writeFile(path.join(outDir, filename), printer.printFile(sf));
   }
 
   function getDeclaration(declaration: ts.Declaration, name: string): ts.Expression {
@@ -265,7 +265,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
     if (node.kind === ts.SyntaxKind.SourceFile && currentSourceFile !== node) {
       currentSourceFile = node as ts.SourceFile;
-      context = new MutationContext(node as ts.SourceFile, options, program, host, scanner, transformationContext);
+      context = new MutationContext(node as ts.SourceFile, options, program, host, scanner, transformationContext, path.resolve(tempEntryFile));
     }
   }
 

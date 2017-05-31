@@ -6,6 +6,7 @@ import { Scanner } from './scanner';
 
 export class MutationContext {
 
+  private _entryFilePath: string;
   private _options: Options;
   private _sourceFile: ts.SourceFile;
   private _program: ts.Program;
@@ -17,7 +18,12 @@ export class MutationContext {
   private _transformationContext: ts.TransformationContext;
   private _processed: ts.Symbol[];
 
-  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext) {
+  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext, entryFilePath: string) {
+    if (!entryFilePath.endsWith('.ts')) {
+      entryFilePath = `${entryFilePath}.ts`;
+    }
+
+    this._entryFilePath = entryFilePath;
     this._sourceFile = sourceFile;
     this._options = options;
     this._program = program;
@@ -387,6 +393,10 @@ export class MutationContext {
 
   get processed(): ts.Symbol[] {
     return this._processed;
+  }
+
+  get entryFilePath(): string {
+    return this._entryFilePath;
   }
 
 }

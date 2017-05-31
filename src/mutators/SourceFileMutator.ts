@@ -11,12 +11,22 @@ export class SourceFileMutator extends Mutator {
     const statements = util.asNewArray(node.statements);
 
     // TODO: insert after references
-    statements.unshift(ts.createImportDeclaration(
-      undefined, undefined, ts.createImportClause(
-        ts.createIdentifier(this.context.factory.lib), undefined),
-        ts.createLiteral(this.context.factory.package)
-      )
-    );
+
+    const declarations = [
+      ts.createImportDeclaration(
+        undefined, undefined, ts.createImportClause(
+          ts.createIdentifier(this.context.factory.lib), undefined),
+          ts.createLiteral(this.context.factory.package)
+        )
+    ];
+
+    if (this.isEntryFile(node)) {
+      declarations.push(ts.createImportDeclaration(
+        undefined, undefined, undefined, ts.createLiteral(`./${this.context.options.declarationFile}`)
+      ));
+    }
+
+    statements.unshift(...declarations);
 
     // statements.unshift(ts.createImportDeclaration(
     //   [], undefined, ts.createImportClause(
@@ -42,6 +52,13 @@ export class SourceFileMutator extends Mutator {
     // return substitution;
 
     return ts.updateSourceFileNode(node, statements);
+  }
+
+  private isEntryFile(node: ts.SourceFile): boolean {
+    console.log(node.fileName);
+    console.log(this.context.entryFilePath);
+    console.log()
+    return node.fileName === this.context.entryFilePath;
   }
 
 }

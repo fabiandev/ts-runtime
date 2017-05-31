@@ -30,12 +30,12 @@ export function setParent(node: ts.Node): void {
 }
 
 export function getHash(str: string): number {
-  var hash = 5381,
-      i    = str.length;
+  var hash = 5381, i = str.length;
 
   while(i) {
     hash = (hash * 33) ^ str.charCodeAt(--i);
   }
+
   return hash >>> 0;
   // return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
 }
