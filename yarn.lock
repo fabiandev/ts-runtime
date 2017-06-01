@@ -1755,8 +1755,8 @@ typescript@^2.1.4:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.1.5.tgz#6fe9479e00e01855247cea216e7561bafcdbcd4a"
 
 typescript@next:
-  version "2.4.0-dev.20170529"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.4.0-dev.20170529.tgz#602da5a441a922dbc652272b49241096a780030b"
+  version "2.4.0-dev.20170601"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.4.0-dev.20170601.tgz#9bac807d61a6a02340264ebaaefca08606d22b61"
 
 uglify-js@^2.8.5:
   version "2.8.21"
