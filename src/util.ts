@@ -113,7 +113,7 @@ export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
 }
 
 export function extendsClauseHasTypeArguments(node: ts.HeritageClause): boolean {
-  return node && Array.isArray(node.types) && node.types[0] && Array.isArray(node.types[0].typeArguments && node.types[0].typeArguments.length > 0);
+  return node && node.types && node.types[0] && node.types[0].typeArguments && node.types[0].typeArguments.length > 0;
 }
 
 export function isAmbient(node: ts.Node): boolean {

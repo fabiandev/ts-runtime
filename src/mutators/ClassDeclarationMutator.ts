@@ -94,11 +94,14 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private declareTypeParameters(node: ts.ClassDeclaration, members: ts.ClassElement[]): ts.ClassElement[] {
-    if (!util.hasTypeParameters(node)) {
+    const extendsClause = util.getExtendsClause(node);
+    const hasTypeParameters = util.hasTypeParameters(node);
+    const extendsClauseHasTypeArguments = util.extendsClauseHasTypeArguments(extendsClause);
+
+    if (!hasTypeParameters && !extendsClauseHasTypeArguments) {
       return members;
     }
 
-    const extendsClause = util.getExtendsClause(node);
     let constructor = this.getConstructor(members);
     let statements: ts.Statement[] = util.asNewArray(constructor.body.statements);
 
@@ -106,16 +109,18 @@ export class ClassDeclarationMutator extends Mutator {
     let thisStatement: ts.Statement;
     let bindStatement: ts.Statement;
 
-    typeParametersStatement = this.factory.typeParametersLiteralDeclaration(node.typeParameters);
-    thisStatement = this.factory.classTypeParameterSymbolConstructorDeclaration(node.name);
+    if (hasTypeParameters) {
+      typeParametersStatement = this.factory.typeParametersLiteralDeclaration(node.typeParameters);
+      thisStatement = this.factory.classTypeParameterSymbolConstructorDeclaration(node.name);
+      this.insertBeforeSuper(statements, typeParametersStatement);
+    }
 
-    if (util.extendsClauseHasTypeArguments(extendsClause)) {
+    if (extendsClauseHasTypeArguments) {
       bindStatement = this.factory.typeParameterBindingDeclaration(
         extendsClause.types[0].typeArguments
       );
     }
 
-    this.insertBeforeSuper(statements, typeParametersStatement);
     this.insertAfterSuper(statements, [thisStatement, bindStatement].filter(statement => !!statement));
     this.updateConstructor(members, constructor, statements);
 

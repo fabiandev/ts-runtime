@@ -560,12 +560,22 @@ export class Factory {
     const nodeInfo = scanner.getInfo(node);
     const isSelfReference = this.context.isSelfReference(node);
 
+    console.log('has info', !!nodeInfo)
+    console.log('has parent', !!node.parent)
+
     if (!isSelfReference && nodeInfo && nodeInfo.typeInfo.TSR_DECLARATION) {
       asLiteral = true;
     }
 
     const typeNameText: string = util.getTypeNameText(node.typeName);
-    const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n =>  this.typeReflection(n));
+
+    console.log(typeNameText);
+    console.log();
+
+    const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n =>  {
+      return this.typeReflection(n)
+    });
+    // const args: ts.Expression[] = [];
 
     let isTypeParameter: boolean;
     let isClassTypeParameter: boolean;

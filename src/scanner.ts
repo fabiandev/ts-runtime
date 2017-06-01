@@ -117,6 +117,7 @@ export class Scanner {
       return;
     }
 
+    // This check may cause errors
     if (node.flags & ts.NodeFlags.Synthesized) {
       return;
     }
@@ -170,9 +171,13 @@ export class Scanner {
     } else {
       typeNode = this._checker.typeToTypeNode(type, node.parent);
 
-      if (typeNode.kind === ts.SyntaxKind.TypeReference) {
+      // type, types, typeArguments (aliasTypeArguments?)
+
+      //if (typeNode.kind === ts.SyntaxKind.TypeReference) {
         this.mapNode(node, typeNode);
-      }
+        (typeNode as ts.TypeReferenceNode).typeArguments;
+        (type as ts.TypeReference).typeArguments
+      //}
     }
 
     typeText = this._checker.typeToString(type, node.parent);
