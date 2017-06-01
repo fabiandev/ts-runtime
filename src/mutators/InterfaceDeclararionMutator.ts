@@ -15,7 +15,7 @@ export class InterfaceDeclarationMutator extends Mutator {
 
   private removeInterface(node: ts.InterfaceDeclaration): boolean {
     const nodeInfo = this.scanner.getInfo(node);
-    const willBeDeclaredInClass = this.willBeDeclaredInClass(nodeInfo.typeInfo.declarations);
+    const willBeDeclaredInClass = this.willBeDeclaredInClass(nodeInfo.typeInfo.symbol.getDeclarations());
     const wasMerged = this.context.wasMerged(nodeInfo.typeInfo.symbol);
 
     if (!willBeDeclaredInClass) {
