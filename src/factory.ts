@@ -558,8 +558,9 @@ export class Factory {
     let asLiteral = false;
     const scanner = this.context.scanner;
     const nodeInfo = scanner.getInfo(node);
+    const isSelfReference = this.context.isSelfReference(node);
 
-    if (nodeInfo && nodeInfo.typeInfo.TSR_DECLARATION) {
+    if (!isSelfReference && nodeInfo && nodeInfo.typeInfo.TSR_DECLARATION) {
       asLiteral = true;
     }
 
@@ -609,7 +610,7 @@ export class Factory {
         keyword = 'number';
       }
 
-      // TODO: check if self-referencing
+      // TODO: check if self-referencing DONE
       // TODO: no tdz if exists
       // TODO: what if changes due to declaration merging
 
@@ -630,7 +631,7 @@ export class Factory {
         identifier = ts.createIdentifier(typeNameText);
       }
 
-      if (!isTypeParameter && !asLiteral && !wasDeclared && isDeclared) {
+      if (!isSelfReference && !isTypeParameter && !asLiteral && !wasDeclared && isDeclared) {
         identifier = this.tdz(identifier as ts.Identifier);
       }
 
