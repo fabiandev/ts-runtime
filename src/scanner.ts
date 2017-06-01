@@ -5,7 +5,7 @@ import { ProgramState } from './transform';
 export interface TypeInfo {
   TSR_DECLARATION: boolean;
   isReference: boolean;
-  declarations: ts.Declaration[];
+  // declarations: ts.Declaration[];
   isLiteral: boolean;
   isExternal: boolean;
   isAmbient: boolean;
@@ -183,7 +183,7 @@ export class Scanner {
     let typeReferenceIsInDeclarationFile = false;
     let typeReferenceIsExternal = false;
     let typeIsLiteral = !typeNode ? false : util.isLiteral(typeNode);
-    let typeDeclarations: ts.Declaration[] = [];
+    // let typeDeclarations: ts.Declaration[] = [];
 
     if (typeIsLiteral) {
       baseType = this._checker.getBaseTypeOfLiteralType(type);
@@ -211,7 +211,7 @@ export class Scanner {
     let typeInfo: TypeInfo = {
       TSR_DECLARATION,
       isReference: typeIsReference,
-      declarations: typeDeclarations,
+      // declarations: typeDeclarations,
       isLiteral: typeIsLiteral,
       isAmbient: typeReferenceIsAmbient,
       isDeclaration: typeReferenceIsDeclaration,
