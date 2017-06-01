@@ -73,6 +73,24 @@ export class MutationContext {
     return false;
   }
 
+  public isSelfReference(node: ts.TypeReferenceNode): boolean {
+    let next: ts.Node = node;
+    let typeSymbol = this.scanner.getSymbolFromNode((node as ts.TypeReferenceNode).typeName)
+
+    while(next.parent) {
+      next = next.parent;
+
+      if (util.isKind(next, ts.SyntaxKind.ClassDeclaration, ts.SyntaxKind.InterfaceDeclaration, ts.SyntaxKind.TypeAliasDeclaration)) {
+        let symbol = this.scanner.getSymbolFromNode((next as any).name || next);
+        if (typeSymbol === symbol) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   public hasSelfReference(node: ts.Node): boolean {
     let symbol = this.scanner.getSymbolFromNode((node as any).name || node);
 
