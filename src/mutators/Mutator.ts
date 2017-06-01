@@ -20,11 +20,24 @@ export abstract class Mutator {
       return node;
     }
 
+    if (this.shouldRemove(node)) {
+      return null;
+    }
+
     return this.mutate(node);
+  }
+
+  public map<T extends ts.Node>(original: ts.Node, other: T): T {
+    this.scanner.mapNode(original, other);
+    return other;
   }
 
   public shouldMutate(node: ts.Node) {
     return node && util.asArray(this.kind).indexOf(node.kind) !== -1;
+  }
+
+  public shouldRemove(node: ts.Node) {
+    return util.isDeclaration(node);
   }
 
   get factory(): Factory {

@@ -170,6 +170,10 @@ export class MutationContext {
   }
 
   public isAny(node: ts.Node): boolean {
+    if (node.kind === ts.SyntaxKind.AnyKeyword) {
+      return true;
+    }
+
     const nodeInfo = this.scanner.getInfo(node);
 
     if (!nodeInfo || !nodeInfo.typeNode) {

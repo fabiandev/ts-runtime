@@ -100,10 +100,11 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
     scanner = new Scanner(program, ProgramState.Transform);
+    scanner.scan();
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
-    writeTempFiles(result);
+    writeTempFiles(result, true);
 
     // do not check post-diagnostics of temp file
     // check(result.diagnostics, options.log)
@@ -158,13 +159,17 @@ function transformProgram(entryFile: string, options?: Options): void {
     program = ts.createProgram([tempEntryFile], options.compilerOptions, host, undefined);
   }
 
-  function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
+  function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>, removeTypes = false): void {
     const printerOptions: ts.PrinterOptions = {
       removeComments: false
     };
 
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
+        if (removeTypes && (node as any).type) {
+          (node as any).type = undefined;
+        }
+
         return node;
       }
     };
@@ -214,7 +219,6 @@ function transformProgram(entryFile: string, options?: Options): void {
     const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
 
-
     declarations.forEach((ids, key) => {
       let firstDeclaration: ts.Declaration = key.getDeclarations()[0];
       let expression: ts.Expression = getDeclaration(firstDeclaration, ids[0]);
@@ -229,9 +233,12 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     });
 
-    sf = ts.updateSourceFileNode(sf, expressions.map(exp => {
-      return ts.createStatement(context.factory.libCall('declare', exp));
-    }))
+    sf = ts.updateSourceFileNode(sf, [
+      context.factory.importLibStatement(),
+      ...expressions.map(exp => {
+        return ts.createStatement(context.factory.libCall('declare', exp));
+      })
+    ])
 
     ts.sys.writeFile(path.join(outDir, filename), printer.printFile(sf));
   }
@@ -247,7 +254,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       case ts.SyntaxKind.EnumDeclaration:
         return context.factory.typeAliasReflection(name, context.factory.enumReflection(declaration as ts.EnumDeclaration));
       case ts.SyntaxKind.EnumMember:
-        return context.factory.enumMemberReflection(declaration as ts.EnumMember);
+        return context.factory.typeAliasReflection(name, context.factory.enumMemberReflection(declaration as ts.EnumMember));
       case ts.SyntaxKind.FunctionDeclaration:
         context.factory.typeAliasReflection(name, context.factory.functionTypeReflection(declaration as ts.FunctionTypeNode));
       case ts.SyntaxKind.VariableDeclaration:
@@ -296,8 +303,8 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     const getImplicitTypeNode = (node: ts.Node) => {
       // TODO: get widened/apparent type?
-      const type = context.checker.getTypeAtLocation(node);
-      const typeNode = type ? context.checker.typeToTypeNode(type, node.parent) : void 0;
+      const type = context.checker.getTypeAtLocation((node as any).name || node);
+      const typeNode = type ? context.checker.typeToTypeNode(type, (node as any).name ? (node as any).name.parent : node.parent) : void 0;
       //
       // type.symbol && type.symbol.members && type.symbol.members.forEach(s => {
       //   console.log(context.checker.getDeclaredTypeOfSymbol(s))

@@ -8,7 +8,7 @@ export class AsExpressionMutator extends Mutator {
   protected mutate(node: ts.AsExpression): ts.Node {
     return this.factory.typeReflectionAndAssertion(
       (node as ts.AsExpression).type,
-      (node as ts.AsExpression).expression
+      (node as ts.AsExpression).expression  // TODO: <---- CHECK TST_DECLARATION
     );
   }
 

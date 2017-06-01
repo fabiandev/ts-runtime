@@ -112,6 +112,10 @@ export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
   return false;
 }
 
+export function extendsClauseHasTypeArguments(node: ts.HeritageClause): boolean {
+  return node && Array.isArray(node.types) && node.types[0] && Array.isArray(node.types[0].typeArguments && node.types[0].typeArguments.length > 0);
+}
+
 export function isAmbient(node: ts.Node): boolean {
   do {
     if (isKind(node, ...AMBIENT_KINDS)) {
@@ -120,6 +124,14 @@ export function isAmbient(node: ts.Node): boolean {
   } while(node = node.parent);
 
   return false
+}
+
+export function getExpression(node: ts.Node): ts.Expression {
+  while((node as any).expression) {
+    node = (node as any).expression;
+  }
+
+  return node as ts.Expression;
 }
 
 export function isDeclaration(node: ts.Node): boolean {
@@ -144,8 +156,19 @@ export function isStaticClassElement(node: ts.Node): boolean {
   return !Array.isArray(node.modifiers) ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
 }
 
+export function getTypeNameText(node: ts.EntityName): string {
+  if (node.kind === ts.SyntaxKind.Identifier) {
+    return (node as ts.Identifier).text;
+  }
+
+  const left = getTypeNameText((node as ts.QualifiedName).left)
+  const right = (node as ts.QualifiedName).right.text;
+
+  return `${left}.${right}`;
+}
+
 export function isTypeParameter(node: ts.TypeReferenceNode): boolean {
-  const nodeName = node.getText();
+  const nodeName = getTypeNameText(node.typeName);
 
   while(node = node.parent as any) {
     if ((node as any).typeParameters && (node as any).typeParameters.length > 0) {
@@ -165,7 +188,7 @@ export function isTypeParameterOf(node: ts.TypeNode, typeParameters: ts.TypePara
     return false;
   }
 
-  const nodeName = (node as ts.TypeReferenceNode).getText();
+  const nodeName = getTypeNameText((node as ts.TypeReferenceNode).typeName);
 
   for (let typeParameter of typeParameters) {
 
