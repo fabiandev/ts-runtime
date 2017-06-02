@@ -24,7 +24,7 @@ export class VariableDeclarationListMutator extends Mutator {
       declarations.push(...this.transform(declaration));
     }
 
-    return this.map(node, ts.updateVariableDeclarationList(node, declarations));
+    return this.map(ts.updateVariableDeclarationList(node, declarations), node);
   }
 
   private transform(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
@@ -54,7 +54,7 @@ export class VariableDeclarationListMutator extends Mutator {
     }
 
     const initializer = this.factory.typeAssertion(nodeName, node.initializer);
-    const assignment = this.map(node, ts.updateVariableDeclaration(node, node.name, node.type, initializer));
+    const assignment = this.map(ts.updateVariableDeclaration(node, node.name, node.type, initializer), node);
 
     return [typeDefinition, assignment];
   }
@@ -66,7 +66,7 @@ export class VariableDeclarationListMutator extends Mutator {
 
     const nodeName = this.context.getTypeDeclarationName(node.name.getText());
     const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
-    const assignment = this.map(node, ts.updateVariableDeclaration(node, node.name, node.type, initializer));
+    const assignment = this.map(ts.updateVariableDeclaration(node, node.name, node.type, initializer), node);
 
     return [assignment];
   }

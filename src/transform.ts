@@ -89,7 +89,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program, ProgramState.FirstPass);
+    scanner = new Scanner(program);
 
     emit(bus.events.TRANSFORM, sourceFiles);
 
@@ -99,7 +99,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     createProgramFromTempFiles();
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program, ProgramState.Transform);
+    scanner = new Scanner(program);
     scanner.scan();
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
@@ -419,7 +419,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       node = ts.visitEachChild(node, visitor, transformationContext);
 
       if (node !== original) {
-        context.scanner.mapNode(original, node);
+        context.scanner.mapNode(node, original);
       }
 
       debugText('~~~~~~~~~~~~~~~~~~~~~');
@@ -434,7 +434,7 @@ function transformProgram(entryFile: string, options?: Options): void {
         node = mutator.mutateNode(node, context);
 
         if (node !== previous) {
-          context.scanner.mapNode(previous, node);
+          context.scanner.mapNode(node, previous);
         }
       }
 
@@ -538,7 +538,7 @@ function debugNodeAttributes(node: ts.Node, context: MutationContext): void {
   if (!DEBUG) return;
   console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
   try {
-    console.log(`Implicit Type: ${context.scanner.getInfo(node).typeNode}`);
+    // console.log(`Implicit Type: ${context.scanner.getInfo(node).typeNode}`);
   } catch (e) {
     console.log('Implicit Type:');
   }

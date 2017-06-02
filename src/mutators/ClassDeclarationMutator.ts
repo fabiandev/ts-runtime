@@ -33,20 +33,20 @@ export class ClassDeclarationMutator extends Mutator {
     this.declareTypeParameters(node, members);
     this.setMerged(node);
 
-    return this.map(node, ts.updateClassDeclaration(
+    return this.map(ts.updateClassDeclaration(
       node, this.reflectClass(node), node.modifiers, node.name,
       node.typeParameters, node.heritageClauses, members
-    ));
+    ), node);
   }
 
   private setMerged(node: ts.ClassDeclaration) {
-    const nodeInfo = this.scanner.getInfo(node);
+    const typeInfo = this.scanner.getTypeInfo(node);
 
-    if (!nodeInfo) {
+    if (!typeInfo) {
       return;
     }
 
-    this.context.setMerged(nodeInfo.typeInfo.symbol);
+    this.context.setMerged(typeInfo.symbol);
   }
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
@@ -70,13 +70,13 @@ export class ClassDeclarationMutator extends Mutator {
     let statements = util.asNewArray(constructor.body.statements);
 
     for (let impl of implementsClause.types || []) {
-      const nodeInfo = this.scanner.getInfo(impl);
+      const typeInfo = this.scanner.getTypeInfo(impl);
 
-      if (!nodeInfo || !nodeInfo.typeInfo.isReference) {
+      if (!typeInfo || !typeInfo.isReference) {
         continue;
       }
 
-      const typeNode = nodeInfo.typeNode as ts.TypeReferenceNode;
+      const typeNode = typeInfo.typeNode as ts.TypeReferenceNode;
 
       statements.push(
         ts.createStatement(
@@ -155,7 +155,7 @@ export class ClassDeclarationMutator extends Mutator {
 
     decorators.unshift(decorator);
 
-    return this.map(node, ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer));
+    return this.map(ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer), node);
   }
 
   private mutateMethodDeclaration(node: MethodLikeProperty): MethodLikeProperty {
@@ -216,13 +216,13 @@ export class ClassDeclarationMutator extends Mutator {
     const index = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
     const exists = index !== -1;
 
-    constructor = this.map(constructor, ts.updateConstructor(
+    constructor = this.map(ts.updateConstructor(
       constructor,
       constructor.decorators,
       constructor.modifiers,
       constructor.parameters,
-      this.map(constructor.body, ts.updateBlock(constructor.body, statements))
-    ));
+      this.map(ts.updateBlock(constructor.body, statements), constructor.body)
+    ), constructor);
 
     if (exists) {
       members[index] = constructor;

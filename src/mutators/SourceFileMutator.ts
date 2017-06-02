@@ -20,7 +20,7 @@ export class SourceFileMutator extends Mutator {
 
     statements.unshift(...declarations);
 
-    return this.map(node, ts.updateSourceFileNode(node, statements));
+    return this.map(ts.updateSourceFileNode(node, statements), node);
   }
 
 }

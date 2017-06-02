@@ -283,7 +283,7 @@ export class Factory {
                   ...implementsClause.types
                     .filter(t => t.expression.getText() !== nodeNameText)
                     .map(t => {
-                      const nodeInfo = this.context.scanner.getInfo(t);
+                      const typeInfo = this.context.scanner.getTypeInfo(t);
                       // const nodeInfo2 = this.context.scanner.getInfo((t as any).name);
                       // const nodeInfo3 = this.context.scanner.getInfo(nodeInfo.typeNode);
 
@@ -317,7 +317,7 @@ export class Factory {
 
                       // console.log(util.getTypeNameText((nodeInfo.typeNode as ts.TypeReferenceNode).typeName))
 
-                      return this.typeReferenceReflection(nodeInfo.typeNode as ts.TypeReferenceNode)
+                      return this.typeReferenceReflection(typeInfo.typeNode as ts.TypeReferenceNode)
                       // return t.expression;
                     }),
                   ...args
@@ -328,8 +328,8 @@ export class Factory {
 
           // TODO: check if working
           if (extendsClause && extendsClause.types && extendsClause.types.length > 0) {
-            const nodeInfo = this.context.scanner.getInfo(extendsClause.types[0]);
-            args.unshift(this.libCall('extends', this.typeReferenceReflection(nodeInfo.typeNode as ts.TypeReferenceNode)));
+            const typeInfo = this.context.scanner.getTypeInfo(extendsClause.types[0]);
+            args.unshift(this.libCall('extends', this.typeReferenceReflection(typeInfo.typeNode as ts.TypeReferenceNode)));
           }
         }
 
@@ -557,13 +557,13 @@ export class Factory {
 
     let asLiteral = false;
     const scanner = this.context.scanner;
-    const nodeInfo = scanner.getInfo(node);
+    const typeInfo = scanner.getTypeInfo(node);
     const isSelfReference = this.context.isSelfReference(node);
 
-    console.log('has info', !!nodeInfo)
+    console.log('has info', !!typeInfo)
     console.log('has parent', !!node.parent)
 
-    if (!isSelfReference && nodeInfo && nodeInfo.typeInfo.TSR_DECLARATION) {
+    if (!isSelfReference && typeInfo && typeInfo.TSR_DECLARATION) {
       asLiteral = true;
     }
 
@@ -612,11 +612,11 @@ export class Factory {
         }
       }
 
-      if ((nodeInfo.typeInfo.symbol && nodeInfo.typeInfo.symbol.flags) & ts.SymbolFlags.RegularEnum) {
+      if ((typeInfo.symbol && typeInfo.symbol.flags) & ts.SymbolFlags.RegularEnum) {
         keyword = asLiteral ? 'ref' : 'typeOf';
-      } else if ((nodeInfo.typeInfo.symbol && nodeInfo.typeInfo.symbol.flags) & ts.SymbolFlags.ConstEnum) {
+      } else if ((typeInfo.symbol && typeInfo.symbol.flags) & ts.SymbolFlags.ConstEnum) {
         keyword = asLiteral ? 'ref' : 'typeOf';
-      } else if ((nodeInfo.typeInfo.symbol && nodeInfo.typeInfo.symbol.flags) & ts.SymbolFlags.EnumMember) {
+      } else if ((typeInfo.symbol && typeInfo.symbol.flags) & ts.SymbolFlags.EnumMember) {
         keyword = 'number';
       }
 
@@ -630,9 +630,9 @@ export class Factory {
       let identifier: ts.Expression;
 
       if (asLiteral) {
-        let sf = nodeInfo.typeInfo.symbol.declarations[0].getSourceFile().fileName;
+        let sf = typeInfo.declarations[0].getSourceFile().fileName;
         let hash = util.getHash(sf);
-        let name = this.context.checker.getFullyQualifiedName(nodeInfo.typeInfo.symbol);
+        let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
         name = name || typeNameText;
         name = `${name}.${hash}`;
 
@@ -762,14 +762,14 @@ export class Factory {
   }
 
   private getProperties(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): ts.TypeElement[] | ts.ClassElement[] {
-    const nodeInfo = this.context.scanner.getInfo(node);
+    const typeInfo = this.context.scanner.getTypeInfo(node);
     const merged: Set<ts.TypeElement> = new Set();
     let type: ts.Type;
 
-    if (!nodeInfo) {
+    if (!typeInfo) {
       type = this.context.checker.getTypeAtLocation(node);
     } else {
-      type = nodeInfo.type;
+      type = typeInfo.type;
     }
 
     if (!type) {
@@ -1518,7 +1518,7 @@ private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): t
         (node as ts.ReturnStatement).expression
       );
 
-      const substitution = this.context.scanner.mapNode(node, ts.updateReturn((node as ts.ReturnStatement), assertion));
+      const substitution = this.context.scanner.mapNode(ts.updateReturn((node as ts.ReturnStatement), assertion), node);
       this.context.addVisited(substitution, true, (node as ts.ReturnStatement).expression);
 
       return substitution;
@@ -1537,7 +1537,7 @@ public mutateFunctionBody(node: FunctionLikeNode): FunctionLikeNode {
 
   if (node.kind === ts.SyntaxKind.ArrowFunction && node.body.kind !== ts.SyntaxKind.Block) {
     const body = ts.createBlock([ts.createReturn(node.body as ts.Expression)], true)
-    node = this.context.scanner.mapNode(node, ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body));
+    node = this.context.scanner.mapNode(ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body), node);
   }
 
   const bodyDeclarations: ts.Statement[] = [];
@@ -1589,7 +1589,7 @@ public mutateFunctionBody(node: FunctionLikeNode): FunctionLikeNode {
   }
 
 
-  let body = this.context.scanner.mapNode(node.body, ts.updateBlock(node.body as ts.Block, this.assertReturnStatements(node.body as ts.Block, node.type).statements));
+  let body = this.context.scanner.mapNode(ts.updateBlock(node.body as ts.Block, this.assertReturnStatements(node.body as ts.Block, node.type).statements), node.body);
   let bodyStatements = body.statements;
 
   bodyStatements.unshift(...bodyAssertions);
@@ -1603,7 +1603,7 @@ public mutateFunctionBody(node: FunctionLikeNode): FunctionLikeNode {
     this.context.addVisited(declaration, true);
   });
 
-  body = this.context.scanner.mapNode(body, ts.updateBlock(body, bodyStatements));
+  body = this.context.scanner.mapNode(ts.updateBlock(body, bodyStatements), body);
 
   let method: FunctionLikeNode;
 

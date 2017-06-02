@@ -116,6 +116,10 @@ export function extendsClauseHasTypeArguments(node: ts.HeritageClause): boolean 
   return node && node.types && node.types[0] && node.types[0].typeArguments && node.types[0].typeArguments.length > 0;
 }
 
+export function isSynthesized(node: ts.Node): boolean {
+  return (node.flags & ts.NodeFlags.Synthesized) === ts.NodeFlags.Synthesized;
+}
+
 export function isAmbient(node: ts.Node): boolean {
   do {
     if (isKind(node, ...AMBIENT_KINDS)) {

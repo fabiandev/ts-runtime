@@ -45,15 +45,15 @@ export class BlockLikeMutator extends Mutator {
   private updateBlock(node: ts.BlockLike, statements: ts.Statement[]): ts.BlockLike {
     switch (node.kind) {
       case this.kind[0]:
-        return this.map(node, ts.updateSourceFileNode(node as ts.SourceFile, statements));
+        return this.map(ts.updateSourceFileNode(node as ts.SourceFile, statements), node);
       case this.kind[1]:
-        return this.map(node, ts.updateBlock(node as ts.Block, statements));
+        return this.map(ts.updateBlock(node as ts.Block, statements), node);
       case this.kind[2]:
-        return this.map(node, ts.updateModuleBlock(node as ts.ModuleBlock, statements));
+        return this.map(ts.updateModuleBlock(node as ts.ModuleBlock, statements), node);
       case this.kind[3]:
-        return this.map(node, ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements));
+        return this.map(ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements), node);
       case this.kind[4]:
-        return this.map(node, ts.updateDefaultClause(node as ts.DefaultClause, statements));
+        return this.map(ts.updateDefaultClause(node as ts.DefaultClause, statements), node);
       default:
         return node;
     }

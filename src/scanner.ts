@@ -1,91 +1,83 @@
 import * as ts from 'typescript';
 import * as util from './util';
-import { ProgramState } from './transform';
 
 export interface TypeInfo {
   TSR_DECLARATION: boolean;
-  isReference: boolean;
-  // declarations: ts.Declaration[];
-  isLiteral: boolean;
-  isExternal: boolean;
-  isAmbient: boolean;
-  isDeclaration: boolean;
-  isInDeclarationFile: boolean;
-  symbol: ts.Symbol;
-}
-
-export interface NodeInfo {
-  node: ts.Node;
-  symbol?: ts.Symbol;
+  enclosingDeclaration: ts.Node;
   sourceFile: ts.SourceFile;
-  isLiteral: boolean;
-  isTypeNode: boolean;
-  typeInfo?: TypeInfo;
+  fileName: string;
+  declarations: ts.Declaration[];
   type: ts.Type;
-  typeNode: ts.TypeNode;
   typeText: string;
+  typeNode: ts.TypeNode;
   baseType: ts.Type;
   baseTypeNode: ts.TypeNode;
   baseTypeText: string;
+  isSynthesized: boolean;
+  isReference: boolean;
+  isLiteral: boolean;
+  isAmbient: boolean;
+  isDeclaration: boolean;
+  isExternal: boolean;
+  isInDeclarationFile: boolean;
+  symbol: ts.Symbol;
+  originalSymbol: ts.Symbol;
+  aliasSymbol: ts.Symbol;
 }
 
 export class Scanner {
 
-  private _state: ProgramState;
-  private _checker: ts.TypeChecker;
-  private _propertiesTable: Map<ts.Node, NodeInfo>;
-  private _aliasMap: Map<ts.Node, ts.Node>;
-  private _declarationsTable: Map<ts.Symbol, string[]>;
+  private program: ts.Program;
+  private checker: ts.TypeChecker;
 
-  private _incompatibleKinds = [
+  private declarations: Map<ts.Symbol, string[]> = new Map();
+  private aliases: Map<ts.Node, ts.Node> = new Map();
+  private properties: Map<ts.Node, TypeInfo> = new Map();
+
+  private skip = [
     ts.SyntaxKind.ImportClause,
     ts.SyntaxKind.SourceFile,
     ts.SyntaxKind.BinaryExpression
   ];
 
-  constructor(private _program: ts.Program, state = ProgramState.None, defer = true, scanDeclarationFiles = false) {
-    this._state = state;
-    this._checker = this._program.getTypeChecker();
-
-    this._propertiesTable = new Map();
-    this._aliasMap = new Map();
-    this._declarationsTable = new Map();
-
-    if (!defer) {
-      this.scan(scanDeclarationFiles)
-    }
+  constructor(program: ts.Program) {
+    this.program = program;
+    this.checker = program.getTypeChecker();
   }
 
-  public scan(scanDeclarationFiles = false): void {
-    let sourceFiles = this._program.getSourceFiles();
-
-    if (!scanDeclarationFiles) {
-      sourceFiles = sourceFiles.filter(sf => !sf.isDeclarationFile);
-    }
+  public scan(): void {
+    let sourceFiles = this.program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
 
     for (let sourceFile of sourceFiles) {
       this.scanner(sourceFile);
     }
   }
 
-  public getSymbolFromNode(node: ts.Node): ts.Symbol {
-    const attributes = this._propertiesTable.get(this.getNode(node));
-    return attributes ? attributes.symbol : null;
-  }
-
-  public getInfo(node: ts.Node): NodeInfo {
-    return this._propertiesTable.get(this.getNode(node));
+  public mapNode<T extends ts.Node>(alias: T, original: ts.Node): T {
+    this.aliases.set(alias, original);
+    return alias;
   }
 
   public getTypeInfo(node: ts.Node): TypeInfo {
-    const nodeInfo = this._propertiesTable.get(this.getNode(node));
-    return nodeInfo ? nodeInfo.typeInfo : null;
+    return this.properties.get(this.getNode(node));
+  }
+
+  public hasTypeInfo(node: ts.Node): boolean {
+    return this.properties.has(this.getNode(node));
+  }
+
+  public getNodeSymbol(node: ts.Node): ts.Symbol {
+    return this.checker.getSymbolAtLocation(this.getNode(node));
+  }
+
+  public getDeclarations(): Map<ts.Symbol, string[]> {
+    return this.declarations;
   }
 
   public getNode(node: ts.Node): ts.Node {
     node = this.getAliasedNode(node);
 
-    if (this.propertiesTable.has(node)) {
+    if (this.properties.has(node)) {
       return node;
     }
 
@@ -95,14 +87,14 @@ export class Scanner {
   }
 
   public getAliasedNode(node: ts.Node): ts.Node {
-    while(this.aliasMap.has(node)) {
-      node = this.aliasMap.get(node);
+    while(this.aliases.has(node)) {
+      node = this.aliases.get(node);
     }
 
     return node;
   }
 
-  private scanner(sourceFile: ts.SourceFile) {
+  private scanner(sourceFile: ts.SourceFile): void {
     const scanNode = (node: ts.Node) => {
       if (!node) return;
       this.scanNode(node);
@@ -112,185 +104,231 @@ export class Scanner {
     ts.forEachChild(sourceFile, scanNode);
   }
 
-  private scanNode(node: ts.Node) {
-    if (!node || this._incompatibleKinds.indexOf(node.kind) !== -1) {
+  private scanNode(node: ts.Node, useType?: ts.Type, enclosingDeclaration?: ts.Node): TypeInfo {
+    if (!this.shouldScan(node)) {
       return;
     }
 
-    // This check may cause errors
+    node = this.mapAsExpression(node);
+    enclosingDeclaration = enclosingDeclaration || node;
+
+    const type = useType || this.getType(node);
+
+    const symbol = type.aliasSymbol || type.symbol;
+    const originalSymbol = type.symbol;
+    const aliasSymbol = type.aliasSymbol;
+    const typeNode = this.getTypeNode(node, type, enclosingDeclaration);
+    const typeText = this.checker.typeToString(type, enclosingDeclaration);
+    const isLiteral = util.isLiteral(typeNode);
+    const isReference = typeNode.kind === ts.SyntaxKind.TypeReference;
+    const isSynthesized = util.isSynthesized(typeNode);
+    const baseType = isLiteral && this.getBaseType(type);
+    const baseTypeNode = baseType && this.checker.typeToTypeNode(baseType, enclosingDeclaration);
+    const baseTypeText = baseType && this.checker.typeToString(baseType, enclosingDeclaration);
+
+    let declarations: ts.Declaration[];
+    let sourceFile: ts.SourceFile;
+    let fileName: string;
+    let isAmbient: boolean;
+    let isDeclaration: boolean;
+    let isInDeclarationFile: boolean;
+    let isExternal: boolean;
+
+    if (isReference && this.hasDeclarations(symbol)) {
+      declarations = symbol.getDeclarations();
+      const firstDeclaration = declarations[0];
+      sourceFile = firstDeclaration.getSourceFile();
+      fileName = sourceFile.fileName;
+      isAmbient = util.isAmbient(firstDeclaration);
+      isDeclaration = util.isDeclaration(firstDeclaration);
+      isInDeclarationFile = sourceFile.isDeclarationFile;
+      isExternal = this.pathIsExternal(fileName);
+    }
+
+    const TSR_DECLARATION = isReference &&
+      (isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
+        (!isExternal && (isDeclaration || isInDeclarationFile)));
+
+    if (TSR_DECLARATION && symbol) {
+      this.addDeclaration(symbol, fileName);
+    }
+
+    if (isSynthesized) {
+      util.setParent(typeNode);
+      this.mapNode(typeNode, node);
+
+      console.log('scan synthesized');
+      // scan synthesized
+      this.scanSynthesizedTypeNode(typeNode, type, enclosingDeclaration);
+
+    }
+
+    // type, constraint, default, elementType, objectType, indexType
+    // typeArguments, elementTypes, types
+
+    // if (isReference && isSynthesized) {
+    //   for (let i = 0; i < (type.aliasTypeArguments || []).length; i++) {
+    //     const typeNodeTypeArgument = (typeNode as ts.TypeReferenceNode).typeArguments[i];
+    //     this.scanNode(typeNodeTypeArgument, type.aliasTypeArguments[i], enclosingDeclaration);
+    //   }
+    //   // for each typeArgument (of ts.Type) that is a type reference, do something
+    // }
+
+    const typeInfo: TypeInfo = {
+      TSR_DECLARATION, enclosingDeclaration, sourceFile, fileName,
+      declarations, type, typeText, typeNode, baseType, baseTypeNode,
+      baseTypeText, isSynthesized, isReference, isLiteral, isAmbient,
+      isDeclaration, isExternal, isInDeclarationFile, symbol,
+      originalSymbol, aliasSymbol,
+    };
+
+    this.properties.set(node, typeInfo);
+
+    return typeInfo;
+  }
+
+  private scanSynthesizedTypeNode(typeNode: ts.TypeNode, type: ts.Type, enclosingDeclaration: ts.Node) {
+    const tn = typeNode as any;
+    const t = type as any;
+
+    switch (typeNode.kind) {
+      case ts.SyntaxKind.TypePredicate:
+      case ts.SyntaxKind.ParenthesizedType:
+      case ts.SyntaxKind.TypeOperator:
+      case ts.SyntaxKind.MappedType:
+        if (tn.type) {
+          this.scanNode(tn.type, t.type, enclosingDeclaration);
+        }
+        break;
+      // .type
+      case ts.SyntaxKind.ArrayType:
+        if (tn.elementType) {
+          this.scanNode(tn.elementType, t.elementType, enclosingDeclaration);
+        }
+        break;
+      // .elementType
+      case ts.SyntaxKind.IndexedAccessType:
+        if (tn.objectType) {
+          this.scanNode(tn.objectType, t.objectType, enclosingDeclaration);
+        }
+        if (tn.indexType) {
+          this.scanNode(tn.indexType, t.indexType, enclosingDeclaration);
+        }
+        break;
+      // .objectType
+      // .indexType
+      case ts.SyntaxKind.TypeReference:
+      case ts.SyntaxKind.ExpressionWithTypeArguments:
+        if (tn.typeArguments) {
+          for (let i = 0; i < (t.typeArguments || []).length; i++) {
+            this.scanNode(tn.typeArguments[i], t.typeArguments[i], enclosingDeclaration);
+          }
+        }
+        break;
+      // .typeArguments[]
+      case ts.SyntaxKind.TupleType:
+        if (tn.elementTypes) {
+          for (let i = 0; i < (t.elementTypes || []).length; i++) {
+            this.scanNode(tn.elementTypes[i], t.elementTypes[i], enclosingDeclaration);
+          }
+        }
+        break;
+      // .elementTypes[]
+      case ts.SyntaxKind.UnionType:
+      case ts.SyntaxKind.IntersectionType:
+        if (tn.types) {
+          for (let i = 0; i < (t.types || []).length; i++) {
+            this.scanNode(tn.types[i], t.types[i], enclosingDeclaration);
+          }
+        }
+        break;
+      // .types[]
+    }
+  }
+
+  private shouldScan(node: ts.Node): boolean {
+    if (!node) {
+      return false;
+    }
+
+    if (this.skip.indexOf(node.kind) !== -1) {
+      return false;
+    }
+
     if (node.flags & ts.NodeFlags.Synthesized) {
-      return;
+      return false;
     }
 
-    // console.log(ts.SyntaxKind[node.kind]);
-    // console.log(node.getSourceFile().fileName);
-    // console.log('------------------------------');
-    // console.log(node.getText());
-    // console.log();
-    // console.log();
+    return true;
+  }
 
+  private mapAsExpression(node: ts.Node): ts.Node {
     if (node.kind === ts.SyntaxKind.AsExpression) {
       let expression = (node as ts.AsExpression).expression;
       this.mapNode(node, expression);
-      node = expression;
+
+      return expression;
     }
 
-    let type: ts.Type;
-    let typeNode: ts.TypeNode;
-    let typeText: string;
-    let baseType: ts.Type;
-    let baseTypeNode: ts.TypeNode;
-    let baseTypeText: string;
+    return node;
+  }
 
-    let isTypeNode = util.isTypeNode(node);
-    let isLiteral = util.isLiteral(node);
-    let sourceFile = node.getSourceFile();
-
-    let canReuseTypeNode: boolean;
+  private getType(node: ts.Node): ts.Type {
+    const isTypeNode = util.isTypeNode(node)
 
     if (isTypeNode) {
-      canReuseTypeNode = true;
-      type = this._checker.getTypeFromTypeNode(node as ts.TypeNode);
-    } else if ((node as any).type) {
-      canReuseTypeNode = true;
-      type = this._checker.getTypeFromTypeNode((node as any).type as ts.TypeNode);
-    } else {
-      canReuseTypeNode = false;
-      type = this._checker.getTypeAtLocation(node);
+      return this.checker.getTypeFromTypeNode(node as ts.TypeNode);
     }
 
-    if (!type) {
-      return;
+    if ((node as any).type) {
+      return this.checker.getTypeFromTypeNode((node as any).type as ts.TypeNode);
     }
 
-    let symbol = this._checker.getSymbolAtLocation(node);
-    let typeSymbol = type.aliasSymbol || type.symbol || symbol;
-
-    if (canReuseTypeNode) {
-      typeNode = node as ts.TypeNode;
-    } else {
-      typeNode = this._checker.typeToTypeNode(type, node.parent);
-
-      // type, types, typeArguments (aliasTypeArguments?)
-
-      //if (typeNode.kind === ts.SyntaxKind.TypeReference) {
-        this.mapNode(node, typeNode);
-        (typeNode as ts.TypeReferenceNode).typeArguments;
-        (type as ts.TypeReference).typeArguments
-      //}
-    }
-
-    typeText = this._checker.typeToString(type, node.parent);
-
-    let typeIsReference = typeNode ? typeNode.kind === ts.SyntaxKind.TypeReference : false;
-    let typeReferenceIsAmbient = false;
-    let typeReferenceIsDeclaration = false;
-    let typeReferenceIsInDeclarationFile = false;
-    let typeReferenceIsExternal = false;
-    let typeIsLiteral = !typeNode ? false : util.isLiteral(typeNode);
-    // let typeDeclarations: ts.Declaration[] = [];
-
-    if (typeIsLiteral) {
-      baseType = this._checker.getBaseTypeOfLiteralType(type);
-
-      if (baseType) {
-        baseTypeNode = this._checker.typeToTypeNode(baseType, node.parent);
-        baseTypeText = this._checker.typeToString(baseType, node.parent);
-      }
-    }
-
-    if (typeIsReference && typeSymbol && typeSymbol.declarations) {
-      for (let dec of typeSymbol.declarations) {
-        const sf = dec.getSourceFile();
-        typeReferenceIsAmbient = !typeReferenceIsAmbient ? util.isAmbient(dec) : typeReferenceIsAmbient;
-        typeReferenceIsDeclaration = !typeReferenceIsDeclaration ? util.isDeclaration(dec) : typeReferenceIsDeclaration;
-        typeReferenceIsInDeclarationFile = !typeReferenceIsInDeclarationFile ? sf.isDeclarationFile : typeReferenceIsInDeclarationFile;
-        typeReferenceIsExternal = !typeReferenceIsExternal ? this.pathIsExternal(sf.fileName) : typeReferenceIsExternal;
-      }
-    }
-
-    const TSR_DECLARATION = typeIsReference && node.kind !== ts.SyntaxKind.TypeParameter &&
-      ((typeReferenceIsExternal && (typeReferenceIsAmbient || typeReferenceIsDeclaration || typeReferenceIsInDeclarationFile)) ||
-        (!typeReferenceIsExternal && (typeReferenceIsDeclaration || typeReferenceIsInDeclarationFile)));
-
-    let typeInfo: TypeInfo = {
-      TSR_DECLARATION,
-      isReference: typeIsReference,
-      // declarations: typeDeclarations,
-      isLiteral: typeIsLiteral,
-      isAmbient: typeReferenceIsAmbient,
-      isDeclaration: typeReferenceIsDeclaration,
-      isInDeclarationFile: typeReferenceIsInDeclarationFile,
-      isExternal: typeReferenceIsExternal,
-      symbol: type.aliasSymbol || type.symbol,
-    };
-
-    let nodeInfo: NodeInfo = {
-      node, symbol, sourceFile, isLiteral, isTypeNode, typeInfo, type,
-      typeNode, typeText, baseType, baseTypeNode, baseTypeText
-    };
-
-    this._propertiesTable.set(node, nodeInfo);
-
-    if (TSR_DECLARATION && typeInfo.symbol) {
-      let sf = typeInfo.symbol.declarations[0].getSourceFile().fileName;
-      let hash = util.getHash(sf);
-      let name = this.checker.getFullyQualifiedName(typeInfo.symbol);
-      name = name || (typeNode as ts.TypeReferenceNode).typeName.getText();
-      name = `${name}.${hash}`;
-
-      if (!this._declarationsTable.has(typeInfo.symbol)) {
-        this._declarationsTable.set(typeInfo.symbol, [name])
-      } else {
-        const names = this._declarationsTable.get(typeInfo.symbol);
-
-        if (names.indexOf(name) === -1) {
-          names.push(name);
-        }
-      }
-    }
-
-    return nodeInfo;
+    return this.checker.getTypeAtLocation(node);
   }
 
-  public getDeclarations(): Map<ts.Symbol, string[]> {
-    return this._declarationsTable;
+  private getTypeNode(node: ts.Node, type: ts.Type, enclosingDeclaration?: ts.Node): ts.TypeNode {
+    const isTypeNode = util.isTypeNode(node);
+
+    if (isTypeNode) {
+      return node as ts.TypeNode;
+    }
+
+    if ((node as any).type && util.isTypeNode((node as any).type)) {
+      return (node as any).type as ts.TypeNode;
+    }
+
+    return this.checker.typeToTypeNode(type, enclosingDeclaration || node);
   }
 
-  public pathIsExternal(fileName: string): boolean {
+  private getBaseType(type: ts.Type): ts.Type {
+    return this.checker.getBaseTypeOfLiteralType(type);
+  }
+
+  private pathIsExternal(fileName: string): boolean {
     const rootDir = this.program.getCompilerOptions().rootDir;
     return !fileName.startsWith(rootDir);
   }
 
-  public mapNode<T extends ts.Node>(original: ts.Node, other: T): T {
-    this._aliasMap.set(other, original);
-    return other;
+  private addDeclaration(symbol: ts.Symbol, fileName: string) {
+    const hash = util.getHash(fileName);
+    const name = this.checker.getFullyQualifiedName(symbol);
+    const uid = `${name}.${hash}`;
+
+    if (!this.declarations.has(symbol)) {
+      this.declarations.set(symbol, [uid])
+      return;
+    }
+
+    const names = this.declarations.get(symbol);
+
+    if (names.indexOf(uid) === -1) {
+      names.push(uid);
+    }
   }
 
-  get program(): ts.Program {
-    return this._program;
-  }
-
-  get checker(): ts.TypeChecker {
-    return this._checker;
-  }
-
-  get propertiesTable(): Map<ts.Node, NodeInfo> {
-    return this._propertiesTable;
-  }
-
-  get aliasMap(): Map<ts.Node, ts.Node> {
-    return this._aliasMap;
-  }
-
-  get incompatibeKinds(): ts.SyntaxKind[] {
-    return this._incompatibleKinds;
-  }
-
-  get declarationTable(): Map<ts.Symbol, string[]> {
-    return this._declarationsTable;
+  private hasDeclarations(symbol: ts.Symbol): boolean {
+    return symbol && symbol.declarations && symbol.declarations.length > 0;
   }
 
 }
-
-export default Scanner;

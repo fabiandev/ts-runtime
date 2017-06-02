@@ -38,7 +38,7 @@ export class MutationContext {
 
   public map(node: ts.Node, original?: ts.Node): ts.Node {
     this.addVisited(node, true);
-    if (original) this.scanner.mapNode(original, node);
+    if (original) this.scanner.mapNode(node, original);
     return node;
   }
 
@@ -75,13 +75,13 @@ export class MutationContext {
 
   public isSelfReference(node: ts.TypeReferenceNode): boolean {
     let next: ts.Node = node;
-    let typeSymbol = this.scanner.getSymbolFromNode((node as ts.TypeReferenceNode).typeName)
+    let typeSymbol = this.scanner.getNodeSymbol((node as ts.TypeReferenceNode).typeName)
 
     while(next.parent) {
       next = next.parent;
 
       if (util.isKind(next, ts.SyntaxKind.ClassDeclaration, ts.SyntaxKind.InterfaceDeclaration, ts.SyntaxKind.TypeAliasDeclaration)) {
-        let symbol = this.scanner.getSymbolFromNode((next as any).name || next);
+        let symbol = this.scanner.getNodeSymbol((next as any).name || next);
         if (typeSymbol === symbol) {
           return true;
         }
@@ -92,7 +92,7 @@ export class MutationContext {
   }
 
   public hasSelfReference(node: ts.Node): boolean {
-    let symbol = this.scanner.getSymbolFromNode((node as any).name || node);
+    let symbol = this.scanner.getNodeSymbol((node as any).name || node);
 
     // if (!symbol) {
     //   this.checker.getSymbolAtLocation((node as any).name || node);
@@ -100,7 +100,7 @@ export class MutationContext {
 
     const search = (node: ts.Node): boolean => {
       const isTypeReference = node.kind === ts.SyntaxKind.TypeReference;
-      const isSelfReference = symbol === (this.scanner.getSymbolFromNode((node as ts.TypeReferenceNode).typeName) /*|| this.checker.getSymbolAtLocation((node as ts.TypeReferenceNode).typeName)*/);
+      const isSelfReference = symbol === (this.scanner.getNodeSymbol((node as ts.TypeReferenceNode).typeName) /*|| this.checker.getSymbolAtLocation((node as ts.TypeReferenceNode).typeName)*/);
 
       if (isTypeReference && isSelfReference) {
         return true;
@@ -182,7 +182,7 @@ export class MutationContext {
   // }
 
   public getDeclarations(node: ts.Node): ts.Declaration[] {
-    const symbol = this.scanner.getSymbolFromNode(node);
+    const symbol = this.scanner.getNodeSymbol(node);
     if (!symbol || !symbol.declarations) return [];
     return symbol.getDeclarations();
   }
@@ -192,13 +192,13 @@ export class MutationContext {
       return true;
     }
 
-    const nodeInfo = this.scanner.getInfo(node);
+    const typeInfo = this.scanner.getTypeInfo(node);
 
-    if (!nodeInfo || !nodeInfo.typeNode) {
+    if (!typeInfo || !typeInfo.typeNode) {
       return false;
     }
 
-    if (nodeInfo.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
+    if (typeInfo.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
       return true;
     }
 
@@ -207,15 +207,15 @@ export class MutationContext {
 
   // TODO: also compare structural (e.g. Options = { /* structure that matches options */ })
   public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
-    const nodeInfo = this.scanner.getInfo(node);
-    const otherInfo = this.scanner.getInfo(other);
+    const typeInfo = this.scanner.getTypeInfo(node);
+    const otherTypeInfo = this.scanner.getTypeInfo(other);
 
-    if (!nodeInfo || !otherInfo) {
+    if (!typeInfo || !otherTypeInfo) {
       return false;
     }
 
-    let nodeTypeText = nodeInfo.typeText;
-    let otherTypeText = otherInfo.typeText;
+    let nodeTypeText = typeInfo.typeText;
+    let otherTypeText = otherTypeInfo.typeText;
 
     if (!nodeTypeText || !otherTypeText) {
       return false;
@@ -225,8 +225,8 @@ export class MutationContext {
       return true;
     }
 
-    if (!strict && !nodeInfo.typeInfo.isLiteral && otherInfo.typeInfo.isLiteral) {
-      otherTypeText = otherInfo.baseTypeText;
+    if (!strict && !typeInfo.isLiteral && otherTypeInfo.isLiteral) {
+      otherTypeText = otherTypeInfo.baseTypeText;
     }
 
     return nodeTypeText === otherTypeText;

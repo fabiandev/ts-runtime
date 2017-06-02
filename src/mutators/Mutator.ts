@@ -27,9 +27,9 @@ export abstract class Mutator {
     return this.mutate(node);
   }
 
-  public map<T extends ts.Node>(original: ts.Node, other: T): T {
-    this.scanner.mapNode(original, other);
-    return other;
+  public map<T extends ts.Node>(alias: T, original: ts.Node): T {
+    this.scanner.mapNode(alias, original);
+    return alias;
   }
 
   public shouldMutate(node: ts.Node) {

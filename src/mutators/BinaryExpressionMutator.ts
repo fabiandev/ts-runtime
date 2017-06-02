@@ -42,7 +42,7 @@ export class BinaryExpressionMutator extends Mutator {
     const name = this.context.getTypeDeclarationName(node.left as ts.BindingName);
     const right = this.factory.typeAssertion(name, node.right);
 
-    return this.map(node, ts.updateBinary(node, node.left, right));
+    return this.map(ts.updateBinary(node, node.left, right), node);
   }
 
   private isAssignmentOperator(node: ts.BinaryExpression): boolean {
