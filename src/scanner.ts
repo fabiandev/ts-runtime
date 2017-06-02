@@ -153,12 +153,18 @@ export class Scanner {
       this.addDeclaration(symbol, fileName);
     }
 
-    if (isSynthesized) {
+    if (useType) console.log(typeText);
+
+    if (isSynthesized && node !== typeNode) {
       util.setParent(typeNode);
       this.mapNode(typeNode, node);
 
+      console.log();
       console.log('scan synthesized');
+      console.log(typeText);
       // scan synthesized
+
+      // works but causes infinite loop
       this.scanSynthesizedTypeNode(typeNode, type, enclosingDeclaration);
 
     }
@@ -220,7 +226,9 @@ export class Scanner {
       case ts.SyntaxKind.TypeReference:
       case ts.SyntaxKind.ExpressionWithTypeArguments:
         if (tn.typeArguments) {
+          console.log('YEEEEES');
           for (let i = 0; i < (t.typeArguments || []).length; i++) {
+            console.log('loooop loop')
             this.scanNode(tn.typeArguments[i], t.typeArguments[i], enclosingDeclaration);
           }
         }
@@ -244,6 +252,7 @@ export class Scanner {
         break;
       // .types[]
     }
+    console.log();
   }
 
   private shouldScan(node: ts.Node): boolean {
@@ -255,9 +264,9 @@ export class Scanner {
       return false;
     }
 
-    if (node.flags & ts.NodeFlags.Synthesized) {
-      return false;
-    }
+    // if (node.flags & ts.NodeFlags.Synthesized) {
+    //   return false;
+    // }
 
     return true;
   }
