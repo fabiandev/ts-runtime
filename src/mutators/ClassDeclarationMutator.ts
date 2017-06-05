@@ -56,6 +56,8 @@ export class ClassDeclarationMutator extends Mutator {
 
     decorators.unshift(decorator);
 
+    // this.skip(decorator, true);
+
     return decorators;
   }
 
@@ -78,14 +80,16 @@ export class ClassDeclarationMutator extends Mutator {
 
       const typeNode = typeInfo.typeNode as ts.TypeReferenceNode;
 
-      statements.push(
-        ts.createStatement(
-          this.factory.typeAssertion(
-            this.factory.typeReferenceReflection(typeNode),
-            ts.createThis()
-          )
+      const assertion = ts.createStatement(
+        this.factory.typeAssertion(
+          this.factory.typeReferenceReflection(typeNode),
+          ts.createThis()
         )
       );
+
+      // this.skip(assertion, true, typeNode);
+
+      statements.push(assertion);
     }
 
     this.updateConstructor(members, constructor, statements);
@@ -153,6 +157,8 @@ export class ClassDeclarationMutator extends Mutator {
       decorator = ts.createDecorator(this.factory.decorate(typeReflection));
     }
 
+    // this.skip(decorator, true);
+
     decorators.unshift(decorator);
 
     return this.map(ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer), node);
@@ -190,6 +196,8 @@ export class ClassDeclarationMutator extends Mutator {
         true
       )
     );
+
+    // this.skip(constructor, true);
 
     return constructor;
   }

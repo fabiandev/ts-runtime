@@ -148,7 +148,7 @@ export function isDeclaration(node: ts.Node): boolean {
   return false
 }
 
-export function hasFlag(node: ts.Node, flag: ts.NodeFlags) {
+export function hasFlag(node: ts.Node | ts.Symbol, flag: ts.NodeFlags | ts.SymbolFlags) {
   return !!(node.flags & flag);
 }
 
@@ -242,7 +242,7 @@ export function isLiteral(node: ts.Node) {
 }
 
 export function isTypeNode(node: ts.Node): boolean {
-  return node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType;
+  return (node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType) || node.kind === ts.SyntaxKind.ExpressionWithTypeArguments;
 }
 
 // export function getScope(node: ts.Node): ts.Node {

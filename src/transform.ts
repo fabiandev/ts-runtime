@@ -166,9 +166,9 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
-        if (removeTypes && (node as any).type) {
-          (node as any).type = undefined;
-        }
+        // if (removeTypes && (node as any).type) {
+        //   (node as any).type = undefined;
+        // }
 
         return node;
       }
@@ -256,13 +256,15 @@ function transformProgram(entryFile: string, options?: Options): void {
       case ts.SyntaxKind.EnumMember:
         return context.factory.typeAliasReflection(name, context.factory.enumMemberReflection(declaration as ts.EnumMember));
       case ts.SyntaxKind.FunctionDeclaration:
-        context.factory.typeAliasReflection(name, context.factory.functionTypeReflection(declaration as ts.FunctionTypeNode));
+        return context.factory.typeAliasReflection(name, context.factory.functionTypeReflection(declaration as ts.FunctionTypeNode));
       case ts.SyntaxKind.VariableDeclaration:
         return context.factory.libCall('var', [ts.createLiteral((declaration as ts.VariableDeclaration).name.getText()), context.factory.typeReflection((declaration as ts.VariableDeclaration).type)]);
       case ts.SyntaxKind.TypeAliasDeclaration:
         return context.factory.typeAliasDeclarationReflection(declaration as ts.TypeAliasDeclaration, name);
       case ts.SyntaxKind.TypeParameter:
         // console.log(declaration.parent.getText())
+        return null;
+      case ts.SyntaxKind.ModuleDeclaration:
         return null;
       default:
         throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
@@ -318,7 +320,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (!node || context.wasVisited(node)) {
+      if (!node) {
         return node;
       }
 
@@ -402,7 +404,6 @@ function transformProgram(entryFile: string, options?: Options): void {
       //
       // }
 
-      context.addVisited(node);
       return ts.visitEachChild(node, visitor, transformationContext);
     };
 
@@ -542,7 +543,7 @@ function debugNodeAttributes(node: ts.Node, context: MutationContext): void {
   } catch (e) {
     console.log('Implicit Type:');
   }
-  console.log(`Visited: ${context.wasVisited(node) ? 'Yes' : 'No'}`);
+  console.log(`Should skip: ${context.shouldSkip(node) ? 'Yes' : 'No'}`);
   // console.log(`Scope: ${scopeKind}`);
   console.log(`Synthesized: ${node.flags === ts.NodeFlags.Synthesized ? 'Yes' : 'No'}`);
   console.log(`File: ${context.sourceFile.fileName}`);

@@ -13,7 +13,7 @@ export class MutationContext {
   private _checker: ts.TypeChecker;
   private _host: ts.CompilerHost;
   private _scanner: Scanner;
-  private _visited: ts.Node[];
+  private _skipNodes: ts.Node[];
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
   private _merged: Set<ts.Symbol>;
@@ -23,6 +23,7 @@ export class MutationContext {
       entryFilePath = `${entryFilePath}.ts`;
     }
 
+    this._skipNodes = [];
     this._entryFilePath = entryFilePath;
     this._sourceFile = sourceFile;
     this._options = options;
@@ -30,44 +31,44 @@ export class MutationContext {
     this._checker = program.getTypeChecker();
     this._host = host;
     this._scanner = scanner;
-    this._visited = [];
     this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.libNamespace);
     this._transformationContext = context;
     this._merged = new Set();
-  }
-
-  public map(node: ts.Node, original?: ts.Node): ts.Node {
-    this.addVisited(node, true);
-    if (original) this.scanner.mapNode(node, original);
-    return node;
   }
 
   // TODO: check if in scope
   public wasDeclared(node: ts.EntityName) {
     node = util.getIdentifierOfQualifiedName(node);
 
-    const declarations = this.getDeclarations(node);
+    const sourceFile = node.getSourceFile()
+    const fileName = sourceFile && sourceFile.fileName;
+
+    const declarations = this
+      .getDeclarations(node)
+      .filter(d => fileName === d.getSourceFile().fileName);
 
     for (let declaration of declarations) {
       if (declaration.getEnd() < node.getEnd()) {
-        if (node.getSourceFile().fileName === declaration.getSourceFile().fileName) {
-          return true;
-        }
+        return true;
       }
     }
 
     return false;
   }
 
+  // TODO: do not rely on typeName
   public isDeclared(node: ts.EntityName) {
     node = util.getIdentifierOfQualifiedName(node);
 
-    const declarations = this.getDeclarations(node);
+    const sourceFile = node.getSourceFile()
+    const fileName = sourceFile && sourceFile.fileName;
+
+    const declarations = this
+      .getDeclarations(node)
+      .filter(d => fileName === d.getSourceFile().fileName) || [];
 
     for (let declaration of declarations) {
-      if (node.getSourceFile().fileName === declaration.getSourceFile().fileName) {
-        return true;
-      }
+      return true;
     }
 
     return false;
@@ -77,7 +78,7 @@ export class MutationContext {
     let next: ts.Node = node;
     let typeSymbol = this.scanner.getNodeSymbol((node as ts.TypeReferenceNode).typeName)
 
-    while(next.parent) {
+    while (next.parent) {
       next = next.parent;
 
       if (util.isKind(next, ts.SyntaxKind.ClassDeclaration, ts.SyntaxKind.InterfaceDeclaration, ts.SyntaxKind.TypeAliasDeclaration)) {
@@ -112,33 +113,33 @@ export class MutationContext {
     return search(node) || false;
   }
 
-  public wasVisited(node: ts.Node): boolean {
-    if (this._visited.indexOf(node) !== -1) {
+  public shouldSkip(node: ts.Node): boolean {
+    if (this._skipNodes.indexOf(node) !== -1) {
       return true;
     }
 
     return false;
   }
 
-  public addVisited(node: ts.Node, recursive = false, ...exclude: ts.Node[]): ts.Node {
-    if (!this.wasVisited(node) && exclude.indexOf(node) === -1) {
-      this._visited.push(node);
+  public skip<T extends ts.Node>(node: T, recursive = false, ...exclude: ts.Node[]): T {
+    if (!this.shouldSkip(node) && exclude.indexOf(node) === -1) {
+      this._skipNodes.push(node);
     }
 
     if (recursive) {
       ts.forEachChild(node, (n: ts.Node) => {
-        this.addVisited(n, recursive, ...exclude);
+        this.skip(n, recursive, ...exclude);
       });
     }
 
     return node;
   }
 
-  public removeVisited(node: ts.Node): boolean {
-    const index = this._visited.indexOf(node);
+  public dontSkip(node: ts.Node): boolean {
+    const index = this._skipNodes.indexOf(node);
 
     if (index !== -1) {
-      this._visited.splice(index, 1);
+      this._skipNodes.splice(index, 1);
       return true;
     }
 
@@ -373,10 +374,6 @@ export class MutationContext {
     this.transformationContext = transformationContext;
   }
 
-  get visited(): ts.Node[] {
-    return this._visited;
-  }
-
   get sourceFile(): ts.SourceFile {
     return this._sourceFile;
   }
@@ -419,6 +416,10 @@ export class MutationContext {
 
   get factory(): Factory {
     return this._factory;
+  }
+
+  get map() {
+    return this._scanner.mapNode.bind(this._scanner);
   }
 
   get entryFilePath(): string {

@@ -3,16 +3,16 @@ import * as util from './util';
 
 export interface TypeInfo {
   TSR_DECLARATION: boolean;
-  enclosingDeclaration: ts.Node;
-  sourceFile: ts.SourceFile;
-  fileName: string;
+  enclosing?: ts.Node;
+  sourceFile?: ts.SourceFile;
+  fileName?: string;
   declarations: ts.Declaration[];
   type: ts.Type;
   typeText: string;
   typeNode: ts.TypeNode;
-  baseType: ts.Type;
-  baseTypeNode: ts.TypeNode;
-  baseTypeText: string;
+  baseType?: ts.Type;
+  baseTypeNode?: ts.TypeNode;
+  baseTypeText?: string;
   isSynthesized: boolean;
   isReference: boolean;
   isLiteral: boolean;
@@ -20,9 +20,9 @@ export interface TypeInfo {
   isDeclaration: boolean;
   isExternal: boolean;
   isInDeclarationFile: boolean;
-  symbol: ts.Symbol;
-  originalSymbol: ts.Symbol;
-  aliasSymbol: ts.Symbol;
+  symbol?: ts.Symbol;
+  originalSymbol?: ts.Symbol;
+  aliasSymbol?: ts.Symbol;
 }
 
 export class Scanner {
@@ -37,7 +37,7 @@ export class Scanner {
   private skip = [
     ts.SyntaxKind.ImportClause,
     ts.SyntaxKind.SourceFile,
-    ts.SyntaxKind.BinaryExpression
+    // ts.SyntaxKind.BinaryExpression
   ];
 
   constructor(program: ts.Program) {
@@ -46,7 +46,9 @@ export class Scanner {
   }
 
   public scan(): void {
-    let sourceFiles = this.program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
+    const sourceFiles = this.program
+      .getSourceFiles()
+      .filter(sf => !sf.isDeclarationFile);
 
     for (let sourceFile of sourceFiles) {
       this.scanner(sourceFile);
@@ -87,7 +89,7 @@ export class Scanner {
   }
 
   public getAliasedNode(node: ts.Node): ts.Node {
-    while(this.aliases.has(node)) {
+    while (this.aliases.has(node)) {
       node = this.aliases.get(node);
     }
 
@@ -104,37 +106,80 @@ export class Scanner {
     ts.forEachChild(sourceFile, scanNode);
   }
 
-  private scanNode(node: ts.Node, useType?: ts.Type, enclosingDeclaration?: ts.Node): TypeInfo {
+  // TODO: check if can have a type annotation (e.g. typeArguments/typeParameters)
+  // use ExpressionWithTypeArguments
+  // or skip expression with type arguments and parse typeArguments array separately
+  //
+  // The type nodes from below are not scanned or mapped
+  // (.type typeNode would be reused)
+  //
+  // omit special cases in the scanner and handle them in the factory/context/mutators
+  // or create helper
+  //
+  // typeArguments[]
+  // CallExpression
+  // ExpressionWithTypeArguments
+  // NewExpression
+  //
+  // constraint, default
+  // TypeParameterDeclaration
+  //
+  // type (already handled)
+  // AsExpression
+  // SignatureDeclaration
+  // VariableDeclaration
+  // ParameterDeclaration
+  // PropertySignature
+  // PropertyDeclaration
+  // VariableLikeDeclaration
+  //
+  //
+  //
+  // TypeReferenceNode
+  //
+  // elementTypes[]
+  // TupleTypeNode
+  //
+  // types[]
+  // IntersectionTypeNode
+  //
+  private scanNode(node: ts.Node, useType?: ts.Type, enclosing?: ts.Node): TypeInfo {
     if (!this.shouldScan(node)) {
       return;
     }
 
+    if (util.isSynthesized(node) && !useType) {
+      return;
+    }
+
+    // TODO: if synthesized and no useType/enclosingDeclaration is given, return
+
     node = this.mapAsExpression(node);
-    enclosingDeclaration = enclosingDeclaration || node;
+    enclosing = enclosing || node;
 
     const type = useType || this.getType(node);
 
     const symbol = type.aliasSymbol || type.symbol;
     const originalSymbol = type.symbol;
     const aliasSymbol = type.aliasSymbol;
-    const typeNode = this.getTypeNode(node, type, enclosingDeclaration);
-    const typeText = this.checker.typeToString(type, enclosingDeclaration);
+    const typeNode = this.getTypeNode(node, type, enclosing);
+    const typeText = this.checker.typeToString(type, enclosing);
     const isLiteral = util.isLiteral(typeNode);
     const isReference = typeNode.kind === ts.SyntaxKind.TypeReference;
     const isSynthesized = util.isSynthesized(typeNode);
     const baseType = isLiteral && this.getBaseType(type);
-    const baseTypeNode = baseType && this.checker.typeToTypeNode(baseType, enclosingDeclaration);
-    const baseTypeText = baseType && this.checker.typeToString(baseType, enclosingDeclaration);
+    const baseTypeNode = baseType && this.checker.typeToTypeNode(baseType, enclosing);
+    const baseTypeText = baseType && this.checker.typeToString(baseType, enclosing);
 
-    let declarations: ts.Declaration[];
+    let declarations: ts.Declaration[] = [];
     let sourceFile: ts.SourceFile;
     let fileName: string;
-    let isAmbient: boolean;
-    let isDeclaration: boolean;
-    let isInDeclarationFile: boolean;
-    let isExternal: boolean;
+    let isAmbient = false;
+    let isDeclaration = false;
+    let isInDeclarationFile = false;
+    let isExternal = false;
 
-    if (isReference && this.hasDeclarations(symbol)) {
+    if (this.hasDeclarations(symbol)) {
       declarations = symbol.getDeclarations();
       const firstDeclaration = declarations[0];
       sourceFile = firstDeclaration.getSourceFile();
@@ -145,43 +190,22 @@ export class Scanner {
       isExternal = this.pathIsExternal(fileName);
     }
 
-    const TSR_DECLARATION = isReference &&
+    const TSR_DECLARATION =
       (isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
-        (!isExternal && (isDeclaration || isInDeclarationFile)));
+      (!isExternal && (isDeclaration || isInDeclarationFile)));
 
     if (TSR_DECLARATION && symbol) {
       this.addDeclaration(symbol, fileName);
     }
 
-    if (useType) console.log(typeText);
-
-    if (isSynthesized && node !== typeNode) {
+    if (node !== typeNode) {
       util.setParent(typeNode);
       this.mapNode(typeNode, node);
-
-      console.log();
-      console.log('scan synthesized');
-      console.log(typeText);
-      // scan synthesized
-
-      // works but causes infinite loop
-      this.scanSynthesizedTypeNode(typeNode, type, enclosingDeclaration);
-
+      this.scanSynthesizedTypeNode(typeNode, type, enclosing);
     }
 
-    // type, constraint, default, elementType, objectType, indexType
-    // typeArguments, elementTypes, types
-
-    // if (isReference && isSynthesized) {
-    //   for (let i = 0; i < (type.aliasTypeArguments || []).length; i++) {
-    //     const typeNodeTypeArgument = (typeNode as ts.TypeReferenceNode).typeArguments[i];
-    //     this.scanNode(typeNodeTypeArgument, type.aliasTypeArguments[i], enclosingDeclaration);
-    //   }
-    //   // for each typeArgument (of ts.Type) that is a type reference, do something
-    // }
-
     const typeInfo: TypeInfo = {
-      TSR_DECLARATION, enclosingDeclaration, sourceFile, fileName,
+      TSR_DECLARATION, enclosing, sourceFile, fileName,
       declarations, type, typeText, typeNode, baseType, baseTypeNode,
       baseTypeText, isSynthesized, isReference, isLiteral, isAmbient,
       isDeclaration, isExternal, isInDeclarationFile, symbol,
@@ -193,66 +217,63 @@ export class Scanner {
     return typeInfo;
   }
 
-  private scanSynthesizedTypeNode(typeNode: ts.TypeNode, type: ts.Type, enclosingDeclaration: ts.Node) {
+  private scanSynthesizedTypeNode(typeNode: ts.TypeNode, type: ts.Type, enclosing: ts.Node) {
     const tn = typeNode as any;
     const t = type as any;
 
     switch (typeNode.kind) {
+      // type
       case ts.SyntaxKind.TypePredicate:
       case ts.SyntaxKind.ParenthesizedType:
       case ts.SyntaxKind.TypeOperator:
       case ts.SyntaxKind.MappedType:
         if (tn.type) {
-          this.scanNode(tn.type, t.type, enclosingDeclaration);
+          this.scanNode(tn.type, t.type, enclosing);
         }
         break;
-      // .type
+      // elementType
       case ts.SyntaxKind.ArrayType:
         if (tn.elementType) {
-          this.scanNode(tn.elementType, t.elementType, enclosingDeclaration);
+          this.scanNode(tn.elementType, t.elementType, enclosing);
         }
         break;
-      // .elementType
+      // objectType
+      // indexType
       case ts.SyntaxKind.IndexedAccessType:
         if (tn.objectType) {
-          this.scanNode(tn.objectType, t.objectType, enclosingDeclaration);
+          this.scanNode(tn.objectType, t.objectType, enclosing);
         }
         if (tn.indexType) {
-          this.scanNode(tn.indexType, t.indexType, enclosingDeclaration);
+          this.scanNode(tn.indexType, t.indexType, enclosing);
         }
         break;
-      // .objectType
-      // .indexType
+      // typeArguments[]
       case ts.SyntaxKind.TypeReference:
       case ts.SyntaxKind.ExpressionWithTypeArguments:
         if (tn.typeArguments) {
-          console.log('YEEEEES');
           for (let i = 0; i < (t.typeArguments || []).length; i++) {
-            console.log('loooop loop')
-            this.scanNode(tn.typeArguments[i], t.typeArguments[i], enclosingDeclaration);
+            this.scanNode(tn.typeArguments[i], t.typeArguments[i], enclosing);
           }
         }
         break;
-      // .typeArguments[]
+      // elementTypes[]
       case ts.SyntaxKind.TupleType:
         if (tn.elementTypes) {
           for (let i = 0; i < (t.elementTypes || []).length; i++) {
-            this.scanNode(tn.elementTypes[i], t.elementTypes[i], enclosingDeclaration);
+            this.scanNode(tn.elementTypes[i], t.elementTypes[i], enclosing);
           }
         }
         break;
-      // .elementTypes[]
+      // types[]
       case ts.SyntaxKind.UnionType:
       case ts.SyntaxKind.IntersectionType:
         if (tn.types) {
           for (let i = 0; i < (t.types || []).length; i++) {
-            this.scanNode(tn.types[i], t.types[i], enclosingDeclaration);
+            this.scanNode(tn.types[i], t.types[i], enclosing);
           }
         }
         break;
-      // .types[]
     }
-    console.log();
   }
 
   private shouldScan(node: ts.Node): boolean {
@@ -263,10 +284,6 @@ export class Scanner {
     if (this.skip.indexOf(node.kind) !== -1) {
       return false;
     }
-
-    // if (node.flags & ts.NodeFlags.Synthesized) {
-    //   return false;
-    // }
 
     return true;
   }
@@ -296,7 +313,7 @@ export class Scanner {
     return this.checker.getTypeAtLocation(node);
   }
 
-  private getTypeNode(node: ts.Node, type: ts.Type, enclosingDeclaration?: ts.Node): ts.TypeNode {
+  private getTypeNode(node: ts.Node, type: ts.Type, enclosing?: ts.Node): ts.TypeNode {
     const isTypeNode = util.isTypeNode(node);
 
     if (isTypeNode) {
@@ -307,7 +324,7 @@ export class Scanner {
       return (node as any).type as ts.TypeNode;
     }
 
-    return this.checker.typeToTypeNode(type, enclosingDeclaration || node);
+    return this.checker.typeToTypeNode(type, enclosing || node);
   }
 
   private getBaseType(type: ts.Type): ts.Type {

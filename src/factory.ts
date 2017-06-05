@@ -96,7 +96,8 @@ export class Factory {
       //     return o[name]; // o[name] is of type T[K]
       // }
       case ts.SyntaxKind.ExpressionWithTypeArguments: // TODO: implement (extends SomeType)
-        throw new ProgramError('Expressions with type arguments are not yet supported.')
+        // throw new ProgramError('Expressions with type arguments are not yet supported.')
+        return this.expressionWithTypeArgumentsReflection(node as ts.ExpressionWithTypeArguments);
       case ts.SyntaxKind.TypeOperator: // TODO: implement
         throw new ProgramError('Type operators are not yet supported.')
       // keyof
@@ -317,7 +318,7 @@ export class Factory {
 
                       // console.log(util.getTypeNameText((nodeInfo.typeNode as ts.TypeReferenceNode).typeName))
 
-                      return this.typeReferenceReflection(typeInfo.typeNode as ts.TypeReferenceNode)
+                      return this.typeReflection(t)
                       // return t.expression;
                     }),
                   ...args
@@ -329,7 +330,7 @@ export class Factory {
           // TODO: check if working
           if (extendsClause && extendsClause.types && extendsClause.types.length > 0) {
             const typeInfo = this.context.scanner.getTypeInfo(extendsClause.types[0]);
-            args.unshift(this.libCall('extends', this.typeReferenceReflection(typeInfo.typeNode as ts.TypeReferenceNode)));
+            args.unshift(this.libCall('extends', this.typeReflection(typeInfo.typeNode)));
           }
         }
 
@@ -551,6 +552,101 @@ export class Factory {
     return this.nullable(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
   }
 
+  public expressionWithTypeArgumentsReflection(node: ts.ExpressionWithTypeArguments): ts.Expression {
+    if (node.expression.kind !== ts.SyntaxKind.PropertyAccessExpression && node.expression.kind !== ts.SyntaxKind.Identifier) {
+      throw new ProgramError('An expression with type argument\’s left hand side expression must be a qualified name or an identifier.')
+    }
+
+    const identifier: ts.Identifier = node.expression.kind !== ts.SyntaxKind.Identifier ? this.tryGetIdentifierOfPropertyAccessExpression(node.expression as ts.PropertyAccessExpression) : node.expression as ts.Identifier;
+    const wasDeclared = this.context.wasDeclared(identifier);
+    const isDeclared = this.context.isDeclared(identifier);
+    const typeInfo = this.context.scanner.getTypeInfo(node.expression);
+    const asLiteral = typeInfo && typeInfo.TSR_DECLARATION;
+    const typeNameText = node.expression.getText();
+
+    let keyword = 'ref';
+
+    if (typeInfo && typeInfo.symbol) {
+      if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) || util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)) {
+        keyword = asLiteral ? 'ref' : 'typeOf';;
+      } else if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.EnumMember)) {
+        keyword = asLiteral ? 'ref' : 'number';
+      }
+    }
+
+    const args: ts.Expression[] = [];
+    let id: ts.Expression;
+
+    if (asLiteral) {
+      let sf = typeInfo.declarations[0].getSourceFile().fileName;
+      let hash = util.getHash(sf);
+      let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
+      name = name || typeNameText;
+      name = `${name}.${hash}`;
+
+      id = ts.createLiteral(name);
+    } else {
+      id = ts.createIdentifier(typeNameText);
+    }
+
+    if (!asLiteral && !wasDeclared && isDeclared) {
+      id = this.tdz(id as ts.Identifier);
+    }
+
+    args.push(id);
+    args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a)));
+
+    return this.nullable(this.libCall(keyword, args));
+
+    // const typeInfo = this.context.scanner.getTypeInfo(node);
+    // console.log(typeInfo.typeText)
+    // console.log(typeInfo.TSR_DECLARATION)
+    // console.log('decl', typeInfo.declarations.length)
+
+    // const info1 = this.context.scanner.getTypeInfo(identifier);
+    // const info2 = this.context.scanner.getTypeInfo(node);
+    // const info3 = this.context.scanner.getTypeInfo(node.expression);
+    //
+    // console.log('isExternal', info1.isExternal);
+    // console.log('isDeclaration', info1.isDeclaration);
+    // console.log('isAmbient', info1.isAmbient);
+    // console.log('isInDeclarationFile', info1.isInDeclarationFile);
+    // console.log(info1.type.symbol.getDeclarations().length)
+    //
+    // console.log(info1.TSR_DECLARATION);
+    // console.log(info2.TSR_DECLARATION);
+    // console.log(info3.TSR_DECLARATION);
+
+    // console.log(this.context.wasDeclared(id));
+    // console.log(this.context.isDeclared(id));
+
+    // const exprTypeInfo = this.context.scanner.getTypeInfo(node.expression);
+    // console.log(exprTypeInfo.typeText)
+    // console.log(exprTypeInfo.TSR_DECLARATION)
+    // console.log('decl2', exprTypeInfo.declarations.length)
+    // this.typeReflection(exprTypeInfo.typeNode);
+
+
+    // throw new ProgramError('Implement EWTA');
+    // const expressionTypeInfo = this.context.scanner.getTypeInfo(node.expression);
+    //
+    //
+  }
+
+  private tryGetIdentifierOfPropertyAccessExpression(node: ts.PropertyAccessExpression): ts.Identifier {
+    let expression = node.expression;
+
+    while (expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
+      expression = (expression as ts.PropertyAccessExpression).expression as ts.LeftHandSideExpression;
+    }
+
+    if (expression.kind !== ts.SyntaxKind.Identifier) {
+      throw new ProgramError('Only identifiers and property access expressions are allowed for expressions with type arguments.');
+    }
+
+    return expression as ts.Identifier;
+  }
+
   // TODO: handle enums (annotate like functions?)
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
     let keyword = 'array';
@@ -560,19 +656,19 @@ export class Factory {
     const typeInfo = scanner.getTypeInfo(node);
     const isSelfReference = this.context.isSelfReference(node);
 
-    console.log('has info', !!typeInfo)
-    console.log('has parent', !!node.parent)
+    // console.log('has info', !!typeInfo)
+    // console.log('has parent', !!node.parent)
 
-    if (!isSelfReference && typeInfo && typeInfo.TSR_DECLARATION) {
+    if (typeInfo && typeInfo.TSR_DECLARATION) {
       asLiteral = true;
     }
 
     const typeNameText: string = util.getTypeNameText(node.typeName);
 
-    console.log(typeNameText);
-    console.log();
+    // console.log(typeNameText);
+    // console.log();
 
-    const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n =>  {
+    const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => {
       return this.typeReflection(n)
     });
     // const args: ts.Expression[] = [];
@@ -612,12 +708,12 @@ export class Factory {
         }
       }
 
-      if ((typeInfo.symbol && typeInfo.symbol.flags) & ts.SymbolFlags.RegularEnum) {
-        keyword = asLiteral ? 'ref' : 'typeOf';
-      } else if ((typeInfo.symbol && typeInfo.symbol.flags) & ts.SymbolFlags.ConstEnum) {
-        keyword = asLiteral ? 'ref' : 'typeOf';
-      } else if ((typeInfo.symbol && typeInfo.symbol.flags) & ts.SymbolFlags.EnumMember) {
-        keyword = 'number';
+      if (typeInfo && typeInfo.symbol) {
+        if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) || util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)) {
+          keyword = asLiteral ? 'ref' : 'typeOf';;
+        } else if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.EnumMember)) {
+          keyword = asLiteral ? 'ref' : 'number';
+        }
       }
 
       // TODO: check if self-referencing DONE
@@ -641,7 +737,7 @@ export class Factory {
         identifier = ts.createIdentifier(typeNameText);
       }
 
-      if (!isSelfReference && !isTypeParameter && !asLiteral && !wasDeclared && isDeclared) {
+      if ((!wasDeclared && isDeclared && !isSelfReference && !asLiteral) || (isSelfReference && asLiteral)) {
         identifier = this.tdz(identifier as ts.Identifier);
       }
 
@@ -1519,7 +1615,7 @@ private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): t
       );
 
       const substitution = this.context.scanner.mapNode(ts.updateReturn((node as ts.ReturnStatement), assertion), node);
-      this.context.addVisited(substitution, true, (node as ts.ReturnStatement).expression);
+      // this.context.skip(substitution, true, (node as ts.ReturnStatement).expression);
 
       return substitution;
     }
@@ -1595,13 +1691,13 @@ public mutateFunctionBody(node: FunctionLikeNode): FunctionLikeNode {
   bodyStatements.unshift(...bodyAssertions);
   bodyStatements.unshift(...bodyDeclarations);
 
-  bodyAssertions.forEach(assertion => {
-    this.context.addVisited(assertion, true);
-  });
-
-  bodyDeclarations.forEach(declaration => {
-    this.context.addVisited(declaration, true);
-  });
+  // bodyAssertions.forEach(assertion => {
+  //   this.context.skip(assertion, true);
+  // });
+  //
+  // bodyDeclarations.forEach(declaration => {
+  //   this.context.skip(declaration, true);
+  // });
 
   body = this.context.scanner.mapNode(ts.updateBlock(body, bodyStatements), body);
 
