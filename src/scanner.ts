@@ -164,7 +164,7 @@ export class Scanner {
     const typeNode = this.getTypeNode(node, type, enclosing);
     const typeText = this.checker.typeToString(type, enclosing);
     const isLiteral = util.isLiteral(typeNode);
-    const isReference = typeNode.kind === ts.SyntaxKind.TypeReference;
+    const isReference = ts.isTypeReferenceNode(typeNode);
     const isSynthesized = util.isSynthesized(typeNode);
     const baseType = isLiteral && this.getBaseType(type);
     const baseTypeNode = baseType && this.checker.typeToTypeNode(baseType, enclosing);
@@ -300,8 +300,8 @@ export class Scanner {
   }
 
   private mapAsExpression(node: ts.Node): ts.Node {
-    if (node.kind === ts.SyntaxKind.AsExpression) {
-      let expression = (node as ts.AsExpression).expression;
+    if (ts.isAsExpression(node)) {
+      let expression = node.expression;
       this.mapNode(node, expression);
 
       return expression;

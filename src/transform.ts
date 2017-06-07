@@ -234,9 +234,9 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
-    if (node.kind === ts.SyntaxKind.SourceFile && currentSourceFile !== node) {
-      currentSourceFile = node as ts.SourceFile;
-      context = new MutationContext(node as ts.SourceFile, options, program, host, scanner, transformationContext, path.resolve(tempEntryFile));
+    if (ts.isSourceFile(node) && currentSourceFile !== node) {
+      currentSourceFile = node;
+      context = new MutationContext(node, options, program, host, scanner, transformationContext, path.resolve(tempEntryFile));
     }
   }
 
@@ -246,11 +246,11 @@ function transformProgram(entryFile: string, options?: Options): void {
     const declarationCanHaveType = (node: ts.Node) => {
       let current: ts.Node = node;
 
-      if (current.kind === ts.SyntaxKind.VariableDeclaration && current.parent) {
+      if (ts.isVariableDeclaration(current) && current.parent) {
         current = current.parent;
       }
 
-      if (current.kind === ts.SyntaxKind.VariableDeclarationList && current.parent) {
+      if (ts.isVariableDeclarationList(current) && current.parent) {
         current = current.parent;
       }
 

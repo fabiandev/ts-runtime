@@ -81,8 +81,8 @@ export class MutationContext {
     while (next.parent) {
       next = next.parent;
 
-      if (util.isKind(next, ts.SyntaxKind.ClassDeclaration, ts.SyntaxKind.InterfaceDeclaration, ts.SyntaxKind.TypeAliasDeclaration)) {
-        let symbol = this.scanner.getNodeSymbol((next as any).name || next);
+      if (ts.isClassDeclaration(next) || ts.isInterfaceDeclaration(next) || ts.isTypeAliasDeclaration(next)) {
+        let symbol = this.scanner.getNodeSymbol(next.name || next);
         if (typeSymbol === symbol) {
           return true;
         }
@@ -100,10 +100,7 @@ export class MutationContext {
     // }
 
     const search = (node: ts.Node): boolean => {
-      const isTypeReference = node.kind === ts.SyntaxKind.TypeReference;
-      const isSelfReference = symbol === (this.scanner.getNodeSymbol((node as ts.TypeReferenceNode).typeName) /*|| this.checker.getSymbolAtLocation((node as ts.TypeReferenceNode).typeName)*/);
-
-      if (isTypeReference && isSelfReference) {
+      if (ts.isTypeReferenceNode(node) && symbol === this.scanner.getNodeSymbol(node.typeName)) {
         return true;
       }
 
@@ -379,7 +376,7 @@ export class MutationContext {
   }
 
   set sourceFile(sourceFile: ts.SourceFile) {
-    if (!util.isKind(sourceFile, ts.SyntaxKind.SourceFile)) {
+    if (ts.isSourceFile(sourceFile)) {
       throw new Error(`Attemt to set invalid node as SourceFile on MutationContext. Got ${ts.SyntaxKind[sourceFile.kind]}.`);
     }
 

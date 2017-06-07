@@ -221,50 +221,6 @@ export class Factory {
     return this.nullable(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
   }
 
-  // public typeReferenceReflection3(node: ts.TypeReferenceNode): ts.Expression {
-  //   const typeNameText: string = util.getTypeNameText(node.typeName);
-  //   const args: ts.Expression[] = [];
-  //
-  //   if (util.hasNonEmptyArrayProperty(node, 'typeArguments')) {
-  //     node.typeArguments.forEach(typeArgument => {
-  //       args.push(this.typeReflection(typeArgument))
-  //     });
-  //   }
-  //
-  //   if (typeNameText.toLowerCase() === 'array') {
-  //     return this.libCall('array', args);
-  //   }
-  //
-  //   const typeInfo = this.context.scanner.getTypeInfo(node);
-  //
-  //   if (typeInfo && typeInfo.symbol) {
-  //     if (
-  //       util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) ||
-  //       util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)
-  //     ) {
-  //       return this.enumReferenceReflection(node, args, typeInfo);
-  //     }
-  //
-  //     if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.EnumMember)) {
-  //       return this.enumMemberReferenceReflection(node, args, typeInfo);
-  //     }
-  //   }
-  //
-  //
-  // }
-  //
-  // private typeParameterReferenceReflection(node: ts.TypeReferenceNode, args: ts.Expression[], typeInfo: TypeInfo): ts.Expression {
-  //
-  // }
-  //
-  // private enumReferenceReflection(node: ts.TypeReferenceNode, args: ts.Expression[], typeInfo: TypeInfo): ts.Expression {
-  //
-  // }
-  //
-  // private enumMemberReferenceReflection(node: ts.TypeReferenceNode, args: ts.Expression[], typeInfo: TypeInfo): ts.Expression {
-  //
-  // }
-
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
     const typeNameText: string = util.getTypeNameText(node.typeName);
     const isArray = typeNameText.toLowerCase() === 'array';

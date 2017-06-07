@@ -57,8 +57,8 @@ export function getHash(str: string): number {
 }
 
 export function getIdentifierOfQualifiedName(node: ts.EntityName): ts.Identifier {
-  while (node.kind === ts.SyntaxKind.QualifiedName) {
-    node = (node as ts.QualifiedName).left;
+  while (ts.isQualifiedName(node)) {
+    node = node.left;
   }
 
   return node;
@@ -87,11 +87,11 @@ export function hasKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
 export function declarationCanHaveTypeAnnotation(node: ts.Node) {
   let current: ts.Node = node;
 
-    if (current.kind === ts.SyntaxKind.VariableDeclaration && current.parent) {
+    if (ts.isVariableDeclaration(current) && current.parent) {
       current = current.parent;
     }
 
-    if (current.kind === ts.SyntaxKind.VariableDeclarationList && current.parent) {
+    if (ts.isVariableDeclarationList(current) && current.parent) {
       current = current.parent;
     }
 
@@ -165,7 +165,7 @@ export function hasFlag(node: ts.Node | ts.Symbol, flag: ts.NodeFlags | ts.Symbo
 }
 
 export function isBindingPattern(node: ts.Node): boolean {
-  return isKind(node, ts.SyntaxKind.ArrayBindingPattern, ts.SyntaxKind.ObjectBindingPattern);
+  return ts.isArrayBindingPattern(node) || ts.isObjectBindingPattern(node);
 }
 
 export function isStaticClassElement(node: ts.Node): boolean {
@@ -173,12 +173,12 @@ export function isStaticClassElement(node: ts.Node): boolean {
 }
 
 export function getTypeNameText(node: ts.EntityName): string {
-  if (node.kind === ts.SyntaxKind.Identifier) {
-    return (node as ts.Identifier).text;
+  if (ts.isIdentifier(node)) {
+    return node.text;
   }
 
-  const left = getTypeNameText((node as ts.QualifiedName).left)
-  const right = (node as ts.QualifiedName).right.text;
+  const left = getTypeNameText(node.left)
+  const right = node.right.text;
 
   return `${left}.${right}`;
 }
@@ -200,11 +200,11 @@ export function isTypeParameter(node: ts.TypeReferenceNode): boolean {
 }
 
 export function isTypeParameterOf(node: ts.TypeNode, typeParameters: ts.TypeParameterDeclaration[]) {
-  if (node.kind !== ts.SyntaxKind.TypeReference) {
+  if (!ts.isTypeReferenceNode(node)) {
     return false;
   }
 
-  const nodeName = getTypeNameText((node as ts.TypeReferenceNode).typeName);
+  const nodeName = getTypeNameText(node.typeName);
 
   for (let typeParameter of typeParameters) {
 
@@ -219,9 +219,9 @@ export function isTypeParameterOf(node: ts.TypeNode, typeParameters: ts.TypePara
 export function isTypeParameterOfClass(node: ts.TypeReferenceNode): ts.ClassDeclaration {
   let current = node as ts.Node;
   while (current = current.parent) {
-    if (current.kind as ts.SyntaxKind === ts.SyntaxKind.ClassDeclaration) {
-      if (isTypeParameterOf(node, (current as ts.ClassDeclaration).typeParameters || [])) {
-        return current as ts.ClassDeclaration;
+    if (ts.isClassDeclaration(current)) {
+      if (isTypeParameterOf(node, current.typeParameters || [])) {
+        return current;
       }
 
       return null;
@@ -232,9 +232,8 @@ export function isTypeParameterOfClass(node: ts.TypeReferenceNode): ts.ClassDecl
 }
 
 export function isSuperStatement(node: ts.Node): boolean {
-  return node.kind === ts.SyntaxKind.ExpressionStatement &&
-    (node as any).expression.kind === ts.SyntaxKind.CallExpression &&
-    (node as any).expression.expression.kind === ts.SyntaxKind.SuperKeyword;
+  return ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) &&
+    node.expression.expression.kind === ts.SyntaxKind.SuperKeyword;
 }
 
 // function isAmbientNode(node: ts.Node) {
@@ -245,16 +244,17 @@ export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
   return kind.indexOf(node.kind) !== -1;
 }
 
-export function isBindingName(node: ts.Node) {
-  return isKind(node, ts.SyntaxKind.Identifier, ts.SyntaxKind.ArrayBindingPattern, ts.SyntaxKind.ObjectBindingPattern);
+export function isBindingName(node: ts.Node): node is ts.Identifier | ts.BindingPattern | ts.ArrayBindingPattern {
+  return ts.isIdentifier(node) || this.isBindingPattern(node);
 }
 
-export function isLiteral(node: ts.Node) {
+export function isLiteral(node: ts.Node): node is ts.LiteralTypeNode | ts.NumericLiteral | ts.StringLiteral | ts.KeywordTypeNode {
   return LITERAL_KINDS.indexOf(node.kind) !== -1;
 }
 
-export function isTypeNode(node: ts.Node): boolean {
-  return (node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType) || node.kind === ts.SyntaxKind.ExpressionWithTypeArguments;
+export function isTypeNode(node: ts.Node): node is ts.TypeNode {
+  return ts.isTypeNode(node);
+  // return (node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType) || node.kind === ts.SyntaxKind.ExpressionWithTypeArguments;
 }
 
 // export function getScope(node: ts.Node): ts.Node {
