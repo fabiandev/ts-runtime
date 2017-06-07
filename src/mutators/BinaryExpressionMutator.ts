@@ -27,7 +27,7 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
-    if (this.isAssignmentOperator(node)) {
+    if (!this.isAssignmentOperator(node)) {
       return node;
     }
 

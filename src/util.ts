@@ -150,7 +150,7 @@ export function getExpression(node: ts.Node): ts.Expression {
   return node as ts.Expression;
 }
 
-export function isDeclaration(node: ts.Node): boolean {
+export function isAmbientDeclaration(node: ts.Node): boolean {
   do {
     if (hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
       return true;
@@ -158,6 +158,13 @@ export function isDeclaration(node: ts.Node): boolean {
   } while(node = node.parent);
 
   return false
+}
+
+export function isDeclaration(node: ts.Node): node is ts.FunctionDeclaration | ts.InterfaceDeclaration | ts.ClassDeclaration | ts.TypeAliasDeclaration | ts.VariableDeclaration | ts.EnumDeclaration | ts.EnumMember {
+  return ts.isFunctionDeclaration(node) || ts.isInterfaceDeclaration(node) ||
+  ts.isClassDeclaration(node) || ts.isTypeAliasDeclaration(node) ||
+  ts.isVariableDeclaration(node) || ts.isEnumDeclaration(node) ||
+  ts.isEnumMember(node);
 }
 
 export function hasFlag(node: ts.Node | ts.Symbol, flag: ts.NodeFlags | ts.SymbolFlags) {

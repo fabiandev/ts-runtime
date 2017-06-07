@@ -10,7 +10,7 @@ export class ArrowFunctionMutator extends Mutator {
 
     return this.factory.annotate([
       substitution,
-      this.factory.functionTypeReflection(node)
+      this.factory.functionReflection(node)
     ]);;
   }
 

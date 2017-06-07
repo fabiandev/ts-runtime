@@ -337,7 +337,6 @@ export class Factory {
   //     // if (isTypeParameter) {
   //     //   console.log(typeNameText);
   //     //   console.log(typeInfo.TSR_DECLARATION);
-  //     //   console.log(util.isDeclaration(node));
   //     //   console.log();
   //     // }
   //
@@ -578,16 +577,47 @@ export class Factory {
     return result;
   }
 
+  private getProperties(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
+    const typeInfo = this.context.scanner.getTypeInfo(node);
+    const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
+    let type: ts.Type = typeInfo.type;
+
+    if (!type) {
+      return util.asArray(node.members as (ts.TypeElement | ts.ClassElement)[]);
+    }
+
+    const members: ts.Symbol[] = [];
+
+    typeInfo.symbol.members.forEach((member, key) => {
+      if (member.flags & ts.SymbolFlags.TypeParameter) {
+        return;
+      }
+
+      members.push(member);
+    });
+
+    members.forEach(sym => {
+      for (let typeElement of ((sym.getDeclarations() || []) as (ts.TypeElement | ts.ClassElement)[])) {
+        merged.add(typeElement);
+      }
+    });
+
+    return Array.from(merged);
+  }
+
   public interfaceReflection(node: ts.InterfaceDeclaration, asType = true): ts.Expression {
     this.setGlobalFlags(FactoryFlags.Reflection | FactoryFlags.InterfaceReflection);
 
     const typeNameText = util.getTypeNameText(node.name);
     const extendsClause = util.getExtendsClause(node);
-    const members = util.asArray(node.members);
+
+    // const members = util.asArray(node.members);
 
     const hasSelfReference = this.context.hasSelfReference(node);
     const hasTypeParameters = util.hasNonEmptyArrayProperty(node, 'typeParameters');
     const hasExtender = util.hasNonEmptyArrayProperty(extendsClause, 'types');
+
+    const members = this.getProperties(node);
 
     const elementsReflection = this.elementsReflection(members);
     const reflection = this.asObject(elementsReflection);
@@ -655,7 +685,9 @@ export class Factory {
     const typeNameText = util.getTypeNameText(node.name);
     const extendsClause = util.getExtendsClause(node);
     // const implementsClause = util.getImplementsClause(node);
-    const members = util.asArray(node.members);
+    // const members = util.asArray(node.members);
+
+    const members = this.getProperties(node);
 
     const hasSelfReference = this.context.hasSelfReference(node);
     const hasTypeParameters = util.hasNonEmptyArrayProperty(node, 'typeParameters');
@@ -1012,6 +1044,7 @@ export class Factory {
     return nodes.map(node => this.elementReflection(node));
   }
 
+  // TODO: refactor and handle computed property names
   private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): ts.Expression[] {
     const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
 
@@ -1193,7 +1226,7 @@ export class Factory {
   }
 
   public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration, noStrictNullCheck = true): ts.Expression {
-    return this.libCall('callProperty', this.methodReflection(node));
+    return this.libCall('callProperty', this.functionReflection(node));
   }
 
   public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
@@ -1315,7 +1348,7 @@ export class Factory {
           (node as ts.ReturnStatement).expression
         );
 
-        const substitution = this.context.scanner.mapNode(ts.updateReturn((node as ts.ReturnStatement), assertion), node);
+        const substitution = ts.updateReturn((node as ts.ReturnStatement), assertion);
         // this.context.skip(substitution, true, (node as ts.ReturnStatement).expression);
 
         return substitution;
@@ -1334,7 +1367,7 @@ export class Factory {
 
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
       const body = ts.createBlock([ts.createReturn(node.body)], true)
-      node = this.context.scanner.mapNode(ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body), node);
+      node = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body);
     }
 
     const bodyDeclarations: ts.Statement[] = [];
@@ -1386,8 +1419,8 @@ export class Factory {
     }
 
 
-    let body = this.context.scanner.mapNode(ts.updateBlock(node.body as ts.Block, this.assertReturnStatements(node.body as ts.Block, node.type).statements), node.body);
-    let bodyStatements = body.statements;
+    let body = ts.updateBlock(node.body as ts.Block, this.assertReturnStatements(node.body as ts.Block, node.type).statements);
+    let bodyStatements: ts.Statement[] = (body && body.statements) || [];
 
     bodyStatements.unshift(...bodyAssertions);
     bodyStatements.unshift(...bodyDeclarations);
@@ -1400,7 +1433,8 @@ export class Factory {
     //   this.context.skip(declaration, true);
     // });
 
-    body = this.context.scanner.mapNode(ts.updateBlock(body, bodyStatements), body);
+
+    body = ts.updateBlock(body, bodyStatements);
 
     let method: FunctionDeclarationLikeNode;
 
@@ -1427,8 +1461,6 @@ export class Factory {
         method = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body);
         break;
     }
-
-    this.context.scanner.mapNode(node, method);
 
     return method;
   }

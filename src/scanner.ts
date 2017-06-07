@@ -34,11 +34,18 @@ export class Scanner {
   private aliases: Map<ts.Node, ts.Node> = new Map();
   private properties: Map<ts.Node, TypeInfo> = new Map();
 
-  private skip = [
+  private scanned: Set<ts.Node> = new Set();
+
+  private skip: ts.SyntaxKind[] = [
+    ts.SyntaxKind.NamespaceImport,
     ts.SyntaxKind.ImportClause,
     ts.SyntaxKind.SourceFile,
     // ts.SyntaxKind.BinaryExpression
   ];
+
+  private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
+    ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
+    ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
 
   constructor(program: ts.Program) {
     this.program = program;
@@ -56,7 +63,12 @@ export class Scanner {
   }
 
   public mapNode<T extends ts.Node>(alias: T, original: ts.Node): T {
+    if (alias === original) {
+      return;
+    }
+
     this.aliases.set(alias, original);
+
     return alias;
   }
 
@@ -66,10 +78,6 @@ export class Scanner {
 
   public hasTypeInfo(node: ts.Node): boolean {
     return this.properties.has(this.getNode(node));
-  }
-
-  public getNodeSymbol(node: ts.Node): ts.Symbol {
-    return this.checker.getSymbolAtLocation(this.getNode(node));
   }
 
   public getDeclarations(): Map<ts.Symbol, string[]> {
@@ -144,6 +152,10 @@ export class Scanner {
   // IntersectionTypeNode
   //
   private scanNode(node: ts.Node, useType?: ts.Type, enclosing?: ts.Node): TypeInfo {
+    if (this.scanned.has(node)) {
+      return;
+    }
+
     if (!this.shouldScan(node)) {
       return;
     }
@@ -157,7 +169,6 @@ export class Scanner {
 
     const type = useType || this.getType(node);
 
-    // TODO: only get symbol for special cases (ExpressionWithTypeArguments, TypeQuery); add getSymbol method
     const symbol = this.getSymbol(type, node);
     // const originalSymbol = type.symbol;
     // const aliasSymbol = type.aliasSymbol;
@@ -184,23 +195,17 @@ export class Scanner {
       sourceFile = firstDeclaration.getSourceFile();
       fileName = sourceFile.fileName;
       isAmbient = util.isAmbient(firstDeclaration);
-      isDeclaration = util.isDeclaration(firstDeclaration);
+      isDeclaration = util.isAmbientDeclaration(firstDeclaration);
       isInDeclarationFile = sourceFile.isDeclarationFile;
       isExternal = this.pathIsExternal(fileName);
     }
 
-
-
     const TSR_DECLARATION =
-      (isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
-      (!isExternal && (isDeclaration || isInDeclarationFile)));
+      ((isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
+      (!isExternal && (isDeclaration || isInDeclarationFile))));
 
-    if (TSR_DECLARATION && symbol) {
+    if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations)) {
       this.addDeclaration(symbol, fileName);
-    }
-
-    if (ts.isTypeQueryNode(node)) {
-      console.log('HERE', TSR_DECLARATION);
     }
 
     if (node !== typeNode) {
@@ -218,14 +223,20 @@ export class Scanner {
     };
 
     this.properties.set(node, typeInfo);
+    this.scanned.add(node);
+
+    // for (let declaration of declarations) {
+    //   this.scanNode(declaration);
+    // }
 
     return typeInfo;
   }
 
+  // TODO: only get symbol for special cases (ExpressionWithTypeArguments, TypeQuery)
   public getSymbol(type: ts.Type, node: ts.Node): ts.Symbol {
-    return type.aliasSymbol || type.symbol ||
+    return type && (type.aliasSymbol || type.symbol ||
     (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
-    this.checker.getSymbolAtLocation(node) : undefined);
+    this.checker.getSymbolAtLocation(node) : undefined));
   }
 
   // private scanSynthesizedTypeNode(typeNode: ts.TypeNode, type: ts.Type, enclosing: ts.Node) {

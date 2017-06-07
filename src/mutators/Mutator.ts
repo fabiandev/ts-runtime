@@ -24,7 +24,7 @@ export abstract class Mutator {
       return node;
     }
 
-    if (util.isDeclaration(node)) {
+    if (util.isAmbientDeclaration(node)) {
       return node;
     }
 

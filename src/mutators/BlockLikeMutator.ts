@@ -17,6 +17,10 @@ export class BlockLikeMutator extends Mutator {
     const statements: ts.Statement[] = [];
 
     for (let statement of node.statements) {
+      if (util.isAmbientDeclaration(statement)) {
+        continue;
+      }
+
       let statementSubstitution = util.asArray(statement);
 
       switch (statement.kind) {
@@ -63,7 +67,7 @@ export class BlockLikeMutator extends Mutator {
     const annotation = ts.createStatement(
       this.factory.annotate([
         node.name,
-        this.factory.functionTypeReflection(node)
+        this.factory.functionReflection(node)
       ])
     );
 

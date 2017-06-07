@@ -27,7 +27,7 @@ export class InterfaceDeclarationMutator extends Mutator {
 
   private willBeDeclaredInClass(declarations: ts.Declaration[]) {
     for(let declaration of declarations) {
-      if (declaration.kind === ts.SyntaxKind.ClassDeclaration) {
+      if (ts.isClassDeclaration(declaration)) {
         return true;
       }
     }
