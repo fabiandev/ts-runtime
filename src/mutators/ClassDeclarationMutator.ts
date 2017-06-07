@@ -1,6 +1,5 @@
 import * as ts from 'typescript';
 import * as util from '../util';
-import { ReflectionContext } from '../factory';
 import { Mutator } from './Mutator';
 
 type MethodLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
@@ -51,13 +50,10 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
-    this.factory.setReflectionContext(ReflectionContext.ClassReflection);
-
     const classReflection = this.factory.classReflection(node);
     const decorators = util.asNewArray(node.decorators);
     const decorator = ts.createDecorator(this.factory.annotate(classReflection));
 
-    this.factory.setReflectionContext(ReflectionContext.None);
     decorators.unshift(decorator);
 
     // this.skip(decorator, true);

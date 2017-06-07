@@ -9,9 +9,14 @@ export type FunctionLikeNode = ts.ArrowFunction | ts.FunctionDeclaration | ts.Fu
 export enum FactoryFlags {
   None = 0,
   NoFlowInto = 1 << 0,
-  ClassReflection = 1 << 1,
-  AmbientReflection = 1 << 2,
-  NamedDeclaration = 1 << 3,
+  Reflection = 1 << 1,
+  ClassReflection = 1 << 2,
+  InterfaceReflection = 1 << 3,
+  TypeAliasReflection = 1 << 4,
+  NamedDeclarationReflection = 1 << 5,
+  Substitution = 1 << 6,
+  InterfaceSubstitution = 1 << 7,
+  TypeAliasSubstitution = 1 << 8,
 }
 
 export class Factory {
@@ -35,12 +40,12 @@ export class Factory {
     this._localFlags = FactoryFlags.None;
   }
 
-  private hasGlobalFlag(flag: FactoryFlags) {
-    return !!(this.globalFlags & flag);
+  public hasGlobalFlags(flags: FactoryFlags) {
+    return !!(this.globalFlags & flags);
   }
 
-  private hasLocalFlag(flag: FactoryFlags) {
-    return !!(this.localFlags & flag);
+  public hasLocalFlags(flags: FactoryFlags) {
+    return !!(this.localFlags & flags);
   }
 
   get globalFlags(): FactoryFlags {
@@ -51,11 +56,11 @@ export class Factory {
     return this._localFlags;
   }
 
-  public setFlags(globalFlags: FactoryFlags): void {
+  public setGlobalFlags(globalFlags: FactoryFlags): void {
     this._globalFlags = globalFlags;
   }
 
-  public unsetFlags(): void {
+  public unsetGlobalFlags(): void {
     this._globalFlags = FactoryFlags.None;
   }
 
@@ -147,7 +152,9 @@ export class Factory {
   // }
 
   public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.Statement {
-    return ts.createVariableStatement(
+    this.setGlobalFlags(FactoryFlags.Substitution & FactoryFlags.TypeAliasSubstitution);
+
+    const result = ts.createVariableStatement(
       node.modifiers,
       ts.createVariableDeclarationList(
         [
@@ -160,9 +167,14 @@ export class Factory {
         ts.NodeFlags.Const
       )
     );
+
+    this.unsetGlobalFlags();
+    return result;
   }
 
   public interfaceSubstitution(node: ts.InterfaceDeclaration): ts.Statement {
+    this.setGlobalFlags(FactoryFlags.Substitution & FactoryFlags.InterfaceSubstitution);
+
     const typeNameText = util.getTypeNameText(node.name);
     const interfaceReflection = this.interfaceReflection(node);
 
@@ -180,6 +192,7 @@ export class Factory {
       )
     );
 
+    this.unsetGlobalFlags();
     return substitution;
   }
 
@@ -307,6 +320,8 @@ export class Factory {
 
 
   public interfaceReflection(node: ts.InterfaceDeclaration, asType = true): ts.Expression {
+    this.setGlobalFlags(FactoryFlags.Reflection | FactoryFlags.InterfaceReflection);
+
     const typeNameText = util.getTypeNameText(node.name);
     const extendsClause = util.getExtendsClause(node);
     const members = util.asArray(node.members);
@@ -329,6 +344,7 @@ export class Factory {
     }
 
     if (hasSelfReference && !hasTypeParameters) {
+      this.unsetGlobalFlags();
       return this.selfReference(typeNameText, result);
     }
 
@@ -346,10 +362,13 @@ export class Factory {
       );
     }
 
+    this.unsetGlobalFlags();
     return asType ? this.asType(typeNameText, result) : result;
   }
 
   public classReflection(node: ts.ClassDeclaration, asType = true): ts.Expression {
+    this.setGlobalFlags(FactoryFlags.Reflection | FactoryFlags.ClassReflection);
+
     const typeNameText = util.getTypeNameText(node.name);
     const extendsClause = util.getExtendsClause(node);
     // const implementsClause = util.getImplementsClause(node);
@@ -404,6 +423,7 @@ export class Factory {
       )];
     }
 
+    this.unsetGlobalFlags();
     return asType ? this.asClass(typeNameText, result) : hasSelfReference || hasTypeParameters ? result[0] : ts.createArrayLiteral(result);
   }
 
@@ -428,33 +448,45 @@ export class Factory {
   }
 
   public namedDeclarationReflection(name: string, declaration: ts.Declaration): ts.Expression {
+    this.setGlobalFlags(FactoryFlags.Reflection | FactoryFlags.NamedDeclarationReflection);
+
+    let result: ts.Expression = null;
+
     switch (declaration.kind) {
       case ts.SyntaxKind.InterfaceDeclaration:
-        return this.asType(name, this.interfaceReflection(declaration as ts.InterfaceDeclaration, false));
+        result = this.asType(name, this.interfaceReflection(declaration as ts.InterfaceDeclaration, false));
+        break;
       case ts.SyntaxKind.ClassDeclaration:
-        return this.asClass(name, this.classReflection(declaration as ts.ClassDeclaration, false));
+        result = this.asClass(name, this.classReflection(declaration as ts.ClassDeclaration, false));
+        break;
       case ts.SyntaxKind.TypeLiteral:
-        return this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode));
+        result = this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode));
+        break;
       case ts.SyntaxKind.EnumDeclaration:
-        return this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration));
+        result = this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration));
+        break;
       case ts.SyntaxKind.EnumMember:
-        return this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember));
+        result = this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember));
+        break;
       case ts.SyntaxKind.FunctionDeclaration:
-        return this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration));
+        result = this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration));
+        break;
       case ts.SyntaxKind.VariableDeclaration:
-        return this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration));
+        result = this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration));
+        break;
       case ts.SyntaxKind.TypeAliasDeclaration:
-        return this.asType(name, this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, false));
+        result = this.asType(name, this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, false));
+        break;
       case ts.SyntaxKind.TypeParameter:
         // TODO: why are type parameters here?
         // console.log(declaration.parent.getText())
-        return null;
       case ts.SyntaxKind.ModuleDeclaration:
-        return null;
       default:
-        return null;
       // throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
     }
+
+    this.unsetGlobalFlags();
+    return result;
   }
 
   public variableReflection(node: ts.VariableDeclaration): ts.Expression {
@@ -462,6 +494,8 @@ export class Factory {
   }
 
   public typeAliasReflection(node: ts.TypeAliasDeclaration, asType = true): ts.Expression {
+    this.setGlobalFlags(FactoryFlags.Reflection | FactoryFlags.TypeAliasReflection);
+
     const typeNameText = util.getTypeNameText(node.name);
     const hasSelfReference = this.context.hasSelfReference(node);
     const hasTypeParameters = util.hasNonEmptyArrayProperty(node, 'typeParameters');
@@ -471,6 +505,7 @@ export class Factory {
     let result = reflection;
 
     if (hasSelfReference && !hasTypeParameters) {
+      this.unsetGlobalFlags();
       return this.selfReference(typeNameText, result);
     }
 
@@ -488,6 +523,7 @@ export class Factory {
       );
     }
 
+    this.unsetGlobalFlags();
     return asType ? this.asType(typeNameText, result) : result;
   }
 
@@ -865,7 +901,7 @@ export class Factory {
     }
 
     args.push(id);
-    args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a, ReflectionContext.NoFlowInto)));
+    args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a, FactoryFlags.NoFlowInto)));
 
     return this.nullable(this.libCall(keyword, args));
   }
@@ -920,14 +956,14 @@ export class Factory {
       isTypeParameter = util.isTypeParameter(node);
       isClassTypeParameter = false;
 
-      if (isTypeParameter) {
-        console.log(typeNameText);
-        console.log(typeInfo.TSR_DECLARATION);
-        console.log(util.isDeclaration(node));
-        console.log();
-      }
+      // if (isTypeParameter) {
+      //   console.log(typeNameText);
+      //   console.log(typeInfo.TSR_DECLARATION);
+      //   console.log(util.isDeclaration(node));
+      //   console.log();
+      // }
 
-      noFlowInto = this._reflectionContext === ReflectionContext.NoFlowInto;
+      noFlowInto = this.hasLocalFlags(FactoryFlags.NoFlowInto);
 
       keyword = 'ref';
 
@@ -935,7 +971,7 @@ export class Factory {
         asLiteral = false;
 
         if (!typeInfo.TSR_DECLARATION) {
-          const parentClass = this.reflectionContext !== ReflectionContext.ClassReflection && util.isTypeParameterOfClass(node);
+          const parentClass = !this.hasGlobalFlags(FactoryFlags.ClassReflection) && util.isTypeParameterOfClass(node);
 
           if (parentClass) {
             isClassTypeParameter = true;
@@ -1206,7 +1242,7 @@ export class Factory {
 }
 
   public returnTypeReflection(node: ts.TypeNode): ts.Expression {
-  return this.libCall('return', this.typeReflection(node, ReflectionContext.NoFlowInto));
+  return this.libCall('return', this.typeReflection(node, FactoryFlags.NoFlowInto));
 }
 
   public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
