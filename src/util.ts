@@ -25,6 +25,18 @@ export function hasTypeParameters(node: ts.Node): boolean {
   return Array.isArray((node as any).typeParameters) && (node as any).typeParameters.length > 0;
 }
 
+export function hasProperty(obj: any, prop: string): boolean {
+  return obj && obj.hasOwnProperty(prop);
+}
+
+export function hasArrayProperty(obj: any, prop: string): boolean {
+  return hasProperty(obj, prop) && Array.isArray(obj[prop]);
+}
+
+export function hasNonEmptyArrayProperty(obj: any, prop: string): boolean {
+  return hasArrayProperty(obj, prop) && obj[prop].length > 0;
+}
+
 export function setParent(node: ts.Node): void {
   if (!node) return;
   ts.forEachChild(node, n => {

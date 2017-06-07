@@ -152,14 +152,13 @@ export class Scanner {
       return;
     }
 
-    // TODO: if synthesized and no useType/enclosingDeclaration is given, return
-
     node = this.mapAsExpression(node);
     enclosing = enclosing || node;
 
     const type = useType || this.getType(node);
 
-    const symbol = type.aliasSymbol || type.symbol;
+    // TODO: only get symbol for special cases (ExpressionWithTypeArguments, TypeQuery); add getSymbol method
+    const symbol = type.aliasSymbol || type.symbol || (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ? this.checker.getSymbolAtLocation(node) : void 0);
     const originalSymbol = type.symbol;
     const aliasSymbol = type.aliasSymbol;
     const typeNode = this.getTypeNode(node, type, enclosing);
@@ -190,6 +189,8 @@ export class Scanner {
       isExternal = this.pathIsExternal(fileName);
     }
 
+
+
     const TSR_DECLARATION =
       (isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
       (!isExternal && (isDeclaration || isInDeclarationFile)));
@@ -198,10 +199,14 @@ export class Scanner {
       this.addDeclaration(symbol, fileName);
     }
 
+    if (ts.isTypeQueryNode(node)) {
+      console.log('HERE', TSR_DECLARATION);
+    }
+
     if (node !== typeNode) {
-      util.setParent(typeNode);
-      this.mapNode(typeNode, node);
-      this.scanSynthesizedTypeNode(typeNode, type, enclosing);
+      // util.setParent(typeNode);
+      // this.mapNode(typeNode, node);
+      // this.scanSynthesizedTypeNode(typeNode, type, enclosing);
     }
 
     const typeInfo: TypeInfo = {
@@ -300,7 +305,7 @@ export class Scanner {
   }
 
   private getType(node: ts.Node): ts.Type {
-    const isTypeNode = util.isTypeNode(node)
+    const isTypeNode = ts.isTypeNode(node)
 
     if (isTypeNode) {
       return this.checker.getTypeFromTypeNode(node as ts.TypeNode);
@@ -314,13 +319,13 @@ export class Scanner {
   }
 
   private getTypeNode(node: ts.Node, type: ts.Type, enclosing?: ts.Node): ts.TypeNode {
-    const isTypeNode = util.isTypeNode(node);
+    const isTypeNode = ts.isTypeNode(node);
 
     if (isTypeNode) {
       return node as ts.TypeNode;
     }
 
-    if ((node as any).type && util.isTypeNode((node as any).type)) {
+    if ((node as any).type && ts.isTypeNode((node as any).type)) {
       return (node as any).type as ts.TypeNode;
     }
 

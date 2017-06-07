@@ -219,18 +219,8 @@ function transformProgram(entryFile: string, options?: Options): void {
     const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
 
-    declarations.forEach((ids, key) => {
-      let firstDeclaration: ts.Declaration = key.getDeclarations()[0];
-      let expression: ts.Expression = getDeclaration(firstDeclaration, ids[0]);
-
-      if (expression) {
-        expressions.push(expression);
-
-        for (let i = 1; i < ids.length; i++) {
-          expressions.push(context.factory.typeAliasReflection(ids[i], context.factory.libCall('ref', ts.createLiteral(ids[0]))));
-        }
-      }
-
+    declarations.forEach((names, key) => {
+      expressions.push(...context.factory.namedDeclarationsReflections(names, key.getDeclarations()));
     });
 
     sf = ts.updateSourceFileNode(sf, [
@@ -241,34 +231,6 @@ function transformProgram(entryFile: string, options?: Options): void {
     ])
 
     ts.sys.writeFile(path.join(outDir, filename), printer.printFile(sf));
-  }
-
-  function getDeclaration(declaration: ts.Declaration, name: string): ts.Expression {
-    switch (declaration.kind) {
-      case ts.SyntaxKind.InterfaceDeclaration:
-        return context.factory.typeAliasReflection(name, context.factory.typeLiteralReflection(declaration as ts.InterfaceDeclaration));
-      case ts.SyntaxKind.ClassDeclaration:
-        return context.factory.typeAliasReflection(name, context.factory.typeLiteralReflection(declaration as ts.InterfaceDeclaration), 'class');
-      case ts.SyntaxKind.TypeLiteral:
-        return context.factory.typeAliasReflection(name, context.factory.typeLiteralReflection(declaration as ts.InterfaceDeclaration));
-      case ts.SyntaxKind.EnumDeclaration:
-        return context.factory.typeAliasReflection(name, context.factory.enumReflection(declaration as ts.EnumDeclaration));
-      case ts.SyntaxKind.EnumMember:
-        return context.factory.typeAliasReflection(name, context.factory.enumMemberReflection(declaration as ts.EnumMember));
-      case ts.SyntaxKind.FunctionDeclaration:
-        return context.factory.typeAliasReflection(name, context.factory.functionTypeReflection(declaration as ts.FunctionTypeNode));
-      case ts.SyntaxKind.VariableDeclaration:
-        return context.factory.libCall('var', [ts.createLiteral((declaration as ts.VariableDeclaration).name.getText()), context.factory.typeReflection((declaration as ts.VariableDeclaration).type)]);
-      case ts.SyntaxKind.TypeAliasDeclaration:
-        return context.factory.typeAliasDeclarationReflection(declaration as ts.TypeAliasDeclaration, name);
-      case ts.SyntaxKind.TypeParameter:
-        // console.log(declaration.parent.getText())
-        return null;
-      case ts.SyntaxKind.ModuleDeclaration:
-        return null;
-      default:
-        throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
-    }
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {

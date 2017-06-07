@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import * as util from '../util';
+import { ReflectionContext } from '../factory';
 import { Mutator } from './Mutator';
 
 type MethodLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
@@ -29,8 +30,8 @@ export class ClassDeclarationMutator extends Mutator {
       }
     }
 
-    this.assertImplementing(node, members);
     this.declareTypeParameters(node, members);
+    this.assertImplementing(node, members);
     this.setMerged(node);
 
     return this.map(ts.updateClassDeclaration(
@@ -50,10 +51,13 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
+    this.factory.setReflectionContext(ReflectionContext.ClassReflection);
+
     const classReflection = this.factory.classReflection(node);
     const decorators = util.asNewArray(node.decorators);
     const decorator = ts.createDecorator(this.factory.annotate(classReflection));
 
+    this.factory.setReflectionContext(ReflectionContext.None);
     decorators.unshift(decorator);
 
     // this.skip(decorator, true);
@@ -74,15 +78,16 @@ export class ClassDeclarationMutator extends Mutator {
     for (let impl of implementsClause.types || []) {
       const typeInfo = this.scanner.getTypeInfo(impl);
 
-      if (!typeInfo || !typeInfo.isReference) {
-        continue;
-      }
+      // if (!typeInfo || !typeInfo.isReference) {
+      //   continue;
+      // }
 
-      const typeNode = typeInfo.typeNode as ts.TypeReferenceNode;
+      // const typeNode = typeInfo.typeNode as ts.TypeReferenceNode;
 
+      // TODO: get ExpressionWithTypeArguments reflection
       const assertion = ts.createStatement(
         this.factory.typeAssertion(
-          this.factory.typeReferenceReflection(typeNode),
+          this.factory.expressionWithTypeArgumentsReflection(impl),
           ts.createThis()
         )
       );

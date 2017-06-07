@@ -10,7 +10,7 @@ export class InterfaceDeclarationMutator extends Mutator {
       return null;
     }
 
-    return this.factory.typeSubstitution(node);
+    return this.factory.interfaceSubstitution(node);
   }
 
   private removeInterface(node: ts.InterfaceDeclaration): boolean {
