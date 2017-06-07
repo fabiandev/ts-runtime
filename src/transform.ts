@@ -388,7 +388,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       node = ts.visitEachChild(node, visitor, transformationContext);
 
       if (node !== original) {
-        context.scanner.mapNode(node, original);
+        scanner.mapNode(node, original);
       }
 
       debugText('~~~~~~~~~~~~~~~~~~~~~');
@@ -403,7 +403,7 @@ function transformProgram(entryFile: string, options?: Options): void {
         node = mutator.mutateNode(node, context);
 
         if (node !== previous) {
-          context.scanner.mapNode(node, previous);
+          scanner.mapNode(node, previous);
         }
       }
 

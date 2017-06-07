@@ -1,7 +1,7 @@
 import * as ts from 'typescript';
 import * as util from './util';
 import { ProgramError } from './errors';
-import { TypeInfo } from './scanner';
+import { Scanner, TypeInfo } from './scanner';
 import { MutationContext } from './context';
 
 export type FunctionDeclarationLikeNode = ts.ArrowFunction | ts.FunctionDeclaration |
@@ -224,7 +224,7 @@ export class Factory {
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
     const typeNameText: string = util.getTypeNameText(node.typeName);
     const isArray = typeNameText.toLowerCase() === 'array';
-    const typeInfo = this.context.scanner.getTypeInfo(node);
+    const typeInfo = this.scanner.getTypeInfo(node);
     const TSR_DECLARATION = !!typeInfo && typeInfo.TSR_DECLARATION;
 
     let args: ts.Expression[] = [];
@@ -250,11 +250,16 @@ export class Factory {
 
     let result: ts.Expression;
     let identifier: ts.Expression;
-    let keyword = isTypeParameter && TSR_DECLARATION ? null : 'ref';
+    let keyword = isTypeParameter ? null : 'ref';
 
     if (flowInto) {
       keyword = 'flowInto'
     }
+
+    console.log(typeNameText);
+    console.log(isClassTypeParameter);
+    console.log(this.hasFlags(FactoryFlags.ClassReflection));
+    console.log();
 
     if (isClassTypeParameter && !this.hasFlags(FactoryFlags.ClassReflection)) {
       result = ts.createPropertyAccess(
@@ -299,125 +304,125 @@ export class Factory {
     return this.nullable(!keyword ? args[0] : this.libCall(keyword, args));
   }
 
-  // public typeReferenceReflection_old(node: ts.TypeReferenceNode): ts.Expression {
-  //   let keyword = 'array';
-  //
-  //   let asLiteral = false;
-  //   const scanner = this.context.scanner;
-  //   const typeInfo = scanner.getTypeInfo(node);
-  //   const isSelfReference = this.context.isSelfReference(node);
-  //
-  //   // console.log('has info', !!typeInfo)
-  //   // console.log('has parent', !!node.parent)
-  //
-  //   if (typeInfo && typeInfo.TSR_DECLARATION) {
-  //     asLiteral = true;
-  //   }
-  //
-  //   const typeNameText: string = util.getTypeNameText(node.typeName);
-  //
-  //   // console.log(typeNameText);
-  //   // console.log();
-  //
-  //   const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => {
-  //     return this.typeReflection(n)
-  //   });
-  //   // const args: ts.Expression[] = [];
-  //
-  //   let isTypeParameter: boolean;
-  //   let isClassTypeParameter: boolean;
-  //   let noFlowInto: boolean;
-  //   let noRef: boolean;
-  //   let classTypeParameterReflection: ts.Expression;
-  //
-  //   if (typeNameText.toLowerCase() !== 'array') {
-  //     isTypeParameter = util.isTypeParameter(node);
-  //     isClassTypeParameter = false;
-  //
-  //     // if (isTypeParameter) {
-  //     //   console.log(typeNameText);
-  //     //   console.log(typeInfo.TSR_DECLARATION);
-  //     //   console.log();
-  //     // }
-  //
-  //     noFlowInto = this.hasLocalFlags(FactoryFlags.NoFlowInto);
-  //
-  //     keyword = 'ref';
-  //
-  //     if (isTypeParameter) {
-  //       asLiteral = false;
-  //
-  //       if (!typeInfo.TSR_DECLARATION) {
-  //         const parentClass = !this.hasGlobalFlags(FactoryFlags.ClassReflection) && util.isTypeParameterOfClass(node);
-  //
-  //         if (parentClass) {
-  //           isClassTypeParameter = true;
-  //
-  //           classTypeParameterReflection = ts.createPropertyAccess(
-  //             ts.createElementAccess(
-  //               ts.createThis(),
-  //               ts.createIdentifier(this.context.getTypeSymbolDeclarationName(parentClass.name.getText()))
-  //             ),
-  //             typeNameText
-  //           );
-  //
-  //           if (!noFlowInto) {
-  //             classTypeParameterReflection = this.flowInto(classTypeParameterReflection);
-  //           }
-  //         } else if (!noFlowInto) {
-  //           keyword = 'flowInto';
-  //         }
-  //       } else {
-  //         noRef = true;
-  //       }
-  //     }
-  //
-  //     if (typeInfo && typeInfo.symbol) {
-  //       if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) || util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)) {
-  //         keyword = asLiteral ? 'ref' : 'typeOf';
-  //       } else if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.EnumMember)) {
-  //         keyword = asLiteral ? 'ref' : 'number';
-  //       }
-  //     }
-  //
-  //     // TODO: check if self-referencing DONE
-  //     // TODO: no tdz if exists
-  //     // TODO: what if changes due to declaration merging
-  //
-  //     const isDeclared = this.context.isDeclared(node.typeName);
-  //     const wasDeclared = this.context.wasDeclared(node.typeName);
-  //
-  //     let identifier: ts.Expression;
-  //
-  //     if (asLiteral) {
-  //       let sf = typeInfo.declarations[0].getSourceFile().fileName;
-  //       let hash = util.getHash(sf);
-  //       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
-  //       name = name || typeNameText;
-  //       name = `${name}.${hash}`;
-  //
-  //       identifier = ts.createLiteral(name);
-  //     } else {
-  //       identifier = ts.createIdentifier(typeNameText);
-  //     }
-  //
-  //     if ((!wasDeclared && isDeclared && !isSelfReference && !asLiteral) || (isSelfReference && asLiteral)) {
-  //       identifier = this.tdz(identifier as ts.Identifier);
-  //     }
-  //
-  //     // if (!isDeclared && !asLiteral) {
-  //     //   identifier = ts.createIdentifier(this.context.getInlineTypeName(typeNameText));
-  //     // }
-  //
-  //     // if (isTypeParameter && !isReturnContext) {
-  //     //   keyword = 'flowInto';
-  //     // }
-  //
-  //     args.unshift(identifier);
-  //   }
-  //
-  //   return this.nullable(isClassTypeParameter ? classTypeParameterReflection : (isTypeParameter && noFlowInto) || noRef ? args[0] : this.libCall(keyword, args));
-  // }
+  public typeReferenceReflection_old(node: ts.TypeReferenceNode): ts.Expression {
+    let keyword = 'array';
+
+    let asLiteral = false;
+    const scanner = this.scanner;
+    const typeInfo = scanner.getTypeInfo(node);
+    const isSelfReference = this.context.isSelfReference(node);
+
+    // console.log('has info', !!typeInfo)
+    // console.log('has parent', !!node.parent)
+
+    if (typeInfo && typeInfo.TSR_DECLARATION) {
+      asLiteral = true;
+    }
+
+    const typeNameText: string = util.getTypeNameText(node.typeName);
+
+    // console.log(typeNameText);
+    // console.log();
+
+    const args: ts.Expression[] = !node.typeArguments ? [] : node.typeArguments.map(n => {
+      return this.typeReflection(n)
+    });
+    // const args: ts.Expression[] = [];
+
+    let isTypeParameter: boolean;
+    let isClassTypeParameter: boolean;
+    let noFlowInto: boolean;
+    let noRef: boolean;
+    let classTypeParameterReflection: ts.Expression;
+
+    if (typeNameText.toLowerCase() !== 'array') {
+      isTypeParameter = util.isTypeParameter(node);
+      isClassTypeParameter = false;
+
+      // if (isTypeParameter) {
+      //   console.log(typeNameText);
+      //   console.log(typeInfo.TSR_DECLARATION);
+      //   console.log();
+      // }
+
+      noFlowInto = this.hasLocalFlags(FactoryFlags.NoFlowInto);
+
+      keyword = 'ref';
+
+      if (isTypeParameter) {
+        asLiteral = false;
+
+        if (!typeInfo.TSR_DECLARATION) {
+          const parentClass = !this.hasGlobalFlags(FactoryFlags.ClassReflection) && util.isTypeParameterOfClass(node);
+
+          if (parentClass) {
+            isClassTypeParameter = true;
+
+            classTypeParameterReflection = ts.createPropertyAccess(
+              ts.createElementAccess(
+                ts.createThis(),
+                ts.createIdentifier(this.context.getTypeSymbolDeclarationName(parentClass.name.getText()))
+              ),
+              typeNameText
+            );
+
+            if (!noFlowInto) {
+              classTypeParameterReflection = this.flowInto(classTypeParameterReflection);
+            }
+          } else if (!noFlowInto) {
+            keyword = 'flowInto';
+          }
+        } else {
+          noRef = true;
+        }
+      }
+
+      if (typeInfo && typeInfo.symbol) {
+        if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) || util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)) {
+          keyword = asLiteral ? 'ref' : 'typeOf';
+        } else if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.EnumMember)) {
+          keyword = asLiteral ? 'ref' : 'number';
+        }
+      }
+
+      // TODO: check if self-referencing DONE
+      // TODO: no tdz if exists
+      // TODO: what if changes due to declaration merging
+
+      const isDeclared = this.context.isDeclared(node.typeName);
+      const wasDeclared = this.context.wasDeclared(node.typeName);
+
+      let identifier: ts.Expression;
+
+      if (asLiteral) {
+        let sf = typeInfo.declarations[0].getSourceFile().fileName;
+        let hash = util.getHash(sf);
+        let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
+        name = name || typeNameText;
+        name = `${name}.${hash}`;
+
+        identifier = ts.createLiteral(name);
+      } else {
+        identifier = ts.createIdentifier(typeNameText);
+      }
+
+      if ((!wasDeclared && isDeclared && !isSelfReference && !asLiteral) || (isSelfReference && asLiteral)) {
+        identifier = this.tdz(identifier as ts.Identifier);
+      }
+
+      // if (!isDeclared && !asLiteral) {
+      //   identifier = ts.createIdentifier(this.context.getInlineTypeName(typeNameText));
+      // }
+
+      // if (isTypeParameter && !isReturnContext) {
+      //   keyword = 'flowInto';
+      // }
+
+      args.unshift(identifier);
+    }
+
+    return this.nullable(isClassTypeParameter ? classTypeParameterReflection : (isTypeParameter && noFlowInto) || noRef ? args[0] : this.libCall(keyword, args));
+  }
 
   public functionTypeReflection(node: ts.FunctionTypeNode): ts.Expression {
     return this.functionReflection(node);
@@ -431,7 +436,7 @@ export class Factory {
     // const identifier = util.getIdentifierOfQualifiedName(node.exprName);
     // const wasDeclared = this.context.wasDeclared(identifier);
     // const isDeclared = this.context.isDeclared(identifier);
-    // const typeInfo = this.context.scanner.getTypeInfo(node.exprName);
+    // const typeInfo = this.scanner.getTypeInfo(node.exprName);
     // const asLiteral = typeInfo && typeInfo.TSR_DECLARATION;
     return this.nullable(this.libCall('typeOf', ts.createIdentifier(util.getTypeNameText(node.exprName))));
   }
@@ -451,7 +456,7 @@ export class Factory {
 
     const wasDeclared = this.context.wasDeclared(identifier);
     const isDeclared = this.context.isDeclared(identifier);
-    const typeInfo = this.context.scanner.getTypeInfo(node);
+    const typeInfo = this.scanner.getTypeInfo(node);
     const asLiteral = typeInfo && typeInfo.TSR_DECLARATION;
     const typeNameText = node.expression.getText();
 
@@ -578,7 +583,7 @@ export class Factory {
   }
 
   private getProperties(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
-    const typeInfo = this.context.scanner.getTypeInfo(node);
+    const typeInfo = this.scanner.getTypeInfo(node);
     const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
     let type: ts.Type = typeInfo.type;
 
@@ -738,6 +743,8 @@ export class Factory {
       );
     }
 
+    this.unsetGlobalFlags();
+
     if (asType) {
       return this.asClass(typeNameText, result);
     }
@@ -745,8 +752,6 @@ export class Factory {
     if (hasSelfReference || hasTypeParameters) {
       return result as ts.Expression;
     }
-
-    this.unsetGlobalFlags();
 
     return util.asArray(result);
   }
@@ -884,7 +889,7 @@ export class Factory {
   }
 
   // private getProperties(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
-  //   const typeInfo = this.context.scanner.getTypeInfo(node);
+  //   const typeInfo = this.scanner.getTypeInfo(node);
   //   const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
   //   let type: ts.Type;
   //
@@ -1309,7 +1314,9 @@ export class Factory {
   }
 
   public typeParameterBindingDeclaration(typeArguments: ts.TypeNode[]): ts.Statement {
-    return ts.createStatement(
+    this.setGlobalFlags(FactoryFlags.NoFlowInto);
+
+    const statement = ts.createStatement(
       ts.createCall(
         ts.createPropertyAccess(
           ts.createIdentifier(this.context.getLibDeclarationName()),
@@ -1322,6 +1329,10 @@ export class Factory {
         ]
       )
     );
+
+    this.unsetGlobalFlags();
+
+    return statement;
   }
 
   public assertReturnStatements<T extends ts.Node>(node: T, type?: ts.TypeNode): T {
@@ -1625,6 +1636,10 @@ export class Factory {
 
   public unsetGlobalFlags(): void {
     this._globalFlags = FactoryFlags.None;
+  }
+
+  get scanner(): Scanner {
+    return this.context.scanner;
   }
 
   get globalFlags(): FactoryFlags {

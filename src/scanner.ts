@@ -33,14 +33,14 @@ export class Scanner {
   private declarations: Map<ts.Symbol, string[]> = new Map();
   private aliases: Map<ts.Node, ts.Node> = new Map();
   private properties: Map<ts.Node, TypeInfo> = new Map();
-
+  private symbols: Map<ts.Node, ts.Symbol> = new Map();
   private scanned: Set<ts.Node> = new Set();
 
   private skip: ts.SyntaxKind[] = [
+    ts.SyntaxKind.NamedImports,
     ts.SyntaxKind.NamespaceImport,
     ts.SyntaxKind.ImportClause,
-    ts.SyntaxKind.SourceFile,
-    // ts.SyntaxKind.BinaryExpression
+    ts.SyntaxKind.SourceFile
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
@@ -104,6 +104,10 @@ export class Scanner {
     return node;
   }
 
+  public getNodeSymbol(node: ts.Node): ts.Symbol {
+    return this.symbols.get(this.getAliasedNode(node));
+  }
+
   private scanner(sourceFile: ts.SourceFile): void {
     const scanNode = (node: ts.Node) => {
       if (!node) return;
@@ -114,44 +118,9 @@ export class Scanner {
     ts.forEachChild(sourceFile, scanNode);
   }
 
-  // TODO: check if can have a type annotation (e.g. typeArguments/typeParameters)
-  // use ExpressionWithTypeArguments
-  // or skip expression with type arguments and parse typeArguments array separately
-  //
-  // The type nodes from below are not scanned or mapped
-  // (.type typeNode would be reused)
-  //
-  // omit special cases in the scanner and handle them in the factory/context/mutators
-  // or create helper
-  //
-  // typeArguments[]
-  // CallExpression
-  // ExpressionWithTypeArguments
-  // NewExpression
-  //
-  // constraint, default
-  // TypeParameterDeclaration
-  //
-  // type (already handled)
-  // AsExpression
-  // SignatureDeclaration
-  // VariableDeclaration
-  // ParameterDeclaration
-  // PropertySignature
-  // PropertyDeclaration
-  // VariableLikeDeclaration
-  //
-  //
-  //
-  // TypeReferenceNode
-  //
-  // elementTypes[]
-  // TupleTypeNode
-  //
-  // types[]
-  // IntersectionTypeNode
-  //
   private scanNode(node: ts.Node, useType?: ts.Type, enclosing?: ts.Node): TypeInfo {
+    this.symbols.set(node, this.checker.getSymbolAtLocation(node));
+
     if (this.scanned.has(node)) {
       return;
     }
@@ -232,71 +201,11 @@ export class Scanner {
     return typeInfo;
   }
 
-  // TODO: only get symbol for special cases (ExpressionWithTypeArguments, TypeQuery)
   public getSymbol(type: ts.Type, node: ts.Node): ts.Symbol {
     return type && (type.aliasSymbol || type.symbol ||
     (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
     this.checker.getSymbolAtLocation(node) : undefined));
   }
-
-  // private scanSynthesizedTypeNode(typeNode: ts.TypeNode, type: ts.Type, enclosing: ts.Node) {
-  //   const tn = typeNode as any;
-  //   const t = type as any;
-  //
-  //   switch (typeNode.kind) {
-  //     // type
-  //     case ts.SyntaxKind.TypePredicate:
-  //     case ts.SyntaxKind.ParenthesizedType:
-  //     case ts.SyntaxKind.TypeOperator:
-  //     case ts.SyntaxKind.MappedType:
-  //       if (tn.type) {
-  //         this.scanNode(tn.type, t.type, enclosing);
-  //       }
-  //       break;
-  //     // elementType
-  //     case ts.SyntaxKind.ArrayType:
-  //       if (tn.elementType) {
-  //         this.scanNode(tn.elementType, t.elementType, enclosing);
-  //       }
-  //       break;
-  //     // objectType
-  //     // indexType
-  //     case ts.SyntaxKind.IndexedAccessType:
-  //       if (tn.objectType) {
-  //         this.scanNode(tn.objectType, t.objectType, enclosing);
-  //       }
-  //       if (tn.indexType) {
-  //         this.scanNode(tn.indexType, t.indexType, enclosing);
-  //       }
-  //       break;
-  //     // typeArguments[]
-  //     case ts.SyntaxKind.TypeReference:
-  //     case ts.SyntaxKind.ExpressionWithTypeArguments:
-  //       if (tn.typeArguments) {
-  //         for (let i = 0; i < (t.typeArguments || []).length; i++) {
-  //           this.scanNode(tn.typeArguments[i], t.typeArguments[i], enclosing);
-  //         }
-  //       }
-  //       break;
-  //     // elementTypes[]
-  //     case ts.SyntaxKind.TupleType:
-  //       if (tn.elementTypes) {
-  //         for (let i = 0; i < (t.elementTypes || []).length; i++) {
-  //           this.scanNode(tn.elementTypes[i], t.elementTypes[i], enclosing);
-  //         }
-  //       }
-  //       break;
-  //     // types[]
-  //     case ts.SyntaxKind.UnionType:
-  //     case ts.SyntaxKind.IntersectionType:
-  //       if (tn.types) {
-  //         for (let i = 0; i < (t.types || []).length; i++) {
-  //           this.scanNode(tn.types[i], t.types[i], enclosing);
-  //         }
-  //       }
-  //       break;
-  //   }
-  // }
 
   private shouldScan(node: ts.Node): boolean {
     if (!node) {
