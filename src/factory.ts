@@ -16,65 +16,45 @@ export type MethodLikeNode = ts.ConstructorTypeNode | ts.CallSignatureDeclaratio
   ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
 export class Factory {
-  [index: string]: any;
 
-  private _flags: number = FactoryFlags.None;
-  private _state: Map<FactoryFlags, number> = new Map();
-
-  get state(): Map<FactoryFlags, number> {
-    return this._state;
-  }
-
-  get flags(): number {
-    return this._flags;
-  }
-
-  public rule(rule: FactoryRules) {
-    return !!(this.flags & rule);
-  }
-
-  public flag(flag: FactoryFlags) {
-    return !!(this.flags & flag);
-  }
-
-  private addFlag(flag: FactoryFlags): void {
-    let counter = this.state.get(flag) || 0;
-    this.state.set(flag, ++counter);
-    if (counter === 1) this._flags |= flag;
-  }
-
-  private removeFlag(flag: FactoryFlags): void {
-    let counter = this.state.get(flag) || 1;
-    if (counter < 0) counter = 0;
-    this.state.set(flag, --counter);
-    if (counter === 0) this._flags &= ~flag;
-  }
+  private _state: Map<FactoryState, number> = new Map();
 
   constructor(private _context: MutationContext, private _strictNullChecks = false, private _lib = 't', private _namespace = '_', private _load = 'ts-runtime/lib') {
     return new Proxy(this, {
-      get: (target: Factory, property: string, receiver: any) => {
-        const destination = target[property];
-
-        if (typeof destination !== 'function') {
-          return destination;
-        }
-
-        const flagName = property.charAt(0).toUpperCase() + property.slice(1);
-        const flagsEnum = FactoryFlags as any as {[index: string]: number};
-
-        return (...args: any[]) => {
-          const enumMember = flagsEnum[flagName];
-          const hasEnumMember = enumMember !== undefined;
-          if (hasEnumMember) this.addFlag(flagsEnum[flagName]);
-          const result = destination.bind(receiver)(...args);
-          if (hasEnumMember)  this.removeFlag(flagsEnum[flagName]);
-          return result;
-        };
-      }
+      get: this.proxy.bind(this)
     });
   }
 
-  public typeReflection(node: ts.TypeNode, localFlags: FactoryFlags = FactoryFlags.None): ts.Expression {
+  private proxy(target: Factory, property: string, receiver: any) {
+    const destination = (target as any)[property];
+
+    if (typeof destination !== 'function') {
+      return destination;
+    }
+
+    const flagName = property.charAt(0).toUpperCase() + property.slice(1);
+    const flagsEnum = FactoryState as any as {[index: string]: number};
+
+    let lastFlag = 0;
+
+    return (...args: any[]) => {
+      const state = flagsEnum[flagName];
+
+      this.addState(state);
+
+      let result = destination.bind(receiver)(...args);
+
+      if (this.match(FactoryRule.Nullable, state)) {
+        result = this.nullable(result);
+      }
+
+      this.removeState(state);
+
+      return result;
+    };
+  }
+
+  public typeReflection(node: ts.TypeNode): ts.Expression {
     if (!node) {
       return this.anyTypeReflection();
     }
@@ -164,23 +144,23 @@ export class Factory {
   }
 
   public numberTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('number'));
+    return this.libCall('number');
   }
 
   public booleanTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('boolean'));
+    return this.libCall('boolean');
   }
 
   public stringTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('string'));
+    return this.libCall('string');
   }
 
   public symbolTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('symbol'));
+    return this.libCall('symbol');
   }
 
   public objectTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('object'));
+    return this.libCall('object');
   }
 
   public voidTypeReflection(): ts.Expression {
@@ -192,11 +172,11 @@ export class Factory {
   }
 
   public undefinedTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('undef'));
+    return this.libCall('undef');
   }
 
   public thisTypeReflection(): ts.Expression {
-    return this.nullable(this.libCall('this', ts.createThis()));
+    return this.libCall('this', ts.createThis());
   }
 
   public literalTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
@@ -215,34 +195,34 @@ export class Factory {
   }
 
   public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.nullable(this.libCall('boolean', ts.createLiteral(
+    return this.libCall('boolean', ts.createLiteral(
       node.literal.kind === ts.SyntaxKind.TrueKeyword ? true : false
-    )));
+    ));
   }
 
   public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.nullable(this.libCall('number', ts.createNumericLiteral(node.literal.getText())));
+    return this.libCall('number', ts.createNumericLiteral(node.literal.getText()));
   }
 
   public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
     const str = node.literal.getText();
-    return this.nullable(this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1))));
+    return this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1)));
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
-    return this.nullable(this.libCall('array', this.typeReflection(node.elementType)));
+    return this.libCall('array', this.typeReflection(node.elementType));
   }
 
   public tupleTypeReflection(node: ts.TupleTypeNode): ts.Expression {
-    return this.nullable(this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n))));
+    return this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n)));
   }
 
   public unionTypeReflection(node: ts.UnionTypeNode): ts.Expression {
-    return this.nullable(this.libCall('union', node.types.map(n => this.typeReflection(n))));
+    return this.libCall('union', node.types.map(n => this.typeReflection(n)));
   }
 
   public intersectionTypeReflection(node: ts.IntersectionTypeNode): ts.Expression {
-    return this.nullable(this.libCall('intersection', node.types.map(n => this.typeReflection(n))));
+    return this.libCall('intersection', node.types.map(n => this.typeReflection(n)));
   }
 
   public typeReferenceReflection(node: ts.TypeReferenceNode): ts.Expression {
@@ -267,7 +247,7 @@ export class Factory {
     const isDeclared = this.context.isDeclared(node.typeName);
     const wasDeclared = this.context.wasDeclared(node.typeName);
     const isTypeParameter = util.isTypeParameter(node);
-    const flowInto = isTypeParameter && !this.rule(FactoryRules.NoFlowInto);
+    const flowInto = isTypeParameter && !this.rule(FactoryRule.NoFlowInto);
     const parentClass = !TSR_DECLARATION && isTypeParameter && util.isTypeParameterOfClass(node);
     const isClassTypeParameter = !!parentClass;
     const asLiteral = !isTypeParameter && TSR_DECLARATION;
@@ -276,18 +256,11 @@ export class Factory {
     let identifier: ts.Expression;
     let keyword = isTypeParameter ? null : 'ref';
 
-    if (isTypeParameter) {
-      console.log(typeNameText);
-      console.log(!!this.flag(FactoryFlags.ReturnTypeReflection));
-      console.log(!!this.rule(FactoryRules.NoFlowInto))
-      console.log()
-    }
-
     if (flowInto) {
       keyword = 'flowInto'
     }
 
-    if (isClassTypeParameter && !this.rule(FactoryRules.NoClassTypeParameterReflection)) {
+    if (isClassTypeParameter && !this.rule(FactoryRule.NoClassTypeParameterReflection)) {
       result = ts.createPropertyAccess(
         ts.createElementAccess(
           ts.createThis(),
@@ -298,7 +271,7 @@ export class Factory {
         typeNameText
       );
 
-      return this.nullable(!keyword ? result : this.libCall(keyword, result));
+      return !keyword ? result : this.libCall(keyword, result);
     }
 
     if (typeInfo && typeInfo.symbol) {
@@ -327,7 +300,7 @@ export class Factory {
 
     args.unshift(identifier);
 
-    return this.nullable(!keyword ? args[0] : this.libCall(keyword, args));
+    return !keyword ? args[0] : this.libCall(keyword, args);
   }
 
   // public typeReferenceReflection_old(node: ts.TypeReferenceNode): ts.Expression {
@@ -464,7 +437,7 @@ export class Factory {
     // const isDeclared = this.context.isDeclared(identifier);
     // const typeInfo = this.scanner.getTypeInfo(node.exprName);
     // const asLiteral = typeInfo && typeInfo.TSR_DECLARATION;
-    return this.nullable(this.libCall('typeOf', ts.createIdentifier(util.getTypeNameText(node.exprName))));
+    return this.libCall('typeOf', ts.createIdentifier(util.getTypeNameText(node.exprName)));
   }
 
   public typeLiteralReflection(node: ts.TypeLiteralNode) {
@@ -518,7 +491,7 @@ export class Factory {
     args.push(id);
     args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a/*, FactoryFlags.NoFlowInto*/)));
 
-    return this.nullable(this.libCall(keyword, args));
+    return this.libCall(keyword, args);
   }
 
   private tryGetIdentifierOfPropertyAccessExpression(node: ts.PropertyAccessExpression): ts.Identifier {
@@ -845,7 +818,7 @@ export class Factory {
     //   ]);
     // }
 
-    return this.nullable(this.libCall('function', args));
+    return this.libCall('function', args);
   }
 
   public methodReflection(node: MethodLikeNode): ts.Expression {
@@ -1513,14 +1486,8 @@ export class Factory {
     return this.libCall('annotate', expressions);
   }
 
-  // public nullable(reflection: ts.Expression, notNullable?: boolean): ts.Expression {
-  //   return this.strictNullChecks || notNullable ? reflection : this.libCall('nullable', reflection);
-  // }
-
-  // TODO: think about a more performant/readable/controlable way to handle strictNullChecks true/false
-  public nullable(reflection: ts.Expression, skip?: boolean): ts.Expression {
-    // return reflection;
-    return this.strictNullChecks || skip ? reflection : this.libCall('nullable', reflection);
+  public nullable(reflection: ts.Expression,): ts.Expression {
+    return this.strictNullChecks ? reflection : this.libCall('nullable', reflection);
   }
 
   public intersect(args: ts.Expression | ts.Expression[]): ts.Expression {
@@ -1603,6 +1570,46 @@ export class Factory {
     return ts.createCall(ts.createPropertyAccess(id, prop), [], args);
   }
 
+  private addState(state: FactoryState): void {
+    if (state === undefined) return;
+    let counter = this._state.get(state) || 0;
+    this._state.set(state, ++counter);
+  }
+
+  private removeState(state: FactoryState): void {
+    if (state === undefined) return;
+    let counter = this._state.get(state) || 1;
+    if (counter < 0) counter = 0;
+    this._state.set(state, --counter);
+    if (counter === 0) this._state.delete(state);
+  }
+
+  public state(state: FactoryState): boolean {
+    return this._state.has(state);
+  }
+
+  public rule(rule: FactoryState[]): boolean {
+    for (let state of rule) {
+      if (this.state(state)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public match(rule: FactoryState[], state: FactoryState): boolean {
+    return rule.indexOf(state) !== -1;
+  }
+
+  // public flag(flag: FactoryFlags) {
+  //   return !!(this.flags & flag);
+  // }
+
+  // get flags(): number {
+  //   return this._flags;
+  // }
+
   get scanner(): Scanner {
     return this.context.scanner;
   }
@@ -1645,86 +1652,111 @@ export class Factory {
 
 }
 
-export enum FactoryFlags {
-  None = 0,
-  TypeDeclaration = 1 << 0,
-  TypeAssertion = 1 << 1,
-  TypeDeclarationAndAssertion = 1 << 2,
-  AnyTypeReflection = 1 << 3,
-  NumberTypeReflection = 1 << 4,
-  BooleanTypeReflection = 1 << 5,
-  StringTypeReflection = 1 << 6,
-  SymbolTypeReflection = 1 << 7,
-  ObjectTypeReflection = 1 << 8,
-  VoidTypeReflection = 1 << 9,
-  NullTypeReflection = 1 << 10,
-  UndefinedTypeReflection = 1 << 11,
-  ThisTypeReflection = 1 << 12,
-  LiteralTypeReflection = 1 << 13,
-  BooleanLiteralTypeReflection = 1 << 14,
-  NumericLiteralTypeReflection = 1 << 15,
-  StringLiteralTypeReflection = 1 << 16,
-  ArrayTypeReflection = 1 << 17,
-  TupleTypeReflection = 1 << 18,
-  UnionTypeReflection = 1 << 19,
-  IntersectionTypeReflection = 1 << 20,
-  TypeReferenceReflection = 1 << 21,
-  FunctionTypeReflection = 1 << 22,
-  ConstructorTypeReflection = 1 << 23,
-  TypeQueryReflection = 1 << 24,
-  TypeLiteralReflection = 1 << 25,
-  ExpressionWithTypeArgumentsReflection = 1 << 26,
-  TypeAliasReflection = 1 << 27,
-  TypeAliasSubstitution = 1 << 28,
-  InterfaceReflection = 1 << 29,
-  InterfaceSubstitution = 1 << 30,
-  ClassReflection = 1 << 31,
-  NamedDeclarationReflection = 1 << 32,
-  NamedDeclarationsReflections = 1 << 33,
-  EnumReflection = 1 << 34,
-  EnumMemberReflection = 1 << 35,
-  VariableReflection = 1 << 36,
-  FunctionReflection = 1 << 37,
-  MethodReflection = 1 << 38,
-  ConstructorReflection = 1 << 39,
-  ParameterReflection = 1 << 40,
-  ReturnTypeReflection = 1 << 41,
-  TypeParameterReflection = 1 << 42,
-  ElementReflection = 1 << 43,
-  ElementsReflection = 1 << 44,
+export enum FactoryState {
+  None,
+  TypeDeclaration,
+  TypeAssertion,
+  TypeDeclarationAndAssertion,
+  AnyTypeReflection,
+  NumberTypeReflection,
+  BooleanTypeReflection,
+  StringTypeReflection,
+  SymbolTypeReflection,
+  ObjectTypeReflection,
+  VoidTypeReflection,
+  NullTypeReflection,
+  UndefinedTypeReflection,
+  ThisTypeReflection,
+  LiteralTypeReflection,
+  BooleanLiteralTypeReflection,
+  NumericLiteralTypeReflection,
+  StringLiteralTypeReflection,
+  ArrayTypeReflection,
+  TupleTypeReflection,
+  UnionTypeReflection,
+  IntersectionTypeReflection,
+  TypeReferenceReflection,
+  FunctionTypeReflection,
+  ConstructorTypeReflection,
+  TypeQueryReflection,
+  TypeLiteralReflection,
+  ExpressionWithTypeArgumentsReflection,
+  TypeAliasReflection,
+  TypeAliasSubstitution,
+  InterfaceReflection,
+  InterfaceSubstitution,
+  ClassReflection,
+  NamedDeclarationReflection,
+  NamedDeclarationsReflections,
+  EnumReflection,
+  EnumMemberReflection,
+  VariableReflection,
+  FunctionReflection,
+  MethodReflection,
+  ConstructorReflection,
+  ParameterReflection,
+  ReturnTypeReflection,
+  TypeParameterReflection,
+  ElementReflection,
+  ElementsReflection,
   MergedElementsReflection,
-  IndexSignatureReflection = 1 << 45,
-  PropertySignatureReflection = 1 << 46,
-  CallSignatureReflection = 1 << 47,
-  ConstructSignatureReflection = 1 << 48,
-  ClassTypeParameterSymbolDeclaration = 1 << 49,
-  ClassTypeParameterSymbolConstructorDeclaration = 1 << 50,
-  ClassTypeParameterSymbolPropertyDeclaration = 1 << 51,
-  TypeParameterDeclaration = 1 << 52,
-  TypeParametersLiteral = 1 << 53,
-  TypeParametersLiteralDeclaration = 1 << 54,
-  TypeParameterBindingDeclaration = 1 << 55,
-  AssertReturnStatements = 1 << 56,
-  MutateFunctionBody = 1 << 57,
-  ImportLibStatement = 1 << 58,
-  ImportDeclarationsStatement = 1 << 59,
-  Decorate = 1 << 60,
-  Annotate = 1 << 61,
-  Nullable = 1 << 62,
-  Intersect = 1 << 63,
-  FlowInto = 1 << 64,
-  Tdz = 1 << 65,
-  SelfReference = 1 << 66,
-  AsObject = 1 << 67,
-  AsRef = 1 << 68,
-  AsType = 1 << 69,
-  AsClass = 1 << 70,
-  AsVar = 1 << 71,
-  AsStatement = 1 << 72,
+  IndexSignatureReflection,
+  PropertySignatureReflection,
+  CallSignatureReflection,
+  ConstructSignatureReflection,
+  ClassTypeParameterSymbolDeclaration,
+  ClassTypeParameterSymbolConstructorDeclaration,
+  ClassTypeParameterSymbolPropertyDeclaration,
+  TypeParameterDeclaration,
+  TypeParametersLiteral,
+  TypeParametersLiteralDeclaration,
+  TypeParameterBindingDeclaration,
+  AssertReturnStatements,
+  MutateFunctionBody,
+  ImportLibStatement,
+  ImportDeclarationsStatement,
+  Decorate,
+  Annotate,
+  Nullable,
+  Intersect,
+  FlowInto,
+  Tdz,
+  SelfReference,
+  AsObject,
+  AsRef,
+  AsType,
+  AsClass,
+  AsVar,
+  AsStatement,
 }
 
-export enum FactoryRules {
-  NoClassTypeParameterReflection = FactoryFlags.ClassReflection,
-  NoFlowInto = FactoryFlags.ReturnTypeReflection | FactoryFlags.ExpressionWithTypeArgumentsReflection | FactoryFlags.TypeParameterBindingDeclaration,
-  NoRef,
-}
+export const FactoryRule = {
+  NoClassTypeParameterReflection: [
+    FactoryState.ClassReflection,
+    FactoryState.NamedDeclarationReflection
+  ],
+  NoFlowInto: [
+    FactoryState.ReturnTypeReflection,
+    FactoryState.ExpressionWithTypeArgumentsReflection,
+    FactoryState.TypeParameterBindingDeclaration,
+    FactoryState.InterfaceReflection,
+    FactoryState.TypeAliasReflection
+  ],
+  Nullable: [
+    FactoryState.NumberTypeReflection,
+    FactoryState.BooleanTypeReflection,
+    FactoryState.StringTypeReflection,
+    FactoryState.SymbolTypeReflection,
+    FactoryState.ObjectTypeReflection,
+    FactoryState.UndefinedTypeReflection,
+    FactoryState.ThisTypeReflection,
+    FactoryState.LiteralTypeReflection,
+    FactoryState.ArrayTypeReflection,
+    FactoryState.TupleTypeReflection,
+    FactoryState.UnionTypeReflection,
+    FactoryState.IntersectionTypeReflection,
+    FactoryState.TypeReferenceReflection,
+    FactoryState.FunctionTypeReflection,
+    FactoryState.ConstructorTypeReflection
+  ]
+};
