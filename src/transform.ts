@@ -219,11 +219,11 @@ function transformProgram(entryFile: string, options?: Options): void {
     const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
 
-    declarations.forEach((names, key) => {
-      console.log(key.name);
-      console.log(names);
-      console.log();
-    });
+    // declarations.forEach((names, key) => {
+    //   console.log(key.name);
+    //   console.log(names);
+    //   console.log();
+    // });
 
     declarations.forEach((names, key) => {
       expressions.push(...context.factory.namedDeclarationsReflections(names, key.getDeclarations()));
