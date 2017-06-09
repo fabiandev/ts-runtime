@@ -171,7 +171,7 @@ export function hasFlag(node: ts.Node | ts.Symbol, flag: ts.NodeFlags | ts.Symbo
   return !!(node.flags & flag);
 }
 
-export function isBindingPattern(node: ts.Node): boolean {
+export function isBindingPattern(node: ts.Node): node is ts.BindingPattern {
   return ts.isArrayBindingPattern(node) || ts.isObjectBindingPattern(node);
 }
 
@@ -196,7 +196,7 @@ export function isTypeParameter(node: ts.TypeReferenceNode): boolean {
   while(node = node.parent as any) {
     if ((node as any).typeParameters && (node as any).typeParameters.length > 0) {
       if ((node as any).typeParameters.find((param: ts.TypeParameterDeclaration) => {
-        return param.name.getText() === nodeName;
+        return param.name.text === nodeName;
       })) {
         return true;
       }
@@ -215,7 +215,7 @@ export function isTypeParameterOf(node: ts.TypeNode, typeParameters: ts.TypePara
 
   for (let typeParameter of typeParameters) {
 
-    if (typeParameter.name.getText() === nodeName) {
+    if (typeParameter.name.text === nodeName) {
       return true;
     }
   }

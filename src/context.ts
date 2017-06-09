@@ -65,7 +65,7 @@ export class MutationContext {
     const declarations = typeInfo.declarations
       .filter(d => fileName === d.getSourceFile().fileName) || [];
 
-    for (let declaration of declarations) {
+    if (declarations.length > 0) {
       return true;
     }
 
@@ -81,7 +81,8 @@ export class MutationContext {
       next = next.parent;
 
       if (ts.isClassDeclaration(next) || ts.isInterfaceDeclaration(next) || ts.isTypeAliasDeclaration(next)) {
-        let symbol = this.scanner.getTypeInfo(next.name || next).symbol;
+        const symbol = this.scanner.getTypeInfo(next.name || next).symbol;
+
         if (typeInfo.symbol === symbol) {
           return true;
         }
@@ -94,15 +95,10 @@ export class MutationContext {
   public hasSelfReference(node: ts.Node): boolean {
     const typeInfo = this.scanner.getTypeInfo((node as any).name || node);
 
-    // let symbol = this.scanner.getNodeSymbol((node as any).name || node);
-
-    // if (!symbol) {
-    //   this.checker.getSymbolAtLocation((node as any).name || node);
-    // }
-
     const search = (node: ts.Node): boolean => {
       if (ts.isTypeReferenceNode(node)) {
         const symbol = this.scanner.getTypeInfo(node.typeName).symbol;
+
         if (typeInfo.symbol === symbol) {
           return true;
         }
@@ -147,13 +143,13 @@ export class MutationContext {
     return false;
   }
 
-  public getTypeDeclarationName(node: string | ts.BindingName): string {
-    const name = typeof node === 'string' ? node : node.getText();
+  public getTypeDeclarationName(node: string | ts.Identifier): string {
+    const name = typeof node === 'string' ? node : node.text;
     return `${this.options.libNamespace}${name}Type`;
   }
 
-  public getInlineTypeName(node: string | ts.BindingName): string {
-    const name = typeof node === 'string' ? node : node.getText();
+  public getInlineTypeName(node: string | ts.Identifier): string {
+    const name = typeof node === 'string' ? node : node.text;
     return `${this.options.libNamespace}${name}TypeInline`;
   }
 
@@ -165,13 +161,13 @@ export class MutationContext {
     return `${this.options.libNamespace}${this.options.libIdentifier}`;
   }
 
-  public getTypeSymbolDeclarationName(node: string | ts.BindingName): string {
-    const name = typeof node === 'string' ? node : node.getText();
+  public getTypeSymbolDeclarationName(node: string | ts.Identifier): string {
+    const name = typeof node === 'string' ? node : node.text;
     return `${this.options.libNamespace}${name}TypeParametersSymbol`;
   }
 
-  public getTypeSymbolDeclarationInitializer(node: string | ts.BindingName): string {
-    const name = typeof node === 'string' ? node : node.getText();
+  public getTypeSymbolDeclarationInitializer(node: string | ts.Identifier): string {
+    const name = typeof node === 'string' ? node : node.text;
     return `${name}TypeParameters`;
   }
 

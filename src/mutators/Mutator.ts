@@ -32,7 +32,7 @@ export abstract class Mutator {
   }
 
 
-  public shouldMutate(node: ts.Node) {
+  public shouldMutate(node: ts.Node): boolean {
     return node && util.asArray(this.kind).indexOf(node.kind) !== -1;
   }
 
@@ -44,15 +44,15 @@ export abstract class Mutator {
     return this.context.scanner;
   }
 
-  get skip() {
+  get skip(): <T extends ts.Node>(node: T, recursive: boolean, ...exclude: ts.Node[]) => T {
     return this.context.skip.bind(this.context);
   }
 
-  get shouldSkip() {
+  get shouldSkip(): (node: ts.Node) => boolean {
     return this.context.shouldSkip.bind(this.context);
   }
 
-  get map() {
+  get map(): <T extends ts.Node>(alias: T, original: ts.Node) => T {
     return this.scanner.mapNode.bind(this.scanner);
   }
 

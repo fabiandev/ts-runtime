@@ -28,11 +28,11 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transform(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    const isConstDeclaration = util.hasFlag(node.parent, ts.NodeFlags.Const);
-
-    if (!isConstDeclaration && util.isBindingPattern(node.name)) {
+    if (!ts.isIdentifier(node.name)) {
       return [node];
     }
+
+    const isConstDeclaration = util.hasFlag(node.parent, ts.NodeFlags.Const);
 
     if (isConstDeclaration) {
       return this.transformConstDeclaration(node);
@@ -46,7 +46,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    const nodeName = this.context.getTypeDeclarationName(node.name.getText());
+    const nodeName = this.context.getTypeDeclarationName((node.name as ts.Identifier).text);
     const typeDefinition = this.factory.typeDeclaration(nodeName, node.type);
 
     if (!node.initializer) {
@@ -64,7 +64,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    const nodeName = this.context.getTypeDeclarationName(node.name.getText());
+    const nodeName = this.context.getTypeDeclarationName((node.name as ts.Identifier).text);
     const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
@@ -76,7 +76,7 @@ export class VariableDeclarationListMutator extends Mutator {
       return false;
     }
 
-    if (!node.parent || this.incompatibleParents.indexOf(node.parent.kind) !== -1) {
+    if (node.parent && this.incompatibleParents.indexOf(node.parent.kind) !== -1) {
       return false;
     }
 

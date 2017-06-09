@@ -303,6 +303,10 @@ function transformProgram(entryFile: string, options?: Options): void {
       if (node && !(node as any).type) {
         let type: ts.TypeNode;
         switch (node.kind) {
+          case ts.SyntaxKind.ObjectBindingPattern:
+          case ts.SyntaxKind.ArrayBindingPattern:
+            type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+            break;
           case ts.SyntaxKind.Parameter:
           case ts.SyntaxKind.PropertySignature:
           case ts.SyntaxKind.PropertyDeclaration:
@@ -401,7 +405,7 @@ function transformProgram(entryFile: string, options?: Options): void {
         let previous = node;
 
         node = mutator.mutateNode(node, context);
-
+        util.setParent(node);
         if (node !== previous) {
           scanner.mapNode(node, previous);
         }

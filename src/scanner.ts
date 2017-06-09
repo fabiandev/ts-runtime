@@ -62,6 +62,7 @@ export class Scanner {
     }
   }
 
+  // TODO: prevent infinite loops
   public mapNode<T extends ts.Node>(alias: T, original: ts.Node): T {
     if (alias === original) {
       return;

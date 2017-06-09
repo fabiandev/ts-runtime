@@ -183,30 +183,32 @@ export class Factory {
     switch (node.literal.kind) {
       case ts.SyntaxKind.TrueKeyword:
       case ts.SyntaxKind.FalseKeyword:
-        return this.booleanLiteralTypeReflection(node);
+        return this.booleanLiteralTypeReflection(node.literal as ts.BooleanLiteral);
       case ts.SyntaxKind.StringLiteral:
-        return this.stringLiteralTypeReflection(node);
+        return this.stringLiteralTypeReflection(node.literal as ts.StringLiteral);
       case ts.SyntaxKind.NumericLiteral:
-        return this.numericLiteralTypeReflection(node);
+        return this.numericLiteralTypeReflection(node.literal as ts.NumericLiteral);
       case ts.SyntaxKind.ComputedPropertyName:
       default:
         throw new Error(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
     }
   }
 
-  public booleanLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+  public booleanLiteralTypeReflection(node: ts.BooleanLiteral): ts.Expression {
     return this.libCall('boolean', ts.createLiteral(
-      node.literal.kind === ts.SyntaxKind.TrueKeyword ? true : false
+      node.kind === ts.SyntaxKind.TrueKeyword ? true : false
     ));
   }
 
-  public numericLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    return this.libCall('number', ts.createNumericLiteral(node.literal.getText()));
+  public numericLiteralTypeReflection(node: ts.NumericLiteral): ts.Expression {
+    return this.libCall('number', ts.createNumericLiteral(node.text));
   }
 
-  public stringLiteralTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
-    const str = node.literal.getText();
-    return this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1)));
+  public stringLiteralTypeReflection(node: ts.StringLiteral): ts.Expression {
+    return this.libCall('string', ts.createLiteral(node.text));
+    // const literal = (node.literal as ts.NumericLiteral);
+    // const str = node.literal.getText();
+    // return this.libCall('string', ts.createLiteral(str.substring(1, str.length - 1)));
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
@@ -457,7 +459,9 @@ export class Factory {
     const isDeclared = this.context.isDeclared(identifier);
     const typeInfo = this.scanner.getTypeInfo(node);
     const asLiteral = typeInfo && typeInfo.TSR_DECLARATION;
-    const typeNameText = node.expression.getText();
+    const typeNameText = ts.isIdentifier(node.expression) ?
+      node.expression.text :
+      this.tryGetPropertyAccessExpressionText(node.expression as ts.PropertyAccessExpression);
 
     let keyword = 'ref';
 
@@ -492,6 +496,21 @@ export class Factory {
     args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a/*, FactoryFlags.NoFlowInto*/)));
 
     return this.libCall(keyword, args);
+  }
+
+  private tryGetPropertyAccessExpressionText(node: ts.PropertyAccessExpression): string {
+    let text = '';
+
+    while (ts.isPropertyAccessExpression(node)) {
+      text += node.name;
+      node = node.expression as ts.PropertyAccessExpression;
+    }
+
+    if (text.length > 0) {
+      return text;
+    }
+
+    throw new ProgramError('Only identifiers and property access expressions are allowed for expressions with type arguments.');
   }
 
   private tryGetIdentifierOfPropertyAccessExpression(node: ts.PropertyAccessExpression): ts.Identifier {
@@ -767,12 +786,9 @@ export class Factory {
         return this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration));
       case ts.SyntaxKind.TypeAliasDeclaration:
         return this.asType(name, this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, false));
-      case ts.SyntaxKind.TypeParameter:
-      // TODO: why are type parameters here?
-      // console.log(declaration.parent.getText())
       case ts.SyntaxKind.ModuleDeclaration:
       default:
-      // throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
+      throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
     }
   }
 
@@ -792,7 +808,11 @@ export class Factory {
 
   public functionReflection(node: FunctionLikeNode): ts.Expression {
     const parameters = node.parameters || [] as ts.ParameterDeclaration[];
-    let args: ts.Expression[] = parameters.map(param => this.parameterReflection(param));
+
+    let args: ts.Expression[] = parameters
+      .filter(param => ts.isIdentifier(param.name))
+      .map(param => this.parameterReflection(param));
+
     args.push(this.returnTypeReflection(node.type));
 
     if (node.typeParameters && node.typeParameters.length > 0) {
@@ -837,10 +857,10 @@ export class Factory {
     return undefined;
   }
 
-  public parameterReflection(param: ts.ParameterDeclaration, reflectType = true) {
+  public parameterReflection(param: ts.ParameterDeclaration, reflectType = true): ts.Expression {
     const parameter: ts.Expression[] = [
       this.declarationNameToLiteralOrExpression(param.name),
-      reflectType ? this.typeReflection(param.type) : ts.createIdentifier(this.context.getTypeDeclarationName(param.name.getText()))
+      reflectType ? this.typeReflection(param.type) : ts.createIdentifier(this.context.getTypeDeclarationName((param.name as ts.Identifier).text))
     ];
 
     if (param.questionToken) {
@@ -964,7 +984,7 @@ export class Factory {
 
   public typeParameterReflection(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Expression {
     const args: ts.Expression[] = [
-      ts.createLiteral(typeParameter.name.getText())
+      ts.createLiteral(typeParameter.name.text)
     ];
 
     if (typeParameter.constraint) {
@@ -1012,6 +1032,7 @@ export class Factory {
   }
 
   // TODO: refactor and handle computed property names
+  // use node.name as index (not getText())
   private mergedElementsReflection(nodes: (ts.TypeElement | ts.ClassElement)[]): ts.Expression[] {
     const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
 
@@ -1247,7 +1268,7 @@ export class Factory {
 
   public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Statement {
     const callExpression = this.typeParameterReflection(typeParameter, prop);
-    return ts.createVariableStatement(undefined, ts.createVariableDeclarationList([ts.createVariableDeclaration(typeParameter.name.getText(), undefined, callExpression)], ts.NodeFlags.Const));
+    return ts.createVariableStatement(undefined, ts.createVariableDeclarationList([ts.createVariableDeclaration(typeParameter.name.text, undefined, callExpression)], ts.NodeFlags.Const));
   }
 
   public typeParametersLiteral(typeParameters: ts.TypeParameterDeclaration[], asStatement = false): ts.Expression {
@@ -1353,7 +1374,11 @@ export class Factory {
         continue;
       }
 
-      const paramNameDeclaration = this.context.getTypeDeclarationName(param.name.getText());
+      if (!ts.isIdentifier(param.name)) {
+        continue;
+      }
+
+      const paramNameDeclaration = this.context.getTypeDeclarationName(param.name.text);
 
       bodyDeclarations.push(
         ts.createVariableStatement(
@@ -1367,8 +1392,7 @@ export class Factory {
         )
       );
 
-      // TODO: pass BindingName (param.name)
-      bodyAssertions.push(ts.createStatement(this.typeAssertion(this.parameterReflection(param, false), ts.createIdentifier(param.name.getText()))));
+      bodyAssertions.push(ts.createStatement(this.typeAssertion(this.parameterReflection(param, false), ts.createIdentifier(param.name.text))));
     }
 
     if (node.type && node.type.kind !== ts.SyntaxKind.AnyKeyword) {
