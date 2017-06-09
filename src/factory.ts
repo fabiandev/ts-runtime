@@ -876,10 +876,11 @@ export class Factory {
 
   private mergedElementsReflection(nodes: ElementLike[]): ts.Expression[] {
     type CallableSignature = ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration;
-    type Signature = ts.MethodSignature | CallableSignature;
+    type MethodSignature = ts.MethodSignature | ts.MethodDeclaration;
+    type Signature = ts.MethodSignature | ts.MethodDeclaration | CallableSignature;
 
-    const methodSignatures: Map<string, Set<ts.MethodSignature>> = new Map();
-    const staticMethodSignatures: Map<string, Set<ts.MethodSignature>> = new Map();
+    const methodSignatures: Map<string, Set<MethodSignature>> = new Map();
+    const staticMethodSignatures: Map<string, Set<MethodSignature>> = new Map();
     const callableSignatures: Set<CallableSignature> = new Set();
     const staticCallableSignatures: Set<CallableSignature> = new Set();
 
@@ -895,7 +896,7 @@ export class Factory {
             const id = node.name.getText();
             const collection = util.isStatic(node) ? staticMethodSignatures : methodSignatures;
             if (!collection.has(id)) collection.set(id, new Set());
-            collection.get(id).add(node as ts.MethodSignature);
+            collection.get(id).add(node as MethodSignature);
             return null;
           }
         case ts.SyntaxKind.CallSignature:
@@ -915,7 +916,7 @@ export class Factory {
       }
     }).filter(node => !!node);
 
-    const mergeSignature = (signatures: Set<ts.MethodSignature> | Set<CallableSignature>) => {
+    const mergeSignature = (signatures: Set<MethodSignature> | Set<CallableSignature>) => {
       if (signatures.size === 0) {
         return null;
       }
@@ -925,34 +926,26 @@ export class Factory {
 
       const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
       const parameterTypesMap: Map<number, Set<string>> = new Map();
-      let minParameters: number = -1;
+
+      let minParameters = Array.from(signatures as Set<Signature>)
+        .map(node => {
+          return util.asArray(node.parameters)
+            .filter(param => !param.questionToken && !param.dotDotDotToken);
+        })
+        .map(params => {
+          return params.length;
+        })
+        .reduce((a, b) => {
+          return Math.min(a, b);
+        });
 
       const typeParameters: ts.TypeParameterDeclaration[] = [];
       const typeParametersSet: Set<string> = new Set();
 
-      let signatureName: ts.PropertyName;
-      let signatureKind: ts.SyntaxKind;
+      let lastSignature: Signature;
 
       (signatures as Set<any>).forEach((node: Signature) => {
-        signatureKind = node.kind;
-        signatureName = node.name;
-
-        // min parameters
-        if (node.parameters) {
-          let numParameters = 0;
-
-          for (let param of node.parameters) {
-            if (!param.questionToken && !param.dotDotDotToken) {
-              numParameters++;
-            }
-          }
-
-          if (numParameters === -1 || numParameters < minParameters) {
-            minParameters = numParameters;
-          }
-        } else {
-          minParameters = 0;
-        }
+        lastSignature = node;
 
         // return type
         const returnTypeText = node.type.getText();
@@ -984,6 +977,7 @@ export class Factory {
             const parameterTypeTexts = parameterTypesMap.get(parameterIndex);
 
             if (!parameterTypeTexts.has(parameterTypeText)) {
+              parameterTypesMap.get(parameterIndex).add(parameterTypeText);
               parameterTypes.get(parameterIndex).push(parameter.type);
             }
           }
@@ -995,7 +989,9 @@ export class Factory {
 
       let returnTypeNode: ts.TypeNode;
 
-      if (returnTypes.length > 1) {
+      if (returnTypes.length === 1) {
+        returnTypeNode = returnTypes[0];
+      } else if (returnTypes.length > 1) {
         returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
         (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
       } else {
@@ -1008,7 +1004,9 @@ export class Factory {
         const param = paramTypes[0].parent as ts.ParameterDeclaration;
 
         let parameterTypeNode: ts.TypeNode;
-        if (paramTypes.length > 1) {
+        if (paramTypes.length === 1) {
+          parameterTypeNode = paramTypes[0];
+        } else if (paramTypes.length > 0) {
           parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
           (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
         } else {
@@ -1025,13 +1023,19 @@ export class Factory {
         parameterDeclarations.push(parameterDeclaration);
       });
 
-      let mergedSignature: ts.TypeElement | ts.ClassElement;
+      let mergedSignature: Signature;
 
-      switch (signatureKind) {
+      switch (lastSignature.kind) {
         case ts.SyntaxKind.MethodSignature:
-        case ts.SyntaxKind.MethodDeclaration:
           mergedSignature = ts.createMethodSignature(
-            typeParameters, parameterDeclarations, returnTypeNode, signatureName, undefined
+            typeParameters, parameterDeclarations, returnTypeNode, lastSignature.name, undefined
+          );
+          break;
+        case ts.SyntaxKind.MethodDeclaration:
+          mergedSignature = ts.createMethod(
+            undefined, lastSignature.modifiers, (lastSignature as ts.MethodDeclaration).asteriskToken,
+            lastSignature.name, undefined, typeParameters, parameterDeclarations,
+            returnTypeNode, undefined
           );
           break;
         case ts.SyntaxKind.CallSignature:
@@ -1039,7 +1043,7 @@ export class Factory {
           mergedSignature = ts.createCallSignature(typeParameters, parameterDeclarations, returnTypeNode);
           break;
         default:
-          throw new ProgramError(`Could not merge ${ts.SyntaxKind[signatureKind]}.`);
+          throw new ProgramError(`Could not merge ${ts.SyntaxKind[(lastSignature as Signature).kind]}.`);
       }
 
 
@@ -1062,163 +1066,163 @@ export class Factory {
 
   // TODO: refactor and handle computed property names
   // use node.name as index (not getText())
-  private mergedElementsReflection_old(nodes: (ts.TypeElement | ts.ClassElement)[]): ts.Expression[] {
-    const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
-
-    let elements = nodes.map(node => {
-      switch (node.kind) {
-        case ts.SyntaxKind.MethodSignature:
-        case ts.SyntaxKind.MethodDeclaration:
-        case ts.SyntaxKind.GetAccessor:
-        // case ts.SyntaxKind.Constructor:
-        case ts.SyntaxKind.SetAccessor:
-          {
-            if (ts.isFunctionLike(node) && this.context.checker.isImplementationOfOverload(node)) {
-              return null;
-            }
-
-            const text = node.name.getText();
-
-            if (!mergeGroups.has(text)) {
-              mergeGroups.set(text, []);
-            }
-
-            const el = mergeGroups.get(text);
-            el.push(node as ts.MethodSignature | ts.MethodDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration);
-
-            return null;
-          }
-        case ts.SyntaxKind.CallSignature:
-          {
-            if (ts.isFunctionLike(node) && this.context.checker.isImplementationOfOverload(node)) {
-              return null;
-            }
-
-            const text = '';
-
-            if (!mergeGroups.has(text)) {
-              mergeGroups.set(text, []);
-            }
-
-            const el = mergeGroups.get(text);
-            el.push(node as ts.CallSignatureDeclaration);
-
-            return null;
-          }
-      }
-
-      return this.elementReflection(node);
-    }).filter(element => !!element);
-
-    mergeGroups.forEach((group, name) => {
-      const returnTypes: ts.TypeNode[] = [];
-      const hasReturnTypes: string[] = [];
-
-      const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
-      const hasParameterTypes: Map<number, string[]> = new Map();
-
-      const typeParameters: ts.TypeParameterDeclaration[] = [];
-      const hasTypeParameters: string[] = [];
-
-      for (let node of group) {
-
-        if (node.type) {
-          const returnTypeText = node.type.getText();
-
-          if (hasReturnTypes.indexOf(returnTypeText) === -1) {
-            hasReturnTypes.push(returnTypeText);
-            returnTypes.push(node.type);
-          }
-        }
-
-        if (node.typeParameters) {
-          for (let typeParameter of node.typeParameters) {
-            const typeParameterText = typeParameter.name.getText();
-
-            if (hasTypeParameters.indexOf(typeParameterText) === -1) {
-              hasTypeParameters.push(typeParameterText);
-              typeParameters.push(typeParameter);
-            }
-          }
-        }
-
-        let parameterIndex = 0;
-        for (let parameter of node.parameters) {
-          // const parameterNameText = parameter.name.getText();
-          const parameterTypeText = parameter.type.getText();
-
-          if (!hasParameterTypes.has(parameterIndex)) {
-            hasParameterTypes.set(parameterIndex, []);
-          }
-
-          const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
-
-          if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
-            parameterTypeTexts.push(parameterTypeText);
-
-            if (!parameterTypes.has(parameterIndex)) {
-              parameterTypes.set(parameterIndex, []);
-            }
-
-            parameterTypes.get(parameterIndex).push(parameter.type);
-          }
-
-          parameterIndex++;
-        }
-      }
-
-      let returnTypeNode = returnTypes[0];
-      if (returnTypes.length > 1) {
-        returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-        (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
-      }
-
-      let parameterDeclarations: ts.ParameterDeclaration[] = [];
-
-      parameterTypes.forEach((paramTypes, index) => {
-        const param = paramTypes[0].parent as ts.ParameterDeclaration;
-
-        let parameterTypeNode = paramTypes[0];
-        if (paramTypes.length > 1) {
-          parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-          (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
-        }
-
-        const parameterDeclaration = ts.createParameter(
-          param.decorators, param.modifiers, param.dotDotDotToken, param.name.getText(),
-          param.questionToken, parameterTypeNode, param.initializer
-        );
-
-        parameterDeclarations.push(parameterDeclaration);
-      });
-
-      let mergedSignature: ts.TypeElement | ts.ClassElement;
-
-      switch (group[0].kind) {
-        case ts.SyntaxKind.MethodSignature:
-          mergedSignature = ts.createMethodSignature(
-            typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
-          );
-          break;
-        case ts.SyntaxKind.MethodDeclaration:
-        case ts.SyntaxKind.GetAccessor:
-        case ts.SyntaxKind.SetAccessor:
-          mergedSignature = ts.createMethod(
-            group[0].decorators, group[0].modifiers, (group[0] as ts.MethodDeclaration).asteriskToken, name, (group[0] as ts.MethodDeclaration).questionToken, typeParameters, parameterDeclarations, returnTypeNode, undefined
-            // group[0].typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
-          );
-          break;
-        case ts.SyntaxKind.CallSignature:
-          mergedSignature = ts.createCallSignature(typeParameters, parameterDeclarations, returnTypeNode);
-          break;
-      }
-
-
-      elements.push(this.elementReflection(mergedSignature));
-    });
-
-    return elements;
-  }
+  // private mergedElementsReflection_old(nodes: (ts.TypeElement | ts.ClassElement)[]): ts.Expression[] {
+  //   const mergeGroups: Map<string, ts.SignatureDeclaration[]> = new Map();
+  //
+  //   let elements = nodes.map(node => {
+  //     switch (node.kind) {
+  //       case ts.SyntaxKind.MethodSignature:
+  //       case ts.SyntaxKind.MethodDeclaration:
+  //       case ts.SyntaxKind.GetAccessor:
+  //       // case ts.SyntaxKind.Constructor:
+  //       case ts.SyntaxKind.SetAccessor:
+  //         {
+  //           if (ts.isFunctionLike(node) && this.context.checker.isImplementationOfOverload(node)) {
+  //             return null;
+  //           }
+  //
+  //           const text = node.name.getText();
+  //
+  //           if (!mergeGroups.has(text)) {
+  //             mergeGroups.set(text, []);
+  //           }
+  //
+  //           const el = mergeGroups.get(text);
+  //           el.push(node as ts.MethodSignature | ts.MethodDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration);
+  //
+  //           return null;
+  //         }
+  //       case ts.SyntaxKind.CallSignature:
+  //         {
+  //           if (ts.isFunctionLike(node) && this.context.checker.isImplementationOfOverload(node)) {
+  //             return null;
+  //           }
+  //
+  //           const text = '';
+  //
+  //           if (!mergeGroups.has(text)) {
+  //             mergeGroups.set(text, []);
+  //           }
+  //
+  //           const el = mergeGroups.get(text);
+  //           el.push(node as ts.CallSignatureDeclaration);
+  //
+  //           return null;
+  //         }
+  //     }
+  //
+  //     return this.elementReflection(node);
+  //   }).filter(element => !!element);
+  //
+  //   mergeGroups.forEach((group, name) => {
+  //     const returnTypes: ts.TypeNode[] = [];
+  //     const hasReturnTypes: string[] = [];
+  //
+  //     const parameterTypes: Map<number, ts.TypeNode[]> = new Map();
+  //     const hasParameterTypes: Map<number, string[]> = new Map();
+  //
+  //     const typeParameters: ts.TypeParameterDeclaration[] = [];
+  //     const hasTypeParameters: string[] = [];
+  //
+  //     for (let node of group) {
+  //
+  //       if (node.type) {
+  //         const returnTypeText = node.type.getText();
+  //
+  //         if (hasReturnTypes.indexOf(returnTypeText) === -1) {
+  //           hasReturnTypes.push(returnTypeText);
+  //           returnTypes.push(node.type);
+  //         }
+  //       }
+  //
+  //       if (node.typeParameters) {
+  //         for (let typeParameter of node.typeParameters) {
+  //           const typeParameterText = typeParameter.name.getText();
+  //
+  //           if (hasTypeParameters.indexOf(typeParameterText) === -1) {
+  //             hasTypeParameters.push(typeParameterText);
+  //             typeParameters.push(typeParameter);
+  //           }
+  //         }
+  //       }
+  //
+  //       let parameterIndex = 0;
+  //       for (let parameter of node.parameters) {
+  //         // const parameterNameText = parameter.name.getText();
+  //         const parameterTypeText = parameter.type.getText();
+  //
+  //         if (!hasParameterTypes.has(parameterIndex)) {
+  //           hasParameterTypes.set(parameterIndex, []);
+  //         }
+  //
+  //         const parameterTypeTexts = hasParameterTypes.get(parameterIndex);
+  //
+  //         if (parameterTypeTexts.indexOf(parameterTypeText) === -1) {
+  //           parameterTypeTexts.push(parameterTypeText);
+  //
+  //           if (!parameterTypes.has(parameterIndex)) {
+  //             parameterTypes.set(parameterIndex, []);
+  //           }
+  //
+  //           parameterTypes.get(parameterIndex).push(parameter.type);
+  //         }
+  //
+  //         parameterIndex++;
+  //       }
+  //     }
+  //
+  //     let returnTypeNode = returnTypes[0];
+  //     if (returnTypes.length > 1) {
+  //       returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+  //       (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+  //     }
+  //
+  //     let parameterDeclarations: ts.ParameterDeclaration[] = [];
+  //
+  //     parameterTypes.forEach((paramTypes, index) => {
+  //       const param = paramTypes[0].parent as ts.ParameterDeclaration;
+  //
+  //       let parameterTypeNode = paramTypes[0];
+  //       if (paramTypes.length > 1) {
+  //         parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
+  //         (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+  //       }
+  //
+  //       const parameterDeclaration = ts.createParameter(
+  //         param.decorators, param.modifiers, param.dotDotDotToken, param.name.getText(),
+  //         param.questionToken, parameterTypeNode, param.initializer
+  //       );
+  //
+  //       parameterDeclarations.push(parameterDeclaration);
+  //     });
+  //
+  //     let mergedSignature: ts.TypeElement | ts.ClassElement;
+  //
+  //     switch (group[0].kind) {
+  //       case ts.SyntaxKind.MethodSignature:
+  //         mergedSignature = ts.createMethodSignature(
+  //           typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
+  //         );
+  //         break;
+  //       case ts.SyntaxKind.MethodDeclaration:
+  //       case ts.SyntaxKind.GetAccessor:
+  //       case ts.SyntaxKind.SetAccessor:
+  //         mergedSignature = ts.createMethod(
+  //           group[0].decorators, group[0].modifiers, (group[0] as ts.MethodDeclaration).asteriskToken, name, (group[0] as ts.MethodDeclaration).questionToken, typeParameters, parameterDeclarations, returnTypeNode, undefined
+  //           // group[0].typeParameters, parameterDeclarations, returnTypeNode, name, (group[0] as ts.MethodSignature).questionToken
+  //         );
+  //         break;
+  //       case ts.SyntaxKind.CallSignature:
+  //         mergedSignature = ts.createCallSignature(typeParameters, parameterDeclarations, returnTypeNode);
+  //         break;
+  //     }
+  //
+  //
+  //     elements.push(this.elementReflection(mergedSignature));
+  //   });
+  //
+  //   return elements;
+  // }
 
   //   public methodSignatureReflection(node: ts.MethodSignature, isClass: boolean): ts.Expression {
   //   return this.libCall('property', [
