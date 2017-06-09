@@ -10,4 +10,8 @@ t.void = () => {
   return t.union(t.null(), t.undef());
 }
 
+t.n = (...args: any[]) => {
+  return t.nullable(...args);
+}
+
 export default t;
