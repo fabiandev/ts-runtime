@@ -13,10 +13,6 @@ export function transform(entryFile: string, options?: Options): void {
   return transformProgram(entryFile, options) as void;
 }
 
-// export function transformModule(source: string, options?: Options, autoStart = true): string {
-//   return transformProgram(source, options, autoStart, true) as string;
-// }
-
 function transformProgram(entryFile: string, options?: Options): void {
   emit(bus.events.START);
 
@@ -36,24 +32,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   let context: MutationContext;
   let currentSourceFile: ts.SourceFile;
 
-  // console.log('basePath', basePath);
-  // console.log('entryFile', entryFile);
-
   return startTransformation();
-
-  // function startModuleTransformation(): string {
-  //   let sourceFile = ts.createSourceFile('transformed.ts', entryFile, options.compilerOptions.target, true, ts.ScriptKind.TS);
-  //   host = ts.createCompilerHost(options.compilerOptions, true);
-  //
-  //   const typedResult = ts.transform(sourceFile, [firstPassTransformer], options.compilerOptions);
-  //   typedResult.dispose();
-  //
-  //   const result = ts.transform(typedResult.transformed[0], [transformer], options.compilerOptions);
-  //   const source = result.transformed[0].getText();
-  //   result.dispose();
-  //
-  //   return source;
-  // }
 
   function startTransformation(): void {
     let sourceFiles: ts.SourceFile[];
@@ -91,7 +70,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     createProgramFromTempFiles();
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program, true);
+    scanner = new Scanner(program);
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
@@ -192,14 +171,8 @@ function transformProgram(entryFile: string, options?: Options): void {
     const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
 
-    // declarations.forEach((names, key) => {
-    //   console.log(key.name);
-    //   console.log(names);
-    //   console.log();
-    // });
-
     declarations.forEach((names, key) => {
-      expressions.push(...context.factory.namedDeclarationsReflections(names, key.getDeclarations()));
+      expressions.unshift(...context.factory.namedDeclarationsReflections(names, key.getDeclarations()));
     });
 
     sf = ts.updateSourceFileNode(sf, [
@@ -244,34 +217,10 @@ function transformProgram(entryFile: string, options?: Options): void {
       return true;
     };
 
-    const getImplicitTypeNode = (node: ts.Node) => {
-      // TODO: get widened/apparent type?
-      const type = context.checker.getTypeAtLocation((node as any).name || node);
-      const typeNode = type ? context.checker.typeToTypeNode(type, (node as any).name ? (node as any).name.parent : node.parent) : void 0;
-      //
-      // type.symbol && type.symbol.members && type.symbol.members.forEach(s => {
-      //   console.log(context.checker.getDeclaredTypeOfSymbol(s))
-      // })
-      // console.log(type.symbol.getDeclarations().map(d => ));
-
-      //console.log(context.checker.typeToString(context.checker.getTypeFromTypeNode(typeNode), node.parent))
-      return typeNode;
-      // const typeNode = context.scanner.getAttributes((node as any).name || node).typeNode;
-      // return typeNode;
-    }
-
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       if (!node) {
         return node;
       }
-
-      // if (node.kind === ts.SyntaxKind.AsExpression) {
-      //   return context.addVisited(
-      //     context.factory.typeReflectionAndAssertion(
-      //       (node as ts.AsExpression).type,
-      //       (node as ts.AsExpression).expression
-      //     ), true, (node as ts.AsExpression).expression);
-      // }
 
       if (node && !(node as any).type) {
         let type: ts.TypeNode;
@@ -287,24 +236,18 @@ function transformProgram(entryFile: string, options?: Options): void {
           case ts.SyntaxKind.CallSignature:
           case ts.SyntaxKind.ConstructSignature:
           case ts.SyntaxKind.IndexSignature:
-            // type = getImplicitTypeNode(node);
             type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
             break;
           case ts.SyntaxKind.VariableDeclaration:
             if (declarationCanHaveType(node)) {
-              // type = getImplicitTypeNode(node);
               type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
             }
             break;
           case ts.SyntaxKind.MethodDeclaration:
-          // case ts.SyntaxKind.Constructor:
           case ts.SyntaxKind.GetAccessor:
-          // case ts.SyntaxKind.SetAccessor:
           case ts.SyntaxKind.FunctionExpression:
           case ts.SyntaxKind.ArrowFunction:
           case ts.SyntaxKind.FunctionDeclaration:
-            // type = getImplicitTypeNode(node);
-            // type = type && ((type as any).type || type);
             type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
             break;
         }
@@ -314,40 +257,6 @@ function transformProgram(entryFile: string, options?: Options): void {
           util.setParent(node);
         }
       }
-
-      // check if isDeclared
-      // if not add to top with name
-      // if yes, rename type reference
-      // add to top
-      // if (node.kind === ts.SyntaxKind.TypeReference) {
-      //   console.log();
-      //   const ref = node as ts.TypeReferenceNode;
-      //
-      //   let name = util.getIdentifierOfEntityName(ref.typeName);
-      //   console.log(name.getText());
-      //
-      //   const isDeclared = context.isDeclared(name);
-      //   console.log(!!isDeclared);
-      //   if (!isDeclared) {
-      //     const sourceFile = node.getSourceFile();
-      //     let lastImport = -1;
-      //     let reflection: ts.Expression;
-      //
-      //     for (let i = 0; i < sourceFile.statements.length; i++) {
-      //       if (sourceFile.statements[i].kind === ts.SyntaxKind.ImportDeclaration) {
-      //         lastImport = i;
-      //       }
-      //     }
-      //
-      //     // console.log(ref.typeName);
-      //     console.log(node.getSourceFile().fileName);
-      //
-      //
-      //     // splice(lastImport + 1, 0, item)
-      //   }
-      //   console.log();
-      //
-      // }
 
       return ts.visitEachChild(node, visitor, transformationContext);
     };
@@ -361,6 +270,7 @@ function transformProgram(entryFile: string, options?: Options): void {
   function transformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       const original = node;
+      const parent = node.parent;
 
       node = ts.visitEachChild(node, visitor, transformationContext);
 
@@ -372,9 +282,11 @@ function transformProgram(entryFile: string, options?: Options): void {
         let previous = node;
 
         node = mutator.mutateNode(node, context);
-        util.setParent(node);
+
         if (node !== previous) {
           scanner.mapNode(node, previous);
+          node.parent = parent;
+          util.setParent(node);
         }
       }
 
@@ -382,19 +294,8 @@ function transformProgram(entryFile: string, options?: Options): void {
         return node;
       }
 
-      if (!node.parent) {
-        node.parent = original.parent;
-      }
-
-      // if (node.kind === ts.SyntaxKind.ClassDeclaration) {
-      //   console.log();
-      //   console.log((node as any).name.getText());
-      //   console.log(node.parent.getText());
-      //   console.log(!!node.parent, (node as any).parent.statements.length);
-      // }
-
+      node.parent = parent;
       util.setParent(node);
-      // context.addVisited(node);
 
       return node;
     };

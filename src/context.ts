@@ -36,19 +36,34 @@ export class MutationContext {
     this._merged = new Set();
   }
 
-  public wasDeclared(node: ts.EntityName) {
-    node = util.getIdentifierOfEntityName(node);
+  public skip<T extends ts.Node>(node: T, recursive = false, ...exclude: ts.Node[]): T {
+    if (!this.shouldSkip(node) && exclude.indexOf(node) === -1) {
+      this._skipNodes.push(node);
+    }
 
-    const typeInfo = this.scanner.getTypeInfo(node);
-    const fileName = typeInfo.fileName;
+    if (recursive) {
+      ts.forEachChild(node, (n: ts.Node) => {
+        this.skip(n, recursive, ...exclude);
+      });
+    }
 
-    const declarations = typeInfo.declarations
-      .filter(d => fileName === d.getSourceFile().fileName);
+    return node;
+  }
 
-    for (let declaration of declarations) {
-      if (declaration.getEnd() < node.getEnd()) {
-        return true;
-      }
+  public shouldSkip(node: ts.Node): boolean {
+    if (this._skipNodes.indexOf(node) !== -1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  public dontSkip(node: ts.Node): boolean {
+    const index = this._skipNodes.indexOf(node);
+
+    if (index !== -1) {
+      this._skipNodes.splice(index, 1);
+      return true;
     }
 
     return false;
@@ -68,6 +83,46 @@ export class MutationContext {
       .filter(d => fileName === d.getSourceFile().fileName) || [];
 
     if (declarations.length > 0) {
+      return true;
+    }
+
+    return false;
+  }
+
+  public wasDeclared(node: ts.EntityName) {
+    node = util.getIdentifierOfEntityName(node);
+
+    const typeInfo = this.scanner.getTypeInfo(node);
+    const fileName = typeInfo.fileName;
+
+    const declarations = typeInfo.declarations
+      .filter(d => fileName === d.getSourceFile().fileName);
+
+    for (let declaration of declarations) {
+      if (declaration.getEnd() < node.getEnd()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public isEntryFile(node: ts.SourceFile) {
+    return node.fileName === this.entryFilePath;
+  }
+
+  public isAny(node: ts.Node): boolean {
+    if (node.kind === ts.SyntaxKind.AnyKeyword) {
+      return true;
+    }
+
+    const typeInfo = this.scanner.getTypeInfo(node);
+
+    if (!typeInfo || !typeInfo.typeNode) {
+      return false;
+    }
+
+    if (typeInfo.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
       return true;
     }
 
@@ -94,6 +149,32 @@ export class MutationContext {
     return false;
   }
 
+  public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
+    const typeInfo = this.scanner.getTypeInfo(node);
+    const otherTypeInfo = this.scanner.getTypeInfo(other);
+
+    if (!typeInfo || !otherTypeInfo) {
+      return false;
+    }
+
+    let nodeTypeText = typeInfo.typeText;
+    let otherTypeText = otherTypeInfo.typeText;
+
+    if (!nodeTypeText || !otherTypeText) {
+      return false;
+    }
+
+    if (!strict && nodeTypeText === 'any') {
+      return true;
+    }
+
+    if (!strict && !typeInfo.isLiteral && otherTypeInfo.isLiteral) {
+      otherTypeText = otherTypeInfo.baseTypeText;
+    }
+
+    return nodeTypeText === otherTypeText;
+  }
+
   public hasSelfReference(node: ts.Node): boolean {
     const typeInfo = this.scanner.getTypeInfo((node as any).name || node);
 
@@ -110,39 +191,6 @@ export class MutationContext {
     }
 
     return search(node) || false;
-  }
-
-  public shouldSkip(node: ts.Node): boolean {
-    if (this._skipNodes.indexOf(node) !== -1) {
-      return true;
-    }
-
-    return false;
-  }
-
-  public skip<T extends ts.Node>(node: T, recursive = false, ...exclude: ts.Node[]): T {
-    if (!this.shouldSkip(node) && exclude.indexOf(node) === -1) {
-      this._skipNodes.push(node);
-    }
-
-    if (recursive) {
-      ts.forEachChild(node, (n: ts.Node) => {
-        this.skip(n, recursive, ...exclude);
-      });
-    }
-
-    return node;
-  }
-
-  public dontSkip(node: ts.Node): boolean {
-    const index = this._skipNodes.indexOf(node);
-
-    if (index !== -1) {
-      this._skipNodes.splice(index, 1);
-      return true;
-    }
-
-    return false;
   }
 
   public getTypeDeclarationName(node: string | ts.Identifier): string {
@@ -175,50 +223,6 @@ export class MutationContext {
 
   public getTypeParametersDeclarationName(): string {
     return `${this.options.libNamespace}typeParameters`;
-  }
-
-  public isAny(node: ts.Node): boolean {
-    if (node.kind === ts.SyntaxKind.AnyKeyword) {
-      return true;
-    }
-
-    const typeInfo = this.scanner.getTypeInfo(node);
-
-    if (!typeInfo || !typeInfo.typeNode) {
-      return false;
-    }
-
-    if (typeInfo.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
-      return true;
-    }
-
-    return false;
-  }
-
-  public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
-    const typeInfo = this.scanner.getTypeInfo(node);
-    const otherTypeInfo = this.scanner.getTypeInfo(other);
-
-    if (!typeInfo || !otherTypeInfo) {
-      return false;
-    }
-
-    let nodeTypeText = typeInfo.typeText;
-    let otherTypeText = otherTypeInfo.typeText;
-
-    if (!nodeTypeText || !otherTypeText) {
-      return false;
-    }
-
-    if (!strict && nodeTypeText === 'any') {
-      return true;
-    }
-
-    if (!strict && !typeInfo.isLiteral && otherTypeInfo.isLiteral) {
-      otherTypeText = otherTypeInfo.baseTypeText;
-    }
-
-    return nodeTypeText === otherTypeText;
   }
 
   public getMembers(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
@@ -255,10 +259,6 @@ export class MutationContext {
 
   public wasMerged(symbol: ts.Symbol) {
     return this._merged.has(symbol);
-  }
-
-  public isEntryFile(node: ts.SourceFile) {
-    return node.fileName === this.entryFilePath;
   }
 
   public setTransformationContext(transformationContext: ts.TransformationContext): void {

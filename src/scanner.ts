@@ -27,11 +27,9 @@ export class Scanner {
 
   private program: ts.Program;
   private checker: ts.TypeChecker;
-
   private declarations: Map<ts.Symbol, string[]> = new Map();
   private aliases: Map<ts.Node, ts.Node> = new Map();
   private properties: Map<ts.Node, TypeInfo> = new Map();
-  private symbols: Map<ts.Node, ts.Symbol> = new Map();
   private scanned: Set<ts.Node> = new Set();
 
   private skip: ts.SyntaxKind[] = [
@@ -41,15 +39,15 @@ export class Scanner {
     ts.SyntaxKind.SourceFile
   ];
 
-  private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
-    ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
-    ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
+  private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
+  ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
+  ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
 
-  constructor(program: ts.Program, autoScan = false) {
+  constructor(program: ts.Program, private defer = false) {
     this.program = program;
     this.checker = program.getTypeChecker();
 
-    if (autoScan) {
+    if (!defer) {
       this.scan();
     }
   }
@@ -64,7 +62,6 @@ export class Scanner {
     }
   }
 
-  // TODO: prevent infinite loops
   public mapNode<T extends ts.Node>(alias: T, original: ts.Node): T {
     if (alias === original) {
       return;
@@ -107,44 +104,34 @@ export class Scanner {
     return node;
   }
 
-  public getNodeSymbol(node: ts.Node): ts.Symbol {
-    return this.symbols.get(this.getAliasedNode(node));
-  }
-
-  private scanner(sourceFile: ts.SourceFile): void {
+  private scanner(entry: ts.Node): void {
     const scanNode = (node: ts.Node) => {
       if (!node) return;
       this.scanNode(node);
       ts.forEachChild(node, scanNode);
     };
 
-    ts.forEachChild(sourceFile, scanNode);
+    ts.forEachChild(entry, scanNode);
   }
 
-  private scanNode(node: ts.Node, useType?: ts.Type, enclosing?: ts.Node): TypeInfo {
-    this.symbols.set(node, this.checker.getSymbolAtLocation(node));
-
+  private scanNode(node: ts.Node): TypeInfo {
     if (this.scanned.has(node)) {
       return;
     }
+
+    this.scanned.add(node);
 
     if (!this.shouldScan(node)) {
       return;
     }
 
-    if (util.isSynthesized(node) && !useType) {
-      return;
-    }
-
     node = this.mapAsExpression(node);
-    enclosing = enclosing || node;
+    const enclosing = node;
 
-    const type = useType || this.getType(node);
+    const type = this.getType(node);
 
     const symbol = this.getSymbol(type, node);
-    // const originalSymbol = type.symbol;
-    // const aliasSymbol = type.aliasSymbol;
-    const typeNode = this.getTypeNode(node, type, enclosing);
+    const typeNode = this.getTypeNode(node, type);
     const typeText = this.checker.typeToString(type, enclosing);
     const isLiteral = util.isLiteral(typeNode);
     const isReference = ts.isTypeReferenceNode(typeNode);
@@ -174,10 +161,16 @@ export class Scanner {
 
     const TSR_DECLARATION =
       ((isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
-      (!isExternal && (isDeclaration || isInDeclarationFile))));
+        (!isExternal && (isDeclaration || isInDeclarationFile))));
 
-    if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations)) {
+    if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations) && isReference) {
       this.addDeclaration(symbol, fileName);
+
+      if (this.defer) {
+        for (let decl of declarations) {
+          this.scanNode(decl)
+        }
+      }
     }
 
     if (node !== typeNode) {
@@ -193,15 +186,16 @@ export class Scanner {
     };
 
     this.properties.set(node, typeInfo);
-    this.scanned.add(node);
 
     return typeInfo;
   }
 
   public getSymbol(type: ts.Type, node: ts.Node): ts.Symbol {
-    return type && (type.aliasSymbol || type.symbol ||
-    (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
-    this.checker.getSymbolAtLocation(node) : undefined));
+    let symbol = type && (type.aliasSymbol || type.symbol ||
+      (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
+        this.checker.getSymbolAtLocation(node) : undefined));
+
+    return symbol;
   }
 
   private shouldScan(node: ts.Node): boolean {
