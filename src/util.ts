@@ -54,10 +54,9 @@ export function getHash(str: string): number {
   }
 
   return hash >>> 0;
-  // return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
 }
 
-export function getIdentifierOfQualifiedName(node: ts.EntityName): ts.Identifier {
+export function getIdentifierOfEntityName(node: ts.EntityName): ts.Identifier {
   while (ts.isQualifiedName(node)) {
     node = node.left;
   }
@@ -216,7 +215,7 @@ export function isBindingPattern(node: ts.Node): node is ts.BindingPattern {
   return ts.isArrayBindingPattern(node) || ts.isObjectBindingPattern(node);
 }
 
-export function isStaticClassElement(node: ts.Node): boolean {
+export function isStatic(node: ts.Node): boolean {
   return !Array.isArray(node.modifiers) ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
 }
 

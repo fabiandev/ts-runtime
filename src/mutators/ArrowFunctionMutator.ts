@@ -6,12 +6,16 @@ export class ArrowFunctionMutator extends Mutator {
   protected kind = ts.SyntaxKind.ArrowFunction;
 
   protected mutate(node: ts.ArrowFunction): ts.Expression {
-    const substitution = this.factory.mutateFunctionBody(node) as ts.ArrowFunction;
+    let substitution: ts.Expression = this.factory.mutateFunctionBody(node) as ts.ArrowFunction;
 
-    return this.factory.annotate([
-      substitution,
-      this.factory.functionReflection(node)
-    ]);;
+    if (this.options.annotate) {
+      substitution = this.factory.annotate([
+        substitution,
+        this.factory.functionReflection(node)
+      ]);
+    }
+
+    return substitution;
   }
 
 }

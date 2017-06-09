@@ -21,8 +21,6 @@ export interface TypeInfo {
   isExternal: boolean;
   isInDeclarationFile: boolean;
   symbol?: ts.Symbol;
-  // originalSymbol?: ts.Symbol;
-  // aliasSymbol?: ts.Symbol;
 }
 
 export class Scanner {
@@ -47,9 +45,13 @@ export class Scanner {
     ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
     ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
 
-  constructor(program: ts.Program) {
+  constructor(program: ts.Program, autoScan = false) {
     this.program = program;
     this.checker = program.getTypeChecker();
+
+    if (autoScan) {
+      this.scan();
+    }
   }
 
   public scan(): void {
@@ -179,9 +181,8 @@ export class Scanner {
     }
 
     if (node !== typeNode) {
-      // util.setParent(typeNode);
-      // this.mapNode(typeNode, node);
-      // this.scanSynthesizedTypeNode(typeNode, type, enclosing);
+      util.setParent(typeNode);
+      this.mapNode(typeNode, node);
     }
 
     const typeInfo: TypeInfo = {
@@ -189,15 +190,10 @@ export class Scanner {
       declarations, type, typeText, typeNode, baseType, baseTypeNode,
       baseTypeText, isSynthesized, isReference, isLiteral, isAmbient,
       isDeclaration, isExternal, isInDeclarationFile, symbol,
-      // originalSymbol, aliasSymbol,
     };
 
     this.properties.set(node, typeInfo);
     this.scanned.add(node);
-
-    // for (let declaration of declarations) {
-    //   this.scanNode(declaration);
-    // }
 
     return typeInfo;
   }

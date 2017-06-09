@@ -45,6 +45,10 @@ function defaultAction() {
   process.exit();
 }
 
+function setNoAnnotate() {
+  options.annotate = false;
+}
+
 function setCompilerOptions(opts: string) {
   compilerOptions = opts;
 }
@@ -98,6 +102,7 @@ program
   into runtime type checks for you
   --------------------------------`)
   .usage('[options] <file>')
+  .option('-a, --no-annotate', 'do not annotate classes and functions', setNoAnnotate)
   .option('-c, --compiler-options <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
   .option('-d, --declaration-file <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)

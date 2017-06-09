@@ -2,6 +2,7 @@ import * as ts from 'typescript';
 
 export interface Options {
   compilerOptions?: ts.CompilerOptions;
+  annotate?: boolean;
   finishOnError?: boolean;
   keepTemp?: boolean;
   tempFolderName?: string;
@@ -24,6 +25,7 @@ export const defaultOptions: Options = {
     removeComments: true,
     preserveConstEnums: true,
   },
+  annotate: true,
   finishOnError: false,
   keepTemp: true,
   tempFolderName: '.tsr',

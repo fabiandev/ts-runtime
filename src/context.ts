@@ -37,7 +37,7 @@ export class MutationContext {
   }
 
   public wasDeclared(node: ts.EntityName) {
-    node = util.getIdentifierOfQualifiedName(node);
+    node = util.getIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
     const fileName = typeInfo.fileName;
@@ -54,8 +54,12 @@ export class MutationContext {
     return false;
   }
 
+  public isImplementationOfOverload(node: ts.Node) {
+    return ts.isFunctionLike(node) && this.checker.isImplementationOfOverload(node);
+  }
+
   public isDeclared(node: ts.EntityName) {
-    node = util.getIdentifierOfQualifiedName(node);
+    node = util.getIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
     const fileName = typeInfo.fileName;
@@ -191,7 +195,6 @@ export class MutationContext {
     return false;
   }
 
-  // TODO: also compare structural (e.g. Options = { /* structure that matches options */ })
   public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
     const typeInfo = this.scanner.getTypeInfo(node);
     const otherTypeInfo = this.scanner.getTypeInfo(other);

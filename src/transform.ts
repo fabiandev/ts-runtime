@@ -9,14 +9,6 @@ import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
 import { Scanner } from './scanner';
 
-const DEBUG = false;
-
-export enum ProgramState {
-  None,
-  FirstPass,
-  Transform
-}
-
 export function transform(entryFile: string, options?: Options): void {
   return transformProgram(entryFile, options) as void;
 }
@@ -94,13 +86,12 @@ function transformProgram(entryFile: string, options?: Options): void {
     emit(bus.events.TRANSFORM, sourceFiles);
 
     const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
-    writeTempFiles(typedResult);
 
+    writeTempFiles(typedResult);
     createProgramFromTempFiles();
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program);
-    scanner.scan();
+    scanner = new Scanner(program, true);
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
@@ -139,22 +130,9 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function createProgramFromTempFiles(): void {
-    // console.log()
-    // console.log()
-    // console.log(path.resolve(getTempPath(basePath, options.tempFolderName)))
-    // console.log(path.resolve(tempEntryFile))
-
     tempEntryFile = toTempFilePath(tempEntryFile, basePath, options.tempFolderName);
     tempBasePath = getTempPath(tempBasePath, options.tempFolderName);
-    // console.log(tempBasePath);
-    // console.log(tempEntryFile);
-
-    // console.log('---')
-    // console.log(path.resolve(basePath))
-    // console.log(path.resolve(tempEntryFile))
-    // console.log();
     options.compilerOptions.rootDir = tempBasePath;
-
     host = ts.createCompilerHost(options.compilerOptions);
     program = ts.createProgram([tempEntryFile], options.compilerOptions, host, undefined);
   }
@@ -166,10 +144,6 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
-        // if (removeTypes && (node as any).type) {
-        //   (node as any).type = undefined;
-        // }
-
         return node;
       }
     };
@@ -184,7 +158,6 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function emitTransformed(): boolean {
-    // options.compilerOptions.rootDir = tempBasePath;
     options.compilerOptions.outDir = getOutDir();
 
     createProgramFromTempFiles();
@@ -350,7 +323,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       //   console.log();
       //   const ref = node as ts.TypeReferenceNode;
       //
-      //   let name = util.getIdentifierOfQualifiedName(ref.typeName);
+      //   let name = util.getIdentifierOfEntityName(ref.typeName);
       //   console.log(name.getText());
       //
       //   const isDeclared = context.isDeclared(name);
@@ -395,12 +368,6 @@ function transformProgram(entryFile: string, options?: Options): void {
         scanner.mapNode(node, original);
       }
 
-      debugText('~~~~~~~~~~~~~~~~~~~~~');
-      debugText('Before Mutation:');
-      debugText('~~~~~~~~~~~~~~~~~~~~~');
-      debugNodeAttributes(node, context);
-      debugNodeText(node, context);
-
       for (let mutator of mutators) {
         let previous = node;
 
@@ -428,14 +395,6 @@ function transformProgram(entryFile: string, options?: Options): void {
 
       util.setParent(node);
       // context.addVisited(node);
-
-      debugSpaces();
-      debugText('~~~~~~~~~~~~~~~~~~~~~');
-      debugText('After Mutation:');
-      debugText('~~~~~~~~~~~~~~~~~~~~~');
-      debugNodeAttributes(node, context);
-      debugNodeText(node, context);
-      debugSpaces(3);
 
       return node;
     };
@@ -495,43 +454,4 @@ export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
 
 export function emit(event: string | symbol, ...args: any[]): boolean {
   return bus.emitter.emit(event, args);
-}
-
-function debugText(text: string): void {
-  if (!DEBUG) return;
-  console.log(text);
-}
-
-function debugSpaces(spaces: number = 1): void {
-  if (!DEBUG) return;
-  console.log(Array(Math.abs(spaces) + 1).join('\n'));
-}
-
-function debugNodeAttributes(node: ts.Node, context: MutationContext): void {
-  if (!DEBUG) return;
-  console.log(`Kind: ${ts.SyntaxKind[node.kind]} (${node.kind})`);
-  try {
-    // console.log(`Implicit Type: ${context.scanner.getInfo(node).typeNode}`);
-  } catch (e) {
-    console.log('Implicit Type:');
-  }
-  console.log(`Should skip: ${context.shouldSkip(node) ? 'Yes' : 'No'}`);
-  // console.log(`Scope: ${scopeKind}`);
-  console.log(`Synthesized: ${node.flags === ts.NodeFlags.Synthesized ? 'Yes' : 'No'}`);
-  console.log(`File: ${context.sourceFile.fileName}`);
-}
-
-function debugNodeText(node: ts.Node, mutstionContext: MutationContext): void {
-  if (!DEBUG) return;
-  console.log('<============================================');
-  if (node.parent) {
-    if (node.flags === ts.NodeFlags.Synthesized) {
-      console.log('Cannot get text of synthesized node.');
-    } else {
-      console.log(node.getText());
-    }
-  } else {
-    console.log('Parent not set, cannot get text.');
-  }
-  console.log('============================================>');
 }

@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import * as util from '../util';
+import { Options } from '../options';
 import { Factory } from '../factory';
 import { Scanner } from '../scanner';
 import { MutationContext } from '../context';
@@ -34,6 +35,10 @@ export abstract class Mutator {
 
   public shouldMutate(node: ts.Node): boolean {
     return node && util.asArray(this.kind).indexOf(node.kind) !== -1;
+  }
+
+  get options(): Options {
+    return this.context.options;
   }
 
   get factory(): Factory {

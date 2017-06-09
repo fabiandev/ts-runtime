@@ -33,8 +33,12 @@ export class ClassDeclarationMutator extends Mutator {
     this.assertImplementing(node, members);
     this.setMerged(node);
 
+    const decorators = this.options.annotate ?
+      this.reflectClass(node) :
+      node.decorators;
+
     return ts.updateClassDeclaration(
-      node, this.reflectClass(node), node.modifiers, node.name,
+      node, decorators, node.modifiers, node.name,
       node.typeParameters, node.heritageClauses, members
     );
   }
@@ -125,6 +129,10 @@ export class ClassDeclarationMutator extends Mutator {
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
     if (this.context.isAny(node.type)) {
+      return node;
+    }
+
+    if (!node.initializer) {
       return node;
     }
 

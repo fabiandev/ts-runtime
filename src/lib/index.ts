@@ -14,4 +14,16 @@ t.n = (...args: any[]) => {
   return t.nullable(...args);
 }
 
+t.enum = (...args: any[]) => {
+  return t.union(...args);
+}
+
+t.enumMember = (arg: any) => {
+  return t.number(arg);
+}
+
+t.enumRef = (...args: any[]) => {
+  return t.typeOf(...args);
+}
+
 export default t;

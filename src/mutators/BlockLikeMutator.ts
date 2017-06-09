@@ -64,6 +64,10 @@ export class BlockLikeMutator extends Mutator {
   }
 
   private annotateFunctionDeclaration(node: ts.FunctionDeclaration): ts.Statement[] {
+    if (!this.options.annotate) {
+      return [node];
+    }
+
     const annotation = ts.createStatement(
       this.factory.annotate([
         node.name,
