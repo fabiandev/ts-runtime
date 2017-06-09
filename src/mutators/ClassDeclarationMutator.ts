@@ -33,10 +33,10 @@ export class ClassDeclarationMutator extends Mutator {
     this.assertImplementing(node, members);
     this.setMerged(node);
 
-    return this.map(ts.updateClassDeclaration(
+    return ts.updateClassDeclaration(
       node, this.reflectClass(node), node.modifiers, node.name,
       node.typeParameters, node.heritageClauses, members
-    ), node);
+    );
   }
 
   private setMerged(node: ts.ClassDeclaration) {
@@ -56,8 +56,6 @@ export class ClassDeclarationMutator extends Mutator {
 
     decorators.unshift(decorator);
 
-    // this.skip(decorator, true);
-
     return decorators;
   }
 
@@ -74,21 +72,12 @@ export class ClassDeclarationMutator extends Mutator {
     for (let impl of implementsClause.types || []) {
       const typeInfo = this.scanner.getTypeInfo(impl);
 
-      // if (!typeInfo || !typeInfo.isReference) {
-      //   continue;
-      // }
-
-      // const typeNode = typeInfo.typeNode as ts.TypeReferenceNode;
-
-      // TODO: get ExpressionWithTypeArguments reflection
       const assertion = ts.createStatement(
         this.factory.typeAssertion(
           this.factory.expressionWithTypeArgumentsReflection(impl),
           ts.createThis()
         )
       );
-
-      // this.skip(assertion, true, typeNode);
 
       statements.push(assertion);
     }
@@ -117,7 +106,7 @@ export class ClassDeclarationMutator extends Mutator {
     if (hasTypeParameters) {
       typeParametersStatement = this.factory.typeParametersLiteralDeclaration(node.typeParameters);
       thisStatement = this.factory.classTypeParameterSymbolConstructorDeclaration(node.name);
-      this.insertBeforeSuper(statements, typeParametersStatement);
+      util.insertBeforeSuper(statements, typeParametersStatement);
     }
 
     if (extendsClauseHasTypeArguments) {
@@ -126,17 +115,13 @@ export class ClassDeclarationMutator extends Mutator {
       );
     }
 
-    this.insertAfterSuper(statements, [thisStatement, bindStatement].filter(statement => !!statement));
+    util.insertAfterSuper(statements, [thisStatement, bindStatement].filter(statement => !!statement));
     this.updateConstructor(members, constructor, statements);
 
     members.unshift(this.factory.classTypeParameterSymbolPropertyDeclaration(node.name));
 
     return members;
   }
-
-  // private getClassTypeParametersDeclaration(node: ts.ClassElement) {
-  //
-  // }
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
     if (this.context.isAny(node.type)) {
@@ -157,8 +142,6 @@ export class ClassDeclarationMutator extends Mutator {
     } else {
       decorator = ts.createDecorator(this.factory.decorate(typeReflection));
     }
-
-    // this.skip(decorator, true);
 
     decorators.unshift(decorator);
 
@@ -198,27 +181,7 @@ export class ClassDeclarationMutator extends Mutator {
       )
     );
 
-    // this.skip(constructor, true);
-
     return constructor;
-  }
-
-  private insertBeforeSuper(statements: ts.Statement[], insert: ts.Statement | ts.Statement[], offset = 0): ts.Statement[] {
-    const index = statements.findIndex(statement => util.isSuperStatement(statement));
-
-    insert = util.asArray(insert);
-
-    if (index !== -1) {
-      statements.splice(index + offset, 0, ...insert)
-    } else {
-      statements.splice(statements.length, 0, ...insert);
-    }
-
-    return statements;
-  }
-
-  private insertAfterSuper(statements: ts.Statement[], insert: ts.Statement | ts.Statement[], offset = 0): ts.Statement[] {
-    return this.insertBeforeSuper(statements, insert, 1);
   }
 
   private updateConstructor(members: ts.ClassElement[], constructor: ts.ConstructorDeclaration, statements: ts.Statement[]): ts.ClassElement[] {

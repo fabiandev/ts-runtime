@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import { ProgramError } from './errors';
 
 export const LITERAL_KINDS = [
   ts.SyntaxKind.LiteralType,
@@ -70,6 +71,24 @@ export function getExtendsClause(node: ts.InterfaceDeclaration | ts.ClassDeclara
       return true;
     }
   });
+}
+
+export function insertBeforeSuper(statements: ts.Statement[], insert: ts.Statement | ts.Statement[], offset = 0): ts.Statement[] {
+  const index = statements.findIndex(statement => isSuperStatement(statement));
+
+  insert = asArray(insert);
+
+  if (index !== -1) {
+    statements.splice(index + offset, 0, ...insert)
+  } else {
+    statements.splice(statements.length, 0, ...insert);
+  }
+
+  return statements;
+}
+
+export function insertAfterSuper(statements: ts.Statement[], insert: ts.Statement | ts.Statement[], offset = 0): ts.Statement[] {
+  return this.insertBeforeSuper(statements, insert, 1);
 }
 
 export function hasKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
@@ -150,6 +169,35 @@ export function getExpression(node: ts.Node): ts.Expression {
   return node as ts.Expression;
 }
 
+export function getPropertyAccessExpressionTextOrFail(node: ts.PropertyAccessExpression): string {
+  let text = '';
+
+  while (ts.isPropertyAccessExpression(node)) {
+    text += node.name;
+    node = node.expression as ts.PropertyAccessExpression;
+  }
+
+  if (text.length > 0) {
+    return text;
+  }
+
+  throw new ProgramError('Can\'t get text of property access expression that contains other expressions than property access expression.');
+}
+
+export function getIdentifierOfPropertyAccessExpressionOrFail(node: ts.PropertyAccessExpression): ts.Identifier {
+  let expression = node.expression;
+
+  while (expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
+    expression = (expression as ts.PropertyAccessExpression).expression;
+  }
+
+  if (expression.kind !== ts.SyntaxKind.Identifier) {
+    throw new ProgramError('Can\'t get identifier of property access expression that contains other expressions than property access expression.');
+  }
+
+  return expression as ts.Identifier;
+}
+
 export function isAmbientDeclaration(node: ts.Node): boolean {
   do {
     if (hasModifier(node, ts.SyntaxKind.DeclareKeyword)) {
@@ -158,13 +206,6 @@ export function isAmbientDeclaration(node: ts.Node): boolean {
   } while(node = node.parent);
 
   return false
-}
-
-export function isDeclaration(node: ts.Node): node is ts.FunctionDeclaration | ts.InterfaceDeclaration | ts.ClassDeclaration | ts.TypeAliasDeclaration | ts.VariableDeclaration | ts.EnumDeclaration | ts.EnumMember {
-  return ts.isFunctionDeclaration(node) || ts.isInterfaceDeclaration(node) ||
-  ts.isClassDeclaration(node) || ts.isTypeAliasDeclaration(node) ||
-  ts.isVariableDeclaration(node) || ts.isEnumDeclaration(node) ||
-  ts.isEnumMember(node);
 }
 
 export function hasFlag(node: ts.Node | ts.Symbol, flag: ts.NodeFlags | ts.SymbolFlags) {
@@ -179,19 +220,19 @@ export function isStaticClassElement(node: ts.Node): boolean {
   return !Array.isArray(node.modifiers) ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
 }
 
-export function getTypeNameText(node: ts.EntityName): string {
+export function getEntityNameText(node: ts.EntityName): string {
   if (ts.isIdentifier(node)) {
     return node.text;
   }
 
-  const left = getTypeNameText(node.left)
+  const left = getEntityNameText(node.left)
   const right = node.right.text;
 
   return `${left}.${right}`;
 }
 
 export function isTypeParameter(node: ts.TypeReferenceNode): boolean {
-  const nodeName = getTypeNameText(node.typeName);
+  const nodeName = getEntityNameText(node.typeName);
 
   while(node = node.parent as any) {
     if ((node as any).typeParameters && (node as any).typeParameters.length > 0) {
@@ -211,7 +252,7 @@ export function isTypeParameterOf(node: ts.TypeNode, typeParameters: ts.TypePara
     return false;
   }
 
-  const nodeName = getTypeNameText(node.typeName);
+  const nodeName = getEntityNameText(node.typeName);
 
   for (let typeParameter of typeParameters) {
 
@@ -243,10 +284,6 @@ export function isSuperStatement(node: ts.Node): boolean {
     node.expression.expression.kind === ts.SyntaxKind.SuperKeyword;
 }
 
-// function isAmbientNode(node: ts.Node) {
-//   return hasModifier(node, ts.SyntaxKind.DeclareKeyword) || isKind(node, ...AMBIENT_KINDS);
-// }
-
 export function isKind(node: ts.Node, ...kind: ts.SyntaxKind[]): boolean {
   return kind.indexOf(node.kind) !== -1;
 }
@@ -258,48 +295,3 @@ export function isBindingName(node: ts.Node): node is ts.Identifier | ts.Binding
 export function isLiteral(node: ts.Node): node is ts.LiteralTypeNode | ts.NumericLiteral | ts.StringLiteral | ts.KeywordTypeNode {
   return LITERAL_KINDS.indexOf(node.kind) !== -1;
 }
-
-export function isTypeNode(node: ts.Node): node is ts.TypeNode {
-  return ts.isTypeNode(node);
-  // return (node.kind >= ts.SyntaxKind.TypePredicate && node.kind <= ts.SyntaxKind.LiteralType) || node.kind === ts.SyntaxKind.ExpressionWithTypeArguments;
-}
-
-// export function getScope(node: ts.Node): ts.Node {
-//   if (node.kind === ts.SyntaxKind.SourceFile) {
-//     return node;
-//   }
-//
-//   if (isScopeKind(node.kind)) {
-//     return node;
-//   }
-//
-//   return getScope(node.parent);
-// }
-//
-//
-// // TODO: test
-// export function identifierExistsUp(node: ts.Node, id: string | ts.Identifier) {
-//   if (typeof id !== 'string') id = id.text;
-//   let current = node;
-//   while (current.parent) current = current.parent;
-//   return identifierExistsDown(current, id, node);
-// }
-//
-// // TODO: test
-// export function identifierExistsDown(node: ts.Node, id: string, stop?: ts.Node): boolean {
-//   if (!node || node === stop) return false;
-//   return node.kind === ts.SyntaxKind.Identifier && (node as ts.Identifier).text === id ?
-//     true : !!ts.forEachChild(node, n => identifierExistsDown(n, id, stop));
-// }
-//
-// export function isScopeKind(kind: ts.SyntaxKind): boolean {
-//   switch (kind) {
-//     case ts.SyntaxKind.SourceFile:
-//     case ts.SyntaxKind.Block:
-//     case ts.SyntaxKind.ModuleBlock:
-//     case ts.SyntaxKind.CaseBlock:
-//       return true;
-//     default:
-//       return false;
-//   }
-// }

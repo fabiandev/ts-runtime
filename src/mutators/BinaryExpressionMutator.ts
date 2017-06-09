@@ -31,7 +31,7 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
-    if (!util.isBindingName(node.left)) {
+    if (!ts.isIdentifier(node.left)) {
       return node;
     }
 
@@ -43,10 +43,10 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
-    const name = this.context.getTypeDeclarationName(node.left as ts.BindingName);
+    const name = this.context.getTypeDeclarationName(node.left);
     const right = this.factory.typeAssertion(name, node.right);
 
-    return this.map(ts.updateBinary(node, node.left, right), node);
+    return ts.updateBinary(node, node.left, right);
   }
 
   private isAssignmentOperator(node: ts.BinaryExpression): boolean {
