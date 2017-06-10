@@ -60,7 +60,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program);
+    // scanner = new Scanner(program);
 
     emit(bus.events.TRANSFORM, sourceFiles);
 
@@ -193,89 +193,54 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function firstPassTransformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
-    const visited: ts.Node[] = [];
-
-    const declarationCanHaveType = (node: ts.Node) => {
-      let current: ts.Node = node;
-
-      if (ts.isVariableDeclaration(current) && current.parent) {
-        current = current.parent;
-      }
-
-      if (ts.isVariableDeclarationList(current) && current.parent) {
-        current = current.parent;
-      }
-
-      switch (current.kind) {
-        case ts.SyntaxKind.ForOfStatement:
-        case ts.SyntaxKind.ForInStatement:
-        case ts.SyntaxKind.CatchClause:
-        case ts.SyntaxKind.ImportClause:
-          return false;
-      }
-
-      return true;
-    };
-
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (!node) {
-        return node;
-      }
-
-      if (node && !(node as any).type) {
-        let type: ts.TypeNode;
-        switch (node.kind) {
-          case ts.SyntaxKind.ObjectBindingPattern:
-          case ts.SyntaxKind.ArrayBindingPattern:
-            type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-            break;
-          case ts.SyntaxKind.Parameter:
-          case ts.SyntaxKind.PropertySignature:
-          case ts.SyntaxKind.PropertyDeclaration:
-          case ts.SyntaxKind.MethodSignature:
-          case ts.SyntaxKind.CallSignature:
-          case ts.SyntaxKind.ConstructSignature:
-          case ts.SyntaxKind.IndexSignature:
-            type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-            break;
-          case ts.SyntaxKind.VariableDeclaration:
-            if (declarationCanHaveType(node)) {
-              type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-            }
-            break;
-          case ts.SyntaxKind.MethodDeclaration:
-          case ts.SyntaxKind.GetAccessor:
-          case ts.SyntaxKind.FunctionExpression:
-          case ts.SyntaxKind.ArrowFunction:
-          case ts.SyntaxKind.FunctionDeclaration:
-            type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-            break;
-        }
-
-        if (type) {
-          (node as any).type = type;
-          util.setParent(node);
-        }
-      }
-
+      if (node && !(node as any).type) annotateWithAny(node);
       return ts.visitEachChild(node, visitor, transformationContext);
     };
 
     return (sf: ts.SourceFile) => {
-      createMutationContext(sf, transformationContext);
       return ts.visitNode(sf, visitor);
     };
+
+    function annotateWithAny(node: ts.Node) {
+      switch (node.kind) {
+        case ts.SyntaxKind.VariableDeclaration:
+          if (!util.declarationCanHaveTypeAnnotation(node)) {
+            break;
+          }
+        case ts.SyntaxKind.ObjectBindingPattern:
+        case ts.SyntaxKind.ArrayBindingPattern:
+        case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertySignature:
+        case ts.SyntaxKind.PropertyDeclaration:
+        case ts.SyntaxKind.MethodSignature:
+        case ts.SyntaxKind.CallSignature:
+        case ts.SyntaxKind.ConstructSignature:
+        case ts.SyntaxKind.IndexSignature:
+        case ts.SyntaxKind.MethodDeclaration:
+        case ts.SyntaxKind.GetAccessor:
+        case ts.SyntaxKind.FunctionExpression:
+        case ts.SyntaxKind.ArrowFunction:
+        case ts.SyntaxKind.FunctionDeclaration:
+          (node as any).type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+          break;
+      }
+    }
   }
 
   function transformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       const original = node;
-      const parent = node.parent;
 
       node = ts.visitEachChild(node, visitor, transformationContext);
 
       if (node !== original) {
         scanner.mapNode(node, original);
+      }
+
+      if (!node.parent) {
+        node.parent = original.parent;
+        util.setParent(node);
       }
 
       for (let mutator of mutators) {
@@ -285,7 +250,10 @@ function transformProgram(entryFile: string, options?: Options): void {
 
         if (node !== previous) {
           scanner.mapNode(node, previous);
-          node.parent = parent;
+        }
+
+        if (!node.parent) {
+          node.parent = previous.parent;
           util.setParent(node);
         }
       }
@@ -293,9 +261,6 @@ function transformProgram(entryFile: string, options?: Options): void {
       if (!node) {
         return node;
       }
-
-      node.parent = parent;
-      util.setParent(node);
 
       return node;
     };
@@ -337,7 +302,7 @@ export function toTempFilePath(file: string, basePath: string, tempFolderName: s
 export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
   if (diagnostics && diagnostics.length > 0) {
 
-    emit(bus.events.DIAGNOSTICS, diagnostics.slice(0, 15), diagnostics.length);
+    emit(bus.events.DIAGNOSTICS, diagnostics.slice(0, 25), diagnostics.length);
 
     if (log) {
       console.error(ts.formatDiagnostics(diagnostics, {

@@ -5,6 +5,7 @@ export const events = {
   END: Symbol('end'),
   STOP: Symbol('stop'),
   ERROR: Symbol('error'),
+  WARN: Symbol('warn'),
   DIAGNOSTICS: Symbol('ts.diagnostics'),
   TRANSFORM: Symbol('transform'),
   TRANSFORM_DONE: Symbol('transform.done'),

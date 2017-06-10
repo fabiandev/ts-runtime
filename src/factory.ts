@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import * as util from './util';
+import * as bus from './bus';
 import { ProgramError } from './errors';
 import { Scanner, TypeInfo } from './scanner';
 import { MutationContext } from './context';
@@ -112,20 +113,23 @@ export class Factory {
       case ts.SyntaxKind.ExpressionWithTypeArguments:
         return this.expressionWithTypeArgumentsReflection(node as ts.ExpressionWithTypeArguments);
       case ts.SyntaxKind.MappedType: // TODO: implement
-        // return this.anyTypeReflection();
-        throw new ProgramError('Mapped types are not yet supported.')
+        bus.emitter.emit(bus.events.WARN, 'Mapped types are not yet supported.');
+        return this.anyTypeReflection();
+        // throw new ProgramError('Mapped types are not yet supported.')
         // type Readonly<T> = {
         //   readonly [P in keyof T]: T[P];
         // }
       case ts.SyntaxKind.IndexedAccessType: // TODO: implement
-        // return this.anyTypeReflection();
-        throw new ProgramError('Indexed acces types are not yet supported.')
+        bus.emitter.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
+        return this.anyTypeReflection();
+        // throw new ProgramError('Indexed acces types are not yet supported.')
         // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
         //     return o[name]; // o[name] is of type T[K]
         // }
       case ts.SyntaxKind.TypeOperator: // TODO: implement
-        // return this.anyTypeReflection();
-        throw new ProgramError('Type operators are not yet supported.')
+        bus.emitter.emit(bus.events.WARN, 'Type operators are not yet supported.');
+        return this.anyTypeReflection();
+        // throw new ProgramError('Type operators are not yet supported.')
         // keyof
       default:
         throw new ProgramError(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
