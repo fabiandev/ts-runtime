@@ -1,30 +1,22 @@
 import * as ts from 'typescript';
+import * as util from '../util';
 import { Mutator } from './Mutator';
 
 export class VariableDeclarationListMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.VariableDeclarationList;
 
-  private skip = [
+  private incompatibleParents = [
     ts.SyntaxKind.ForOfStatement,
     ts.SyntaxKind.ForInStatement,
     ts.SyntaxKind.CatchClause,
     ts.SyntaxKind.ImportClause
   ];
 
-  private constDeclaration: boolean;
-
   protected mutate(node: ts.VariableDeclarationList): ts.Node {
-    if (!node.declarations) {
+    if (!this.shouldTransform(node)) {
       return node;
     }
-
-    // TODO: assert within loop; make ForOfLoopMutator etc.
-    if (node.parent && this.skip.indexOf(node.parent.kind) !== -1) {
-      return node;
-    }
-
-    this.constDeclaration = node && node.flags === ts.NodeFlags.Const;
 
     const declarations: ts.VariableDeclaration[] = [];
 
@@ -36,30 +28,13 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transform(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    let nameIsBindingPattern = false;
-    switch(node.name.kind) {
-      // case ts.SyntaxKind.Identifier:
-      //   nameIsBindingPattern = false;
-      //   break;
-      case ts.SyntaxKind.ArrayBindingPattern:
-      case ts.SyntaxKind.ObjectBindingPattern:
-        nameIsBindingPattern = true;
-        break;
-    }
-
-    if (!this.constDeclaration && nameIsBindingPattern) {
+    if (!ts.isIdentifier(node.name)) {
       return [node];
     }
 
-    // if (!node.type) {
-    //   if (this.constDeclaration) {
-    //     return this.transformUntypedConstDeclaration(node);
-    //   }
-    //
-    //   return this.transformUntypedDeclaration(node);
-    // }
+    const isConstDeclaration = util.hasFlag(node.parent, ts.NodeFlags.Const);
 
-    if (this.constDeclaration) {
+    if (isConstDeclaration) {
       return this.transformConstDeclaration(node);
     }
 
@@ -67,91 +42,53 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transformDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-    const typeDefinition = this.factory.typeDeclaration(nodeName, node.type);
-
     if (this.context.isAny(node.type)) {
       return [node];
     }
 
-    if (!node.initializer /*|| this.declarationTypeIsInitializerType(node)*/) {
+    const nodeName = this.context.getTypeDeclarationName((node.name as ts.Identifier).text);
+    const typeDefinition = this.factory.typeDeclaration(nodeName, node.type);
+
+    if (!node.initializer) {
+      return [typeDefinition, node];
+    }
+
+    if (this.context.isSafeAssignment(node.type, node.initializer)) {
       return [typeDefinition, node];
     }
 
     const initializer = this.factory.typeAssertion(nodeName, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
 
-    this.context.addVisited(typeDefinition, true);
-    this.context.addVisited(assignment, true, node.initializer);
-
     return [typeDefinition, assignment];
   }
 
   private transformConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    if (!node.initializer || node.initializer.kind === ts.SyntaxKind.FunctionExpression) {
+    if (!node.initializer || !node.type || this.context.isAny(node.type)) {
       return [node];
     }
 
-    if (this.context.isAny(node.type)) {
+    if (this.context.isSafeAssignment(node.type, node.initializer)) {
       return [node];
     }
 
-    if (!node.type /*|| this.declarationTypeIsInitializerType(node)*/) {
-      return [node];
-    }
-
-    const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-
+    const nodeName = this.context.getTypeDeclarationName((node.name as ts.Identifier).text);
     const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
-
-    this.context.addVisited(assignment, true, node.initializer);
 
     return [assignment];
   }
 
-  private declarationTypeIsInitializerType(node: ts.VariableDeclaration): boolean {
-    return this.context.isSafeAssignment(node.name, node.initializer);
-  }
+  private shouldTransform(node: ts.VariableDeclarationList): boolean {
+    if (!node.declarations) {
+      return false;
+    }
 
-  // private transformUntypedDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-  //   const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-  //
-  //   if (!this.context.options.assertAny && node.type.kind === ts.SyntaxKind.AnyKeyword) {
-  //     return [node];
-  //   }
-  //
-  //   const typeDefinition = this.factory.typeDeclaration(
-  //     nodeName,
-  //     node.type
-  //   );
-  //
-  //   if (!node.initializer) {
-  //     return [typeDefinition, node];
-  //   }
-  //
-  //   const initializer = this.factory.typeAssertion(nodeName, [node.initializer]);
-  //   const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
-  //
-  //   this.context.addVisited(typeDefinition, true);
-  //   this.context.addVisited(assignment, true, node.initializer);
-  //
-  //   return [typeDefinition, assignment];
-  // }
-  //
-  // private transformUntypedConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-  //   const nodeName = this.context.getTypeDeclarationName(node.name.getText());
-  //
-  //   if (!this.context.options.assertAny && node.type.kind === ts.SyntaxKind.AnyKeyword) {
-  //     return [node];
-  //   }
-  //
-  //   const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
-  //   const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
-  //
-  //   this.context.addVisited(assignment, true, node.initializer);
-  //
-  //   return [assignment];
-  // }
+    if (node.parent && this.incompatibleParents.indexOf(node.parent.kind) !== -1) {
+      return false;
+    }
+
+    return true;
+  }
 
 }

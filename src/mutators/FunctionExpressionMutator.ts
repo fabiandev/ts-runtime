@@ -8,16 +8,14 @@ export class FunctionExpressionMutator extends Mutator {
   protected mutate(node: ts.FunctionExpression): ts.Expression {
     let substitution: ts.Expression = this.factory.mutateFunctionBody(node) as ts.FunctionExpression;
 
-    substitution = ts.updateFunctionExpression(
-      node, node.modifiers, node.asteriskToken, node.name, node.typeParameters,
-      node.parameters, node.type, (substitution as ts.FunctionExpression).body
-    );
+    if (this.options.annotate) {
+      substitution = this.factory.annotate([
+        substitution,
+        this.factory.functionReflection(node)
+      ]);
+    }
 
-    let annotation = this.factory.libCall('annotate', [
-      substitution, this.factory.functionTypeReflection(node)
-    ]);
-
-    return annotation;
+    return substitution;
   }
 
 }

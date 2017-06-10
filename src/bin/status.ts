@@ -9,6 +9,7 @@ let spinner: any = ora();
 let current = 'Processing';
 let hasErrors = false;
 let numDiagnostics = 0;
+let warnings: string[] = [];
 
 process.on('uncaughtException', (error: Error) => {
   status.error(error);
@@ -76,7 +77,7 @@ status.diagnostics = (diags: string[], total?: number) => {
   }
 
   if (total > diags.length) {
-    spinner.fail(chalk.bold(`Only showing first ${diags.length} diagnistics, ${total - diags.length} were hidden.`))
+    spinner.fail(chalk.bold(`Showing first ${diags.length} diagnistics, ${total - diags.length} were hidden.`))
   }
 
   spinner.text = text;
@@ -86,16 +87,38 @@ status.diagnostics = (diags: string[], total?: number) => {
 
 status.end = (args: any[]) => {
   spinner.succeed('Cleaning Up');
+
+  for (let warning of warnings) {
+    spinner.warn(chalk.yellow.bold(warning));
+  }
+
   if (hasErrors) {
     spinner.fail(chalk.red.bold(`Processing has finished, but there were errors.`));
   } else if (numDiagnostics > 0) {
-    spinner.warn(chalk.yellow.bold(`Processing has finished, but there were ${numDiagnostics} compiler diagnostics.`));
+    let wasWere = numDiagnostics === 1 ? 'was' : 'were';
+    let diagPlural = numDiagnostics === 1 ? 'diagnostic' : 'diagnostics';
+    let text = `Processing has finished, but there ${wasWere} ${numDiagnostics} compiler ${diagPlural}`;
+    if (warnings.length > 0) {
+      let warningPlural = warnings.length === 1 ? 'warning' : 'warnings';
+      text += ` and ${warnings.length} ${warningPlural}`
+    }
+    spinner.succeed(chalk.yellow.bold(`${text}.`));
+  } else if (warnings.length > 0) {
+    let wasWere = warnings.length === 1 ? 'was' : 'were';
+    let warningPlural = warnings.length === 1 ? 'warning' : 'warnings';
+    spinner.succeed(chalk.yellow.bold(`Processing has finished, but there ${wasWere} ${warnings.length} ${warningPlural}.`));
   } else {
     spinner.succeed(chalk.green.bold('Processing has finished.'));
   }
 
   process.exit(0);
 };
+
+status.warn = (warning: string) => {
+  if (warnings.indexOf(warning) === -1) {
+    warnings.push(warning);
+  }
+}
 
 status.stop = (...args: any[]) => {
   hasErrors = true;

@@ -17,21 +17,22 @@ bus.emitter.on(bus.events.INTERNAL_OPTIONS, (opts: Options) => {
 function killChild(exitOtherwise = true) {
   if (childIsRunning) {
     child.kill();
-  } else if (exitOtherwise) {
-    process.exit(0);
   }
 }
 
 process.on('exit', () => {
   killChild();
+  process.exit(0);
 });
 
 process.on('SIGINT', () => {
   killChild();
+  process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   killChild();
+  process.exit(0);
 });
 
 child.on('exit', code => {
@@ -51,6 +52,10 @@ process.on('uncaughtException', handleError);
 process.on('unhandledRejection', handleError);
 
 bus.emitter.on(bus.events.ERROR, handleError);
+
+bus.emitter.on(bus.events.WARN, (args: any[]) => {
+  child.send({ message: 'warn', payload: args });
+});
 
 bus.emitter.on(bus.events.START, (args: any[]) => {
   child.send({ message: 'start', payload: args });

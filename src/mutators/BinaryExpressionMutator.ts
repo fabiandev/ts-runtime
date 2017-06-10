@@ -19,41 +19,38 @@ export class BinaryExpressionMutator extends Mutator {
     ts.SyntaxKind.CaretEqualsToken,
     ts.SyntaxKind.LessThanLessThanEqualsToken,
     ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
-    ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+    ts.SyntaxKind.GreaterThanGreaterThanEqualsToken
   ];
 
-  // TODO: check spec (e.g. destructuring, rest element,...)
   protected mutate(node: ts.BinaryExpression): ts.Node {
     if (node.left.kind !== ts.SyntaxKind.Identifier) {
       return node;
     }
 
-    if (this.assignmentOperators.indexOf(node.operatorToken.kind as any) === -1) {
+    if (!this.isAssignmentOperator(node)) {
       return node;
     }
 
-    if (!util.isBindingName(node.left)) {
+    if (!ts.isIdentifier(node.left)) {
       return node;
     }
-
-    // if (this.context.typeMatchesBaseTypeOrAny(node.left, node.right)) {
-    //   return node;
-    // } 
-
-    // if (this.context.isSafeAssignment(node.left, node.right)) {
-    //   return node;
-    // } 
 
     if (this.context.isAny(node.left)) {
       return node;
     }
 
-    const nodeName = this.context.getTypeDeclarationName(node.left as ts.BindingName);
-    const right = this.factory.typeAssertion(nodeName, node.right);
+    if (this.context.isSafeAssignment(node.left, node.right)) {
+      return node;
+    }
 
-    this.context.addVisited(right, true, node.right);
+    const name = this.context.getTypeDeclarationName(node.left);
+    const right = this.factory.typeAssertion(name, node.right);
 
     return ts.updateBinary(node, node.left, right);
+  }
+
+  private isAssignmentOperator(node: ts.BinaryExpression): boolean {
+    return this.assignmentOperators.indexOf(node.operatorToken.kind as any) !== -1;
   }
 
 }
