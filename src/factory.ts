@@ -113,24 +113,36 @@ export class Factory {
       case ts.SyntaxKind.ExpressionWithTypeArguments:
         return this.expressionWithTypeArgumentsReflection(node as ts.ExpressionWithTypeArguments);
       case ts.SyntaxKind.MappedType: // TODO: implement
-        bus.emitter.emit(bus.events.WARN, 'Mapped types are not yet supported.');
+        if (this.context.options.log) {
+          console.warn('Mapped types are not yet supported.')
+        } else {
+          bus.emitter.emit(bus.events.WARN, 'Mapped types are not yet supported.');
+        }
         return this.anyTypeReflection();
-        // throw new ProgramError('Mapped types are not yet supported.')
-        // type Readonly<T> = {
-        //   readonly [P in keyof T]: T[P];
-        // }
+      // throw new ProgramError('Mapped types are not yet supported.')
+      // type Readonly<T> = {
+      //   readonly [P in keyof T]: T[P];
+      // }
       case ts.SyntaxKind.IndexedAccessType: // TODO: implement
-        bus.emitter.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
+        if (this.context.options.log) {
+          console.warn('Indexed acces types are not yet supported.')
+        } else {
+          bus.emitter.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
+        }
         return this.anyTypeReflection();
-        // throw new ProgramError('Indexed acces types are not yet supported.')
-        // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
-        //     return o[name]; // o[name] is of type T[K]
-        // }
+      // throw new ProgramError('Indexed acces types are not yet supported.')
+      // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
+      //     return o[name]; // o[name] is of type T[K]
+      // }
       case ts.SyntaxKind.TypeOperator: // TODO: implement
-        bus.emitter.emit(bus.events.WARN, 'Type operators are not yet supported.');
+        if (this.context.options.log) {
+          console.warn('Type operators are not yet supported.')
+        } else {
+          bus.emitter.emit(bus.events.WARN, 'Type operators are not yet supported.');
+        }
         return this.anyTypeReflection();
-        // throw new ProgramError('Type operators are not yet supported.')
-        // keyof
+      // throw new ProgramError('Type operators are not yet supported.')
+      // keyof
       default:
         throw new ProgramError(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }

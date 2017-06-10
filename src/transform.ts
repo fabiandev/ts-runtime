@@ -60,43 +60,39 @@ function transformProgram(entryFile: string, options?: Options): void {
     }
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    // scanner = new Scanner(program);
 
-    emit(bus.events.TRANSFORM, sourceFiles);
+    setTimeout(() => {
+      emit(bus.events.SCAN);
 
-    // const typedResult = ts.transform(sourceFiles, [firstPassTransformer], options.compilerOptions);
-    //
-    // writeTempFiles(typedResult);
-    // createProgramFromTempFiles();
+      scanner = new Scanner(program);
 
-    // sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-    scanner = new Scanner(program);
+      emit(bus.events.TRANSFORM, sourceFiles);
 
-    const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
+      const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
-    writeTempFiles(result, true);
+      writeTempFiles(result, true);
 
-    // do not check post-diagnostics of temp file
-    // check(result.diagnostics, options.log)
+      // do not check post-diagnostics of temp file
+      // check(result.diagnostics, options.log)
 
-    emitDeclarations();
+      emitDeclarations();
 
-    if (!emitTransformed() && !options.finishOnError) {
-      if (!options.keepTemp) deleteTempFiles();
-      emit(bus.events.STOP);
-      return;
-    }
+      if (!emitTransformed() && !options.finishOnError) {
+        if (!options.keepTemp) deleteTempFiles();
+        emit(bus.events.STOP);
+        return;
+      }
 
-    emit(bus.events.CLEANUP);
+      emit(bus.events.CLEANUP);
 
-    if (!options.keepTemp) {
-      deleteTempFiles();
-    }
+      if (!options.keepTemp) {
+        deleteTempFiles();
+      }
 
-    // typedResult.dispose();
-    result.dispose();
+      result.dispose();
 
-    emit(bus.events.END);
+      emit(bus.events.END);
+    }, 500)
   };
 
   function getOutDir(): string {
@@ -282,7 +278,7 @@ export function toTempFilePath(file: string, basePath: string, tempFolderName: s
 export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
   if (diagnostics && diagnostics.length > 0) {
 
-    emit(bus.events.DIAGNOSTICS, diagnostics.slice(0, 25), diagnostics.length);
+    emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
 
     if (log) {
       console.error(ts.formatDiagnostics(diagnostics, {

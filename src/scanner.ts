@@ -163,7 +163,7 @@ export class Scanner {
       ((isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
         (!isExternal && (isDeclaration || isInDeclarationFile))));
 
-    if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations) && isReference) {
+    if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations) && (isReference || util.isPartOfTypeNode(node))) {
       this.addDeclaration(symbol, fileName);
 
       if (this.defer) {

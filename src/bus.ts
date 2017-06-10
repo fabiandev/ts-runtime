@@ -8,9 +8,8 @@ export const events = {
   WARN: Symbol('warn'),
   DIAGNOSTICS: Symbol('ts.diagnostics'),
   TRANSFORM: Symbol('transform'),
-  TRANSFORM_DONE: Symbol('transform.done'),
+  SCAN: Symbol('transform'),
   CLEANUP: Symbol('cleanup'),
-  CLEANUP_DONE: Symbol('cleanup.done'),
   INTERNAL_OPTIONS: Symbol('internal.options'),
 };
 
