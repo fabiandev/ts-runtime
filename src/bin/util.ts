@@ -37,7 +37,7 @@ export function getError(error: string | Error, options?: Options): string {
     const result = split.slice(0, lines);
 
     if (limit > 0 && split.length > result.length) {
-      result.push(chalk.bold(`    -> There are ${split.length - lines} more results. Use option -s ${split.length - 1} to show the full stack trace.`));
+      result.push(chalk.bold(`    -> There are ${split.length - lines} more items on the stack trace. Use option -s ${split.length - 1} to show the full stack trace.`));
     }
 
     return result.join('\n');;

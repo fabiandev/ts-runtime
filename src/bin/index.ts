@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-Error.stackTraceLimit = Infinity;
 
 import './handlers';
 import * as path from 'path';
@@ -42,7 +41,6 @@ function defaultAction() {
   }
 
   transform(entryFile, options);
-  process.exit();
 }
 
 function setNoAnnotate() {
@@ -87,8 +85,8 @@ function setNamespace(namespace: string) {
   options.libNamespace = namespace;
 }
 
-function setStackTrace(limit?: number) {
-  options.stackTrace = limit !== 0 && !limit ? 3 : limit;
+function setStackTrace(limit: number) {
+  options.stackTrace = limit;
 }
 
 function setTempFolder(name: string) {
@@ -109,7 +107,7 @@ program
   .option('-k, --keep-temp', 'keep temporary files. default to false', setKeepTempFiles)
   .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
   .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
-  .option('-s, --stack-trace [limit]', 'show stack trace of errors with an optional limit. defaults to 3', setStackTrace)
+  .option('-s, --stack-trace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
   .option('-t, --temp-folder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
   .on('--help', () => {
     console.log('  Examples:');

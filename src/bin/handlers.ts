@@ -14,9 +14,10 @@ bus.emitter.on(bus.events.INTERNAL_OPTIONS, (opts: Options) => {
   options = opts;
 });
 
-function killChild(exitOtherwise = true) {
+function killChild() {
   if (childIsRunning) {
     child.kill();
+    childIsRunning = false;
   }
 }
 
@@ -61,6 +62,10 @@ bus.emitter.on(bus.events.START, (args: any[]) => {
   child.send({ message: 'start', payload: args });
 });
 
+bus.emitter.on(bus.events.SCAN, (args: any[]) => {
+  child.send({ message: 'scan', payload: args });
+});
+
 bus.emitter.on(bus.events.TRANSFORM, (args: any[]) => {
   const sourceFiles = args[0] as ts.SourceFile[];
   const fileNames = sourceFiles.map(sf => sf.fileName);
@@ -82,7 +87,11 @@ bus.emitter.on(bus.events.DIAGNOSTICS, (args: any[]) => {
 
   const diags = formatted.filter(str => str.trim().length > 0);
 
-  child.send({ message: 'diagnostics', payload: diags, info: args[1] });
+  let i, j, temp, chunk = 10;
+  for (i = 0, j = formatted.length; i < j; i += chunk) {
+    temp = formatted.slice(i, i + chunk);
+    child.send({ message: 'diagnostics', payload: temp, info: temp.length });
+  }
 });
 
 bus.emitter.on(bus.events.CLEANUP, (args: any[]) => {

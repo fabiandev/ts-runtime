@@ -25,6 +25,7 @@ process.on('SIGINT', () => {
 });
 
 process.on('SIGTERM', () => {
+  console.log('TERM')
   status.term();
   process.exit(0);
 });
@@ -58,9 +59,17 @@ status.transform = (fileNames: string[]) => {
   return spinner;
 };
 
+status.scan = (args: any[]) => {
+  spinner.succeed(current);
+  current = 'Scanning';
+  spinner.text = chalk.bold(current);
+  spinner.start();
+  return spinner;
+};
+
 status.cleanup = (args: any[]) => {
   spinner.succeed(current);
-  current = 'Cleanup';
+  current = 'Cleaning';
   spinner.text = chalk.bold(current);
   spinner.start();
   return spinner;
@@ -69,8 +78,6 @@ status.cleanup = (args: any[]) => {
 status.diagnostics = (diags: string[], total?: number) => {
   const text = spinner.text;
   numDiagnostics += total || diags.length;
-
-  spinner.fail(chalk.red(`${total || diags.length} TypeScript Compiler Diagnostics:`));
 
   for (let diag of diags) {
     spinner.fail(diag);
@@ -86,10 +93,10 @@ status.diagnostics = (diags: string[], total?: number) => {
 };
 
 status.end = (args: any[]) => {
-  spinner.succeed('Cleaning Up');
+  spinner.succeed(current);
 
   for (let warning of warnings) {
-    spinner.warn(chalk.yellow.bold(warning));
+    spinner.warn(chalk.yellow(warning));
   }
 
   if (hasErrors) {
