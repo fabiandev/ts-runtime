@@ -781,7 +781,18 @@ export class Factory {
         case ts.SyntaxKind.MethodSignature:
         case ts.SyntaxKind.MethodDeclaration:
           {
-            const id = node.name.getText();
+            let id: string;
+
+            if (ts.isIdentifier(node.name)) {
+              id = node.name.text;
+            } else if (ts.isStringLiteral(node.name)) {
+              id = node.name.text;
+            } else if (ts.isNumericLiteral(node.name)) {
+              id = node.name.text;
+            } else {
+              id = node.name.getText();
+            }
+
             const collection = util.isStatic(node) ? staticMethodSignatures : methodSignatures;
             if (!collection.has(id)) collection.set(id, new Set());
             collection.get(id).add(node as MethodSignature);
@@ -859,8 +870,8 @@ export class Factory {
         let parameterIndex = 0;
         for (let parameter of node.parameters) {
 
-          // const typeInfo = this.scanner.getTypeInfo(parameter);
-          const parameterTypeText = parameter.type.getText();
+          const typeInfo = this.scanner.getTypeInfo(parameter);
+          const parameterTypeText = typeInfo.typeText;
 
           if (!parameterTypesMap.has(parameterIndex)) {
             parameterTypesMap.set(parameterIndex, new Set([parameterTypeText]));
