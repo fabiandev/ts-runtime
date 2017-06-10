@@ -148,47 +148,47 @@ export class Factory {
     return this.typeAssertion(this.typeReflection(node), args);
   }
 
-  public anyTypeReflection(): ts.Expression {
+  public anyTypeReflection(): ts.CallExpression {
     return this.libCall('any');
   }
 
-  public numberTypeReflection(): ts.Expression {
+  public numberTypeReflection(): ts.CallExpression {
     return this.libCall('number');
   }
 
-  public booleanTypeReflection(): ts.Expression {
+  public booleanTypeReflection(): ts.CallExpression {
     return this.libCall('boolean');
   }
 
-  public stringTypeReflection(): ts.Expression {
+  public stringTypeReflection(): ts.CallExpression {
     return this.libCall('string');
   }
 
-  public symbolTypeReflection(): ts.Expression {
+  public symbolTypeReflection(): ts.CallExpression {
     return this.libCall('symbol');
   }
 
-  public objectTypeReflection(): ts.Expression {
+  public objectTypeReflection(): ts.CallExpression {
     return this.libCall('object');
   }
 
-  public voidTypeReflection(): ts.Expression {
+  public voidTypeReflection(): ts.CallExpression {
     return this.libCall('void');
   }
 
-  public nullTypeReflection(): ts.Expression {
+  public nullTypeReflection(): ts.CallExpression {
     return this.libCall('null');
   }
 
-  public undefinedTypeReflection(): ts.Expression {
+  public undefinedTypeReflection(): ts.CallExpression {
     return this.libCall('undef');
   }
 
-  public thisTypeReflection(): ts.Expression {
+  public thisTypeReflection(): ts.CallExpression {
     return this.libCall('this', ts.createThis());
   }
 
-  public literalTypeReflection(node: ts.LiteralTypeNode): ts.Expression {
+  public literalTypeReflection(node: ts.LiteralTypeNode): ts.CallExpression {
     switch (node.literal.kind) {
       case ts.SyntaxKind.TrueKeyword:
       case ts.SyntaxKind.FalseKeyword:
@@ -203,33 +203,33 @@ export class Factory {
     }
   }
 
-  public booleanLiteralTypeReflection(node: ts.BooleanLiteral): ts.Expression {
+  public booleanLiteralTypeReflection(node: ts.BooleanLiteral): ts.CallExpression {
     return this.libCall('boolean', ts.createLiteral(
       node.kind === ts.SyntaxKind.TrueKeyword ? true : false
     ));
   }
 
-  public numericLiteralTypeReflection(node: ts.NumericLiteral): ts.Expression {
+  public numericLiteralTypeReflection(node: ts.NumericLiteral): ts.CallExpression {
     return this.libCall('number', ts.createNumericLiteral(node.text));
   }
 
-  public stringLiteralTypeReflection(node: ts.StringLiteral): ts.Expression {
+  public stringLiteralTypeReflection(node: ts.StringLiteral): ts.CallExpression {
     return this.libCall('string', ts.createLiteral(node.text));
   }
 
-  public arrayTypeReflection(node: ts.ArrayTypeNode): ts.Expression {
+  public arrayTypeReflection(node: ts.ArrayTypeNode): ts.CallExpression {
     return this.libCall('array', this.typeReflection(node.elementType));
   }
 
-  public tupleTypeReflection(node: ts.TupleTypeNode): ts.Expression {
+  public tupleTypeReflection(node: ts.TupleTypeNode): ts.CallExpression {
     return this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n)));
   }
 
-  public unionTypeReflection(node: ts.UnionTypeNode): ts.Expression {
+  public unionTypeReflection(node: ts.UnionTypeNode): ts.CallExpression {
     return this.libCall('union', node.types.map(n => this.typeReflection(n)));
   }
 
-  public intersectionTypeReflection(node: ts.IntersectionTypeNode): ts.Expression {
+  public intersectionTypeReflection(node: ts.IntersectionTypeNode): ts.CallExpression {
     return this.libCall('intersection', node.types.map(n => this.typeReflection(n)));
   }
 
@@ -311,23 +311,23 @@ export class Factory {
     return !keyword ? args[0] : this.libCall(keyword, args);
   }
 
-  public functionTypeReflection(node: ts.FunctionTypeNode): ts.Expression {
+  public functionTypeReflection(node: ts.FunctionTypeNode): ts.CallExpression {
     return this.functionReflection(node);
   }
 
-  public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.Expression {
+  public constructorTypeReflection(node: ts.ConstructorTypeNode): ts.CallExpression {
     return this.methodReflection(node);
   }
 
-  public typeQueryReflection(node: ts.TypeQueryNode): ts.Expression {
+  public typeQueryReflection(node: ts.TypeQueryNode): ts.CallExpression {
     return this.libCall('typeOf', ts.createIdentifier(util.getEntityNameText(node.exprName)));
   }
 
-  public typeLiteralReflection(node: ts.TypeLiteralNode) {
+  public typeLiteralReflection(node: ts.TypeLiteralNode): ts.CallExpression {
     return this.asObject(this.elementsReflection(util.asArray(node.members)))
   }
 
-  public expressionWithTypeArgumentsReflection(node: ts.ExpressionWithTypeArguments): ts.Expression {
+  public expressionWithTypeArgumentsReflection(node: ts.ExpressionWithTypeArguments): ts.CallExpression {
     if (node.expression.kind !== ts.SyntaxKind.PropertyAccessExpression && node.expression.kind !== ts.SyntaxKind.Identifier) {
       throw new ProgramError('An expression with type argument\’s left hand side expression must be a property access expression or an identifier.')
     }
@@ -407,7 +407,7 @@ export class Factory {
     return this.asType(name || typeNameText, result);
   }
 
-  public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.Statement {
+  public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.VariableStatement {
     return ts.createVariableStatement(
       node.modifiers,
       ts.createVariableDeclarationList(
@@ -436,7 +436,7 @@ export class Factory {
     const elementsReflection = this.elementsReflection(members);
     const reflection = this.asObject(elementsReflection);
 
-    let result = reflection;
+    let result: ts.Expression = reflection;
 
     if (hasExtender) {
       const intersections = extendsClause.types.map(expressionWithTypeArguments => {
@@ -591,13 +591,13 @@ export class Factory {
     }
   }
 
-  public enumReflection(node: ts.EnumDeclaration): ts.Expression {
+  public enumReflection(node: ts.EnumDeclaration): ts.CallExpression {
     return this.libCall('enum', (node.members || [] as ts.EnumMember[]).map(member => {
       return this.enumMemberReflection(member);
     }));
   }
 
-  public enumMemberReflection(node: ts.EnumMember): ts.Expression {
+  public enumMemberReflection(node: ts.EnumMember): ts.CallExpression {
     return this.libCall('enumMember', ts.createLiteral(this.context.checker.getConstantValue(node)));
   }
 
@@ -605,7 +605,7 @@ export class Factory {
     return this.typeReflection(node.type);
   }
 
-  public functionReflection(node: FunctionLikeNode): ts.Expression {
+  public functionReflection(node: FunctionLikeNode): ts.CallExpression {
     const parameters = node.parameters || [] as ts.ParameterDeclaration[];
 
     let args: ts.Expression[] = parameters
@@ -631,11 +631,11 @@ export class Factory {
     return this.libCall('function', args);
   }
 
-  public returnTypeReflection(node: ts.TypeNode): ts.Expression {
+  public returnTypeReflection(node: ts.TypeNode): ts.CallExpression {
     return this.libCall('return', this.typeReflection(node/*, FactoryFlags.NoFlowInto*/));
   }
 
-  public typeParameterReflection(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Expression {
+  public typeParameterReflection(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.CallExpression {
     const args: ts.Expression[] = [
       ts.createLiteral(typeParameter.name.text)
     ];
@@ -655,7 +655,7 @@ export class Factory {
     return this.propertyAccessCall(prop, 'typeParameter', args);
   }
 
-  public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.Expression {
+  public indexSignatureReflection(node: ts.IndexSignatureDeclaration): ts.CallExpression {
     return this.libCall('indexer', [
       this.declarationNameToLiteralOrExpression(node.parameters[0].name),
       this.typeReflection(node.parameters[0].type),
@@ -663,7 +663,7 @@ export class Factory {
     ]);
   }
 
-  public propertySignatureReflection(node: ts.PropertySignature | ts.PropertyDeclaration): ts.Expression {
+  public propertySignatureReflection(node: ts.PropertySignature | ts.PropertyDeclaration): ts.CallExpression {
     const args: ts.Expression[] = [
       this.propertyNameToLiteralOrExpression(node.name),
       this.typeReflection(node.type)
@@ -677,45 +677,45 @@ export class Factory {
     return this.libCall(util.isStatic(node as ts.PropertyDeclaration) ? 'staticProperty' : 'property', args);
   }
 
-  public propertyReflection(node: ts.PropertyDeclaration): ts.Expression {
+  public propertyReflection(node: ts.PropertyDeclaration): ts.CallExpression {
     return this.propertySignatureReflection(node);
   }
 
-  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration): ts.Expression {
+  public callSignatureReflection(node: ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration): ts.CallExpression {
     return this.libCall(util.isStatic(node) ? 'staticCallProperty' : 'callProperty', this.functionReflection(node));
   }
 
-  public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.Expression {
+  public constructSignatureReflection(node: ts.ConstructSignatureDeclaration): ts.CallExpression {
     return this.callSignatureReflection(node);
   }
 
-  public constructorReflection(node: ts.ConstructorDeclaration): ts.Expression {
+  public constructorReflection(node: ts.ConstructorDeclaration): ts.CallExpression {
     return this.libCall('property', [
       ts.createLiteral('constructor'),
       this.functionReflection(node)
     ]);
   }
 
-  public methodReflection(node: MethodLikeNode): ts.Expression {
+  public methodReflection(node: MethodLikeNode): ts.CallExpression {
     return this.methodSignatureReflection(node);
   }
 
-  public methodSignatureReflection(node: MethodLikeNode): ts.Expression {
+  public methodSignatureReflection(node: MethodLikeNode): ts.CallExpression {
     return this.libCall(util.isStatic(node) ? 'staticProperty' : 'property', [
       this.propertyNameToLiteralOrExpression(node.name),
       this.functionReflection(node)
     ]);
   }
 
-  public getAccessorReflection(node: ts.GetAccessorDeclaration): ts.Expression {
+  public getAccessorReflection(node: ts.GetAccessorDeclaration): ts.CallExpression {
     return this.methodReflection(node);
   }
 
-  public setAccessorReflection(node: ts.SetAccessorDeclaration): ts.Expression {
+  public setAccessorReflection(node: ts.SetAccessorDeclaration): ts.CallExpression {
     return this.methodReflection(node);
   }
 
-  public parameterReflection(param: ts.ParameterDeclaration, reflectType = true): ts.Expression {
+  public parameterReflection(param: ts.ParameterDeclaration, reflectType = true): ts.CallExpression {
     const parameter: ts.Expression[] = [
       this.declarationNameToLiteralOrExpression(param.name),
       reflectType ? this.typeReflection(param.type) : ts.createIdentifier(this.context.getTypeDeclarationName((param.name as ts.Identifier).text))
@@ -728,7 +728,7 @@ export class Factory {
     return this.libCall(param.dotDotDotToken ? 'rest' : 'param', parameter);
   }
 
-  public elementReflection(node: ts.TypeElement | ts.ClassElement): ts.Expression {
+  public elementReflection(node: ts.TypeElement | ts.ClassElement): ts.CallExpression {
     switch (node.kind) {
       case ts.SyntaxKind.Constructor:
         return this.constructorReflection(node as ts.ConstructorDeclaration);
@@ -979,7 +979,7 @@ export class Factory {
     )], ts.NodeFlags.Const);
   }
 
-  public classTypeParameterSymbolConstructorDeclaration(name: string | ts.Identifier): ts.Statement {
+  public classTypeParameterSymbolConstructorDeclaration(name: string | ts.Identifier): ts.ExpressionStatement {
     return ts.createStatement(
       ts.createBinary(
         ts.createElementAccess(ts.createThis(), ts.createIdentifier(this.context.getTypeSymbolDeclarationName(name))),
@@ -1005,7 +1005,7 @@ export class Factory {
     );
   }
 
-  public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.Statement {
+  public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.VariableStatement {
     const callExpression = this.typeParameterReflection(typeParameter, prop);
     return ts.createVariableStatement(undefined, ts.createVariableDeclarationList([ts.createVariableDeclaration(typeParameter.name.text, undefined, callExpression)], ts.NodeFlags.Const));
   }
@@ -1019,7 +1019,7 @@ export class Factory {
     );
   }
 
-  public typeParametersLiteralDeclaration(typeParameters: ts.TypeParameterDeclaration[]): ts.Statement {
+  public typeParametersLiteralDeclaration(typeParameters: ts.TypeParameterDeclaration[]): ts.VariableStatement {
     return ts.createVariableStatement(
       undefined,
       ts.createVariableDeclarationList(
@@ -1035,7 +1035,7 @@ export class Factory {
     );
   }
 
-  public typeParameterBindingDeclaration(typeArguments: ts.TypeNode[]): ts.Statement {
+  public typeParameterBindingDeclaration(typeArguments: ts.TypeNode[]): ts.ExpressionStatement {
     // this.setGlobalFlags(FactoryFlags.NoFlowInto);
 
     return ts.createStatement(
@@ -1215,7 +1215,7 @@ export class Factory {
     }
   }
 
-  public importLibStatement(): ts.Statement {
+  public importLibStatement(): ts.ImportDeclaration {
     return ts.createImportDeclaration(
       undefined, undefined, ts.createImportClause(
         ts.createIdentifier(this.context.factory.lib), undefined),
@@ -1223,34 +1223,34 @@ export class Factory {
     );
   }
 
-  public importDeclarationsStatement(): ts.Statement {
+  public importDeclarationsStatement(): ts.ImportDeclaration {
     return ts.createImportDeclaration(
       undefined, undefined, undefined, ts.createLiteral(`./${this.context.options.declarationFile}`)
     );
   }
 
-  public decorate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
+  public decorate(expressions: ts.Expression | ts.Expression[]): ts.CallExpression {
     return this.libCall('decorate', expressions);
   }
 
-  public annotate(expressions: ts.Expression | ts.Expression[]): ts.Expression {
+  public annotate(expressions: ts.Expression | ts.Expression[]): ts.CallExpression {
     return this.libCall('annotate', expressions);
   }
 
-  public nullable(reflection: ts.Expression, ): ts.Expression {
+  public nullable<T extends ts.Expression>(reflection: T): T | ts.CallExpression {
     return this.strictNullChecks ? reflection : this.libCall('nullable', reflection);
   }
 
-  public intersect(args: ts.Expression | ts.Expression[]): ts.Expression {
+  public intersect(args: ts.Expression | ts.Expression[]): ts.CallExpression {
     return this.libCall('intersect', args);
   }
 
-  public flowInto(args: ts.Expression | ts.Expression[]) {
+  public flowInto(args: ts.Expression | ts.Expression[]): ts.CallExpression {
     return this.libCall('flowInto', args);
   }
 
   // TODO: no tdz if self reference
-  public tdz(body: ts.Identifier, name?: string): ts.Expression {
+  public tdz(body: ts.Identifier, name?: string): ts.CallExpression {
     const args = [
       ts.createArrowFunction(
         undefined, undefined, [], undefined,
@@ -1277,29 +1277,29 @@ export class Factory {
     );
   }
 
-  public asObject(nodes: ts.Expression[]): ts.Expression {
+  public asObject(nodes: ts.Expression[]): ts.CallExpression {
     return this.libCall('object', nodes);
   }
 
-  public asRef(arg: ts.Expression): ts.Expression {
+  public asRef(arg: ts.Expression): ts.CallExpression {
     return this.libCall('ref', arg);
   }
 
-  public asType(name: string | ts.Identifier, args: ts.Expression | ts.Expression[], keyword = 'type'): ts.Expression {
+  public asType(name: string | ts.Identifier, args: ts.Expression | ts.Expression[], keyword = 'type'): ts.CallExpression {
     args = util.asArray(args);
     args.unshift(ts.createLiteral(name as any));
     return this.libCall(keyword, args);
   }
 
-  public asClass(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.Expression {
+  public asClass(name: string | ts.Identifier, args: ts.Expression | ts.Expression[]): ts.CallExpression {
     return this.asType(name, args, 'class');
   }
 
-  public asVar(name: string, expression: ts.Expression): ts.Expression {
+  public asVar(name: string, expression: ts.Expression): ts.CallExpression {
     return this.libCall('var', [ts.createLiteral(name), expression]);
   }
 
-  public asStatement(expression: ts.Expression): ts.Statement {
+  public asStatement(expression: ts.Expression): ts.ExpressionStatement {
     return ts.createStatement(expression);
   }
 
