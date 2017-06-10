@@ -9,6 +9,9 @@
   "repository": "https://github.com/fabiandev/ts-runtime.git",
   "author": "Fabian Pirklbauer <hi@fabiandev.io>",
   "license": "MIT",
+  "engines": {
+    "node": ">=6"
+  },
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck",
     "build:tsr": "ts-node ./src/bin/index src/index.ts -s 200 -fkc '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'",
