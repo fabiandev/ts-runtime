@@ -306,3 +306,31 @@ export function declarationCanHaveTypeAnnotation(node: ts.Node) {
 export function extendsClauseHasTypeArguments(node: ts.HeritageClause): boolean {
   return node && node.types && node.types[0] && node.types[0].typeArguments && node.types[0].typeArguments.length > 0;
 }
+
+export function annotateWithAny(node: ts.Node): boolean {
+  switch (node.kind) {
+    case ts.SyntaxKind.VariableDeclaration:
+      if (!declarationCanHaveTypeAnnotation(node)) {
+        return false;
+      }
+    case ts.SyntaxKind.ObjectBindingPattern:
+    case ts.SyntaxKind.ArrayBindingPattern:
+    case ts.SyntaxKind.Parameter:
+    case ts.SyntaxKind.PropertySignature:
+    case ts.SyntaxKind.PropertyDeclaration:
+    case ts.SyntaxKind.MethodSignature:
+    case ts.SyntaxKind.CallSignature:
+    case ts.SyntaxKind.ConstructSignature:
+    case ts.SyntaxKind.IndexSignature:
+    case ts.SyntaxKind.MethodDeclaration:
+    case ts.SyntaxKind.GetAccessor:
+    case ts.SyntaxKind.FunctionExpression:
+    case ts.SyntaxKind.ArrowFunction:
+    case ts.SyntaxKind.FunctionDeclaration:
+      (node as any).type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+      (node as any).type.parent = node;
+      return true;
+  }
+
+  return false;
+}
