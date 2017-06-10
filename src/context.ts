@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as ts from 'typescript';
 import * as util from './util';
 import { Factory } from './factory';
@@ -108,7 +109,7 @@ export class MutationContext {
   }
 
   public isEntryFile(node: ts.SourceFile) {
-    return node.fileName === this.entryFilePath;
+    return path.resolve(node.fileName) === path.resolve(this.entryFilePath);
   }
 
   public isAny(node: ts.Node): boolean {
