@@ -14,9 +14,7 @@
   },
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck",
-    "build:tsr": "ts-node ./src/bin/index src/index.ts -s 25 -fkc '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": true, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'",
-    "build:lkg": "node ./dist/bin/index src/index.ts -s 25 -fkc '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'",
-    "build:demo": "./node_modules/.bin/webpack docs/demo.js docs/bundle.js"
+    "build:tsr": "ts-node ./src/bin/index src/index.ts -s 25 -fkc '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'",
   },
   "dependencies": {
     "chalk": "^1.1.3",

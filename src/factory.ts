@@ -2,6 +2,7 @@ import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
 import { ProgramError } from './errors';
+import { Options } from './options';
 import { Scanner, TypeInfo } from './scanner';
 import { MutationContext } from './context';
 
@@ -21,8 +22,17 @@ export type ElementLikeNode = ts.TypeElement | ts.ClassElement;
 export class Factory {
 
   private _state: Map<FactoryState, number> = new Map();
+  private _strictNullChecks: boolean;
+  private _namespace: string = '_';
+  private _lib: string = 't';
+  private _load: string = 'ts-runtime/lib';
 
-  constructor(private _context: MutationContext, private _strictNullChecks = false, private _lib = 't', private _namespace = '_', private _load = 'ts-runtime/lib') {
+  constructor(private _context: MutationContext, options: Options, library?: string) {
+    this._strictNullChecks = !!options.compilerOptions.strictNullChecks;
+    this._namespace = options.libNamespace || this._namespace;
+    this._lib = options.libIdentifier || this._lib;
+    this._load = library || this._load;
+
     return new Proxy(this, {
       get: this.proxy.bind(this)
     });

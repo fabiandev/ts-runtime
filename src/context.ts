@@ -32,7 +32,7 @@ export class MutationContext {
     this._checker = program.getTypeChecker();
     this._host = host;
     this._scanner = scanner;
-    this._factory = new Factory(this, options.compilerOptions.strictNullChecks, options.libIdentifier, options.libNamespace);
+    this._factory = new Factory(this, options);
     this._transformationContext = context;
     this._merged = new Set();
   }
