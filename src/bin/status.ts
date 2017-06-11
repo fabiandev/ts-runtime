@@ -7,6 +7,7 @@ import * as util from './util';
 const version = require('../../package.json').version;
 let spinner: any = ora();
 let current = 'Processing';
+let currentPast = 'Processed';
 let hasErrors = false;
 let numDiagnostics = 0;
 let warnings: string[] = [];
@@ -45,31 +46,35 @@ status.init = () => {
 
 status.start = (args: any[]) => {
   current = 'Processing';
+  currentPast = 'Processed';
   spinner.info(chalk.bold(`ts-runtime v${version}`));
   spinner.text = current;
   spinner.start();
   return spinner;
 };
 
-status.transform = (fileNames: string[]) => {
-  spinner.succeed(current);
-  current = `Transforming`;
+status.transform = (fileNames: string[], time: string) => {
+  spinner.succeed(`${current} (${time})`);
+  current = 'Transforming';
+  currentPast = 'Transformed';
   spinner.text = chalk.bold(current);
   spinner.start();
   return spinner;
 };
 
-status.scan = (args: any[]) => {
-  spinner.succeed(current);
+status.scan = (args: any[], time: string) => {
+  spinner.succeed(`${current} (${time})`);
   current = 'Scanning';
+  currentPast = 'Scanned';
   spinner.text = chalk.bold(current);
   spinner.start();
   return spinner;
 };
 
-status.cleanup = (args: any[]) => {
-  spinner.succeed(current);
+status.cleanup = (args: any[], time: string) => {
+  spinner.succeed(`${current} (${time})`);
   current = 'Cleaning';
+  currentPast = 'Cleaned';
   spinner.text = chalk.bold(current);
   spinner.start();
   return spinner;
@@ -92,19 +97,19 @@ status.diagnostics = (diags: string[], total?: number) => {
   return spinner;
 };
 
-status.end = (args: any[]) => {
-  spinner.succeed(current);
+status.end = (args: any[], time: string[]) => {
+    spinner.succeed(`${current} (${time[0]})`);
 
   for (let warning of warnings) {
     spinner.warn(chalk.yellow(warning));
   }
 
   if (hasErrors) {
-    spinner.fail(chalk.red.bold(`Processing has finished, but there were errors.`));
+    spinner.fail(chalk.red.bold(`Done in ${time[1]}, but there were errors.`));
   } else if (numDiagnostics > 0) {
     let wasWere = numDiagnostics === 1 ? 'was' : 'were';
     let diagPlural = numDiagnostics === 1 ? 'diagnostic' : 'diagnostics';
-    let text = `Processing has finished, but there ${wasWere} ${numDiagnostics} compiler ${diagPlural}`;
+    let text = `Done in ${time[1]}, but there ${wasWere} ${numDiagnostics} compiler ${diagPlural}`;
     if (warnings.length > 0) {
       let warningPlural = warnings.length === 1 ? 'warning' : 'warnings';
       text += ` and ${warnings.length} ${warningPlural}`
@@ -113,9 +118,9 @@ status.end = (args: any[]) => {
   } else if (warnings.length > 0) {
     let wasWere = warnings.length === 1 ? 'was' : 'were';
     let warningPlural = warnings.length === 1 ? 'warning' : 'warnings';
-    spinner.succeed(chalk.yellow.bold(`Processing has finished, but there ${wasWere} ${warnings.length} ${warningPlural}.`));
+    spinner.succeed(chalk.yellow.bold(`Done in ${time[1]}, but there ${wasWere} ${warnings.length} ${warningPlural}.`));
   } else {
-    spinner.succeed(chalk.green.bold('Processing has finished.'));
+    spinner.succeed(chalk.green.bold(`Done in ${time[1]}.`));
   }
 
   process.exit(0);

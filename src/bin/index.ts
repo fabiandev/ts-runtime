@@ -69,6 +69,10 @@ function setDeclarationFileName(fileName: string) {
   options.declarationFile = fileName;
 }
 
+function setExcludeDeclarationFile() {
+  options.excludeDeclarationFile = true;
+}
+
 function setFinishOnError() {
   options.finishOnError = true;
 }
@@ -103,6 +107,7 @@ program
   .option('-a, --no-annotate', 'do not annotate classes and functions', setNoAnnotate)
   .option('-c, --compiler-options <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
   .option('-d, --declaration-file <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
+  .option('-e, --exclude-declaration-file', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
   .option('-k, --keep-temp', 'keep temporary files. default to false', setKeepTempFiles)
   .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)

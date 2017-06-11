@@ -63,14 +63,14 @@ bus.emitter.on(bus.events.START, (args: any[]) => {
 });
 
 bus.emitter.on(bus.events.SCAN, (args: any[]) => {
-  child.send({ message: 'scan', payload: args });
+  child.send({ message: 'scan', payload: args, info: args[0] });
 });
 
 bus.emitter.on(bus.events.TRANSFORM, (args: any[]) => {
   const sourceFiles = args[0] as ts.SourceFile[];
   const fileNames = sourceFiles.map(sf => sf.fileName);
 
-  child.send({ message: 'transform', payload: fileNames });
+  child.send({ message: 'transform', payload: fileNames, info: args[1] });
 });
 
 bus.emitter.on(bus.events.DIAGNOSTICS, (args: any[]) => {
@@ -95,7 +95,7 @@ bus.emitter.on(bus.events.DIAGNOSTICS, (args: any[]) => {
 });
 
 bus.emitter.on(bus.events.CLEANUP, (args: any[]) => {
-  child.send({ message: 'cleanup', payload: args });
+  child.send({ message: 'cleanup', payload: args, info: args[0] });
 });
 
 bus.emitter.on(bus.events.STOP, (args: any[]) => {
@@ -103,5 +103,5 @@ bus.emitter.on(bus.events.STOP, (args: any[]) => {
 });
 
 bus.emitter.on(bus.events.END, (args: any[]) => {
-  child.send({ message: 'end', payload: args });
+  child.send({ message: 'end', payload: args, info: [args[0], args[1]] });
 });
