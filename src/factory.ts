@@ -16,7 +16,7 @@ export type FunctionLikeNode = ts.FunctionExpression | ts.ArrowFunction | ts.Fun
 export type MethodLikeNode = ts.ConstructorTypeNode | ts.ConstructorDeclaration | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration |
   ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
-export type ElementLike = ts.TypeElement | ts.ClassElement;
+export type ElementLikeNode = ts.TypeElement | ts.ClassElement;
 
 export class Factory {
 
@@ -775,7 +775,7 @@ export class Factory {
     return nodes.map(node => this.elementReflection(node));
   }
 
-  private mergedElementsReflection(nodes: ElementLike[]): ts.Expression[] {
+  private mergedElementsReflection(nodes: ElementLikeNode[]): ts.Expression[] {
     type CallableSignature = ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration;
     type MethodSignature = ts.MethodSignature | ts.MethodDeclaration;
     type Signature = ts.MethodSignature | ts.MethodDeclaration | CallableSignature;
