@@ -308,5 +308,5 @@ export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
 }
 
 export function emit(event: string | symbol, ...args: any[]): boolean {
-  return bus.emitter.emit(event, args);
+  return bus.emit(event, args);
 }

@@ -31,9 +31,13 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-process.on('message', (data: { message: string, payload: any, info?: any }) => {
+process.on('message', (data: { message: string, payload: any[] }) => {
   if (typeof status[data.message] === 'function') {
-    status[data.message](data.payload, data.info);
+    if (Array.isArray(data.payload)) {
+      status[data.message](...data.payload);
+    } else {
+      status[data.message](data.payload);
+    }
   }
 });
 
@@ -44,7 +48,7 @@ status.init = () => {
   spinner = ora();
 };
 
-status.start = (args: any[]) => {
+status.start = () => {
   current = 'Processing';
   currentPast = 'Processed';
   spinner.info(chalk.bold(`ts-runtime v${version}`));
@@ -62,7 +66,7 @@ status.transform = (fileNames: string[], time: string) => {
   return spinner;
 };
 
-status.scan = (args: any[], time: string) => {
+status.scan = (time: string) => {
   spinner.succeed(`${current} (${time})`);
   current = 'Scanning';
   currentPast = 'Scanned';
@@ -71,7 +75,7 @@ status.scan = (args: any[], time: string) => {
   return spinner;
 };
 
-status.cleanup = (args: any[], time: string) => {
+status.cleanup = (time: string) => {
   spinner.succeed(`${current} (${time})`);
   current = 'Cleaning';
   currentPast = 'Cleaned';
@@ -80,16 +84,12 @@ status.cleanup = (args: any[], time: string) => {
   return spinner;
 };
 
-status.diagnostics = (diags: string[], total?: number) => {
+status.diagnostics = (diags: string[]) => {
   const text = spinner.text;
-  numDiagnostics += total || diags.length;
+  numDiagnostics += diags.length;
 
   for (let diag of diags) {
     spinner.fail(diag);
-  }
-
-  if (total > diags.length) {
-    spinner.fail(chalk.bold(`Showing first ${diags.length} diagnistics, ${total - diags.length} were hidden.`))
   }
 
   spinner.text = text;
@@ -97,19 +97,19 @@ status.diagnostics = (diags: string[], total?: number) => {
   return spinner;
 };
 
-status.end = (args: any[], time: string[]) => {
-    spinner.succeed(`${current} (${time[0]})`);
+status.end = (time: string, totalTime: string) => {
+    spinner.succeed(`${current} (${time})`);
 
   for (let warning of warnings) {
     spinner.warn(chalk.yellow(warning));
   }
 
   if (hasErrors) {
-    spinner.fail(chalk.red.bold(`Done in ${time[1]}, but there were errors.`));
+    spinner.fail(chalk.red.bold(`Done in ${totalTime}, but there were errors.`));
   } else if (numDiagnostics > 0) {
     let wasWere = numDiagnostics === 1 ? 'was' : 'were';
     let diagPlural = numDiagnostics === 1 ? 'diagnostic' : 'diagnostics';
-    let text = `Done in ${time[1]}, but there ${wasWere} ${numDiagnostics} compiler ${diagPlural}`;
+    let text = `Done in ${totalTime}, but there ${wasWere} ${numDiagnostics} compiler ${diagPlural}`;
     if (warnings.length > 0) {
       let warningPlural = warnings.length === 1 ? 'warning' : 'warnings';
       text += ` and ${warnings.length} ${warningPlural}`
@@ -118,9 +118,9 @@ status.end = (args: any[], time: string[]) => {
   } else if (warnings.length > 0) {
     let wasWere = warnings.length === 1 ? 'was' : 'were';
     let warningPlural = warnings.length === 1 ? 'warning' : 'warnings';
-    spinner.succeed(chalk.yellow.bold(`Done in ${time[1]}, but there ${wasWere} ${warnings.length} ${warningPlural}.`));
+    spinner.succeed(chalk.yellow.bold(`Done in ${totalTime}, but there ${wasWere} ${warnings.length} ${warningPlural}.`));
   } else {
-    spinner.succeed(chalk.green.bold(`Done in ${time[1]}.`));
+    spinner.succeed(chalk.green.bold(`Done in ${totalTime}.`));
   }
 
   process.exit(0);
@@ -132,7 +132,7 @@ status.warn = (warning: string) => {
   }
 }
 
-status.stop = (...args: any[]) => {
+status.stop = () => {
   hasErrors = true;
   status.error();
 };

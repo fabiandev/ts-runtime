@@ -32,11 +32,11 @@ function defaultAction() {
 
   options.compilerOptions = opts.options;
 
-  bus.emitter.emit(bus.events.INTERNAL_OPTIONS, options);
+  bus.emit(bus.events.INTERNAL_OPTIONS, options);
 
   if (opts.errors.length > 0) {
-    bus.emitter.emit(bus.events.DIAGNOSTICS, [opts.errors]);
-    bus.emitter.emit(bus.events.ERROR);
+    bus.emit(bus.events.DIAGNOSTICS, [opts.errors]);
+    bus.emit(bus.events.ERROR);
     return;
   }
 

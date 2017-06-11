@@ -14,3 +14,5 @@ export const events = {
 };
 
 export const emitter = new EventEmitter();
+export const emit = emitter.emit.bind(emitter);
+export const on = emitter.on.bind(emitter);

@@ -116,7 +116,7 @@ export class Factory {
         if (this.context.options.log) {
           console.warn('Mapped types are not yet supported.')
         } else {
-          bus.emitter.emit(bus.events.WARN, 'Mapped types are not yet supported.');
+          bus.emit(bus.events.WARN, 'Mapped types are not yet supported.');
         }
         return this.anyTypeReflection();
       // throw new ProgramError('Mapped types are not yet supported.')
@@ -127,7 +127,7 @@ export class Factory {
         if (this.context.options.log) {
           console.warn('Indexed acces types are not yet supported.')
         } else {
-          bus.emitter.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
+          bus.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
         }
         return this.anyTypeReflection();
       // throw new ProgramError('Indexed acces types are not yet supported.')
@@ -138,7 +138,7 @@ export class Factory {
         if (this.context.options.log) {
           console.warn('Type operators are not yet supported.')
         } else {
-          bus.emitter.emit(bus.events.WARN, 'Type operators are not yet supported.');
+          bus.emit(bus.events.WARN, 'Type operators are not yet supported.');
         }
         return this.anyTypeReflection();
       // throw new ProgramError('Type operators are not yet supported.')

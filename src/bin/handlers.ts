@@ -10,7 +10,7 @@ let childIsRunning = true;
 
 let options: Options;
 
-bus.emitter.on(bus.events.INTERNAL_OPTIONS, (opts: Options) => {
+bus.on(bus.events.INTERNAL_OPTIONS, (opts: Options) => {
   options = opts;
 });
 
@@ -52,28 +52,29 @@ function handleError(error: string | Error) {
 process.on('uncaughtException', handleError);
 process.on('unhandledRejection', handleError);
 
-bus.emitter.on(bus.events.ERROR, handleError);
+bus.on(bus.events.ERROR, handleError);
 
-bus.emitter.on(bus.events.WARN, (args: any[]) => {
+bus.on(bus.events.WARN, (args: any[]) => {
   child.send({ message: 'warn', payload: args });
 });
 
-bus.emitter.on(bus.events.START, (args: any[]) => {
+bus.on(bus.events.START, (args: any[]) => {
   child.send({ message: 'start', payload: args });
 });
 
-bus.emitter.on(bus.events.SCAN, (args: any[]) => {
-  child.send({ message: 'scan', payload: args, info: args[0] });
+bus.on(bus.events.SCAN, (args: any[]) => {
+  child.send({ message: 'scan', payload: args });
 });
 
-bus.emitter.on(bus.events.TRANSFORM, (args: any[]) => {
+bus.on(bus.events.TRANSFORM, (args: any[]) => {
   const sourceFiles = args[0] as ts.SourceFile[];
+  const time = args[1];
   const fileNames = sourceFiles.map(sf => sf.fileName);
 
-  child.send({ message: 'transform', payload: fileNames, info: args[1] });
+  child.send({ message: 'transform', payload: [fileNames, time] });
 });
 
-bus.emitter.on(bus.events.DIAGNOSTICS, (args: any[]) => {
+bus.on(bus.events.DIAGNOSTICS, (args: any[]) => {
   const diagnostics = args[0] as ts.Diagnostic[];
   let formatted: string[] = [];
 
@@ -90,18 +91,18 @@ bus.emitter.on(bus.events.DIAGNOSTICS, (args: any[]) => {
   let i, j, temp, chunk = 10;
   for (i = 0, j = formatted.length; i < j; i += chunk) {
     temp = formatted.slice(i, i + chunk);
-    child.send({ message: 'diagnostics', payload: temp, info: temp.length });
+    child.send({ message: 'diagnostics', payload: [temp] });
   }
 });
 
-bus.emitter.on(bus.events.CLEANUP, (args: any[]) => {
-  child.send({ message: 'cleanup', payload: args, info: args[0] });
+bus.on(bus.events.CLEANUP, (args: any[]) => {
+  child.send({ message: 'cleanup', payload: args });
 });
 
-bus.emitter.on(bus.events.STOP, (args: any[]) => {
+bus.on(bus.events.STOP, (args: any[]) => {
   child.send({ message: 'stop', payload: args });
 });
 
-bus.emitter.on(bus.events.END, (args: any[]) => {
-  child.send({ message: 'end', payload: args, info: [args[0], args[1]] });
+bus.on(bus.events.END, (args: any[]) => {
+  child.send({ message: 'end', payload: args });
 });
