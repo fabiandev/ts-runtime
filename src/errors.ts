@@ -6,4 +6,5 @@ export class ProgramError extends Error {
       super(message);
       this.name = ProgramError.id;
     }
+
 }

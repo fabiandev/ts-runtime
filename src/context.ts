@@ -112,6 +112,11 @@ export class MutationContext {
     return path.resolve(node.fileName) === path.resolve(this.entryFilePath);
   }
 
+  public pathIsOutsideRoot(fileName: string): boolean {
+    const rootDir = this.program.getCompilerOptions().rootDir;
+    return !fileName.startsWith(rootDir);
+  }
+
   public isAny(node: ts.Node): boolean {
     if (node.kind === ts.SyntaxKind.AnyKeyword) {
       return true;

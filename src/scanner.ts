@@ -48,13 +48,12 @@ export class Scanner {
   ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
   ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
 
-  constructor(program: ts.Program, private defer = false) {
+  constructor(program: ts.Program/*, private defer = false*/) {
     this.program = program;
     this.checker = program.getTypeChecker();
-
-    if (!defer) {
-      this.scan();
-    }
+    // if (!defer) {
+    //   this.scan();
+    // }
   }
 
   public scan(): void {
@@ -63,7 +62,7 @@ export class Scanner {
       .filter(sf => !sf.isDeclarationFile);
 
     for (let sourceFile of sourceFiles) {
-      this.scanner(sourceFile);
+      this.scanRecursive(sourceFile);
     }
   }
 
@@ -83,10 +82,6 @@ export class Scanner {
 
   public hasTypeInfo(node: ts.Node): boolean {
     return this.properties.has(this.getNode(node));
-  }
-
-  public getDeclarations(): TsrDeclaration[] {
-    return this.declarations;
   }
 
   public getNode(node: ts.Node): ts.Node {
@@ -109,7 +104,19 @@ export class Scanner {
     return node;
   }
 
-  private scanner(entry: ts.Node): void {
+  public getSymbol(type: ts.Type, node: ts.Node): ts.Symbol {
+    let symbol = type && (type.aliasSymbol || type.symbol ||
+      (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
+        this.checker.getSymbolAtLocation(node) : undefined));
+
+    return symbol;
+  }
+
+  public getDeclarations(): TsrDeclaration[] {
+    return this.declarations;
+  }
+
+  private scanRecursive(entry: ts.Node): void {
     const scanNode = (node: ts.Node) => {
       if (!node) return;
       this.scanNode(node);
@@ -130,11 +137,12 @@ export class Scanner {
       return;
     }
 
-    node = this.mapAsExpression(node);
+    if (ts.isAsExpression(node)) {
+      node = this.getAsExpression(node);
+    }
+
     const enclosing = node;
-
     const type = this.getType(node);
-
     const symbol = this.getSymbol(type, node);
     const typeNode = this.getTypeNode(node, type);
     const typeText = this.checker.typeToString(type, enclosing);
@@ -170,12 +178,11 @@ export class Scanner {
 
     if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations) && (isReference || util.isPartOfTypeNode(node))) {
       this.addDeclaration(symbol, fileName);
-
-      if (this.defer) {
-        for (let decl of declarations) {
-          this.scanNode(decl)
-        }
-      }
+      // if (this.defer) {
+      //   for (let decl of declarations) {
+      //     this.scanNode(decl)
+      //   }
+      // }
     }
 
     if (node !== typeNode) {
@@ -195,14 +202,6 @@ export class Scanner {
     return typeInfo;
   }
 
-  public getSymbol(type: ts.Type, node: ts.Node): ts.Symbol {
-    let symbol = type && (type.aliasSymbol || type.symbol ||
-      (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
-        this.checker.getSymbolAtLocation(node) : undefined));
-
-    return symbol;
-  }
-
   private shouldScan(node: ts.Node): boolean {
     if (!node) {
       return false;
@@ -215,15 +214,19 @@ export class Scanner {
     return true;
   }
 
-  private mapAsExpression(node: ts.Node): ts.Node {
-    if (ts.isAsExpression(node)) {
-      let expression = node.expression;
-      this.mapNode(node, expression);
+  private hasDeclarations(symbol: ts.Symbol): boolean {
+    return symbol && symbol.declarations && symbol.declarations.length > 0;
+  }
 
-      return expression;
-    }
+  private pathIsExternal(fileName: string): boolean {
+    const rootDir = this.program.getCompilerOptions().rootDir;
+    return !fileName.startsWith(rootDir);
+  }
 
-    return node;
+  private getAsExpression(node: ts.AsExpression): ts.Node {
+    let expression = node.expression;
+    this.mapNode(node, expression);
+    return expression;
   }
 
   private getType(node: ts.Node): ts.Type {
@@ -258,11 +261,6 @@ export class Scanner {
     return this.checker.getBaseTypeOfLiteralType(type);
   }
 
-  private pathIsExternal(fileName: string): boolean {
-    const rootDir = this.program.getCompilerOptions().rootDir;
-    return !fileName.startsWith(rootDir);
-  }
-
   private addDeclaration(symbol: ts.Symbol, fileName: string) {
     const hash = util.getHash(fileName);
     const name = this.checker.getFullyQualifiedName(symbol);
@@ -278,10 +276,6 @@ export class Scanner {
     if (decl.names.indexOf(uid) === -1) {
       decl.names.push(uid);
     }
-  }
-
-  private hasDeclarations(symbol: ts.Symbol): boolean {
-    return symbol && symbol.declarations && symbol.declarations.length > 0;
   }
 
 }
