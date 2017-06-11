@@ -10,14 +10,21 @@ import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
 import { Scanner } from './scanner';
 
-const start = process.hrtime();
-let elapsed = start;
+let start: [number, number], elapsed: [number, number];
 
 export function transform(entryFile: string, options?: Options): void {
   return transformProgram(entryFile, options) as void;
 }
 
+export function getOptions(options: Options = {}): Options {
+  const opts = Object.assign({}, defaultOptions, options);
+  opts.compilerOptions = Object.assign({}, defaultOptions.compilerOptions, options.compilerOptions || {});
+  return opts;
+}
+
 function transformProgram(entryFile: string, options?: Options): void {
+  start = elapsed = process.hrtime();
+
   emit(bus.events.START);
 
   entryFile = path.normalize(entryFile);
@@ -241,12 +248,6 @@ function transformProgram(entryFile: string, options?: Options): void {
       return ts.visitNode(sf, visitor);
     }
   }
-}
-
-export function getOptions(options: Options = {}): Options {
-  const opts = Object.assign({}, defaultOptions, options);
-  opts.compilerOptions = Object.assign({}, defaultOptions.compilerOptions, options.compilerOptions || {});
-  return opts;
 }
 
 function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
