@@ -11,11 +11,13 @@ export type FunctionDeclarationLikeNode = ts.ArrowFunction | ts.FunctionDeclarat
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
 export type FunctionLikeNode = ts.FunctionExpression | ts.ArrowFunction | ts.FunctionDeclaration |
-  ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.ConstructorDeclaration | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration |
-  ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
+  ts.FunctionTypeNode | ts.ConstructorTypeNode | ts.ConstructorDeclaration | ts.CallSignatureDeclaration |
+  ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration |
+  ts.GetAccessorDeclaration;
 
-export type MethodLikeNode = ts.ConstructorTypeNode | ts.ConstructorDeclaration | ts.CallSignatureDeclaration | ts.ConstructSignatureDeclaration |
-  ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
+export type MethodLikeNode = ts.ConstructorTypeNode | ts.ConstructorDeclaration | ts.CallSignatureDeclaration |
+  ts.ConstructSignatureDeclaration | ts.MethodSignature | ts.MethodDeclaration | ts.SetAccessorDeclaration |
+  ts.GetAccessorDeclaration;
 
 export type ElementLikeNode = ts.TypeElement | ts.ClassElement;
 
@@ -45,13 +47,13 @@ export class Factory {
       return destination;
     }
 
-    const flagName = property.charAt(0).toUpperCase() + property.slice(1);
-    const flagsEnum = FactoryState as any as { [index: string]: number };
+    const states = FactoryState as any as { [index: string]: number };
+    const stateName = property.charAt(0).toUpperCase() + property.slice(1);
 
     let lastFlag = 0;
 
     return (...args: any[]) => {
-      const state = flagsEnum[flagName];
+      const state = states[stateName];
 
       this.addState(state);
 
@@ -122,37 +124,34 @@ export class Factory {
         return this.booleanTypeReflection();
       case ts.SyntaxKind.ExpressionWithTypeArguments:
         return this.expressionWithTypeArgumentsReflection(node as ts.ExpressionWithTypeArguments);
-      case ts.SyntaxKind.MappedType: // TODO: implement
+      case ts.SyntaxKind.MappedType:
+        // type Readonly<T> = {
+        //   readonly [P in keyof T]: T[P];
+        // }
         if (this.context.options.log) {
           console.warn('Mapped types are not yet supported.')
         } else {
           bus.emit(bus.events.WARN, 'Mapped types are not yet supported.');
         }
         return this.anyTypeReflection();
-      // throw new ProgramError('Mapped types are not yet supported.')
-      // type Readonly<T> = {
-      //   readonly [P in keyof T]: T[P];
-      // }
-      case ts.SyntaxKind.IndexedAccessType: // TODO: implement
+      case ts.SyntaxKind.IndexedAccessType:
+        // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
+        //     return o[name]; // o[name] is of type T[K]
+        // }
         if (this.context.options.log) {
           console.warn('Indexed acces types are not yet supported.')
         } else {
           bus.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
         }
         return this.anyTypeReflection();
-      // throw new ProgramError('Indexed acces types are not yet supported.')
-      // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
-      //     return o[name]; // o[name] is of type T[K]
-      // }
-      case ts.SyntaxKind.TypeOperator: // TODO: implement
+      case ts.SyntaxKind.TypeOperator:
+        // let a: keyof MyClass;
         if (this.context.options.log) {
           console.warn('Type operators are not yet supported.')
         } else {
           bus.emit(bus.events.WARN, 'Type operators are not yet supported.');
         }
         return this.anyTypeReflection();
-      // throw new ProgramError('Type operators are not yet supported.')
-      // keyof
       default:
         throw new ProgramError(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
@@ -397,7 +396,7 @@ export class Factory {
     }
 
     args.push(id);
-    args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a/*, FactoryFlags.NoFlowInto*/)));
+    args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a)));
 
     return this.libCall(keyword, args);
   }
@@ -655,7 +654,7 @@ export class Factory {
   }
 
   public returnTypeReflection(node: ts.TypeNode): ts.CallExpression {
-    return this.libCall('return', this.typeReflection(node/*, FactoryFlags.NoFlowInto*/));
+    return this.libCall('return', this.typeReflection(node));
   }
 
   public typeParameterReflection(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.CallExpression {
@@ -741,7 +740,9 @@ export class Factory {
   public parameterReflection(param: ts.ParameterDeclaration, reflectType = true): ts.CallExpression {
     const parameter: ts.Expression[] = [
       this.declarationNameToLiteralOrExpression(param.name),
-      reflectType ? this.typeReflection(param.type) : ts.createIdentifier(this.context.getTypeDeclarationName((param.name as ts.Identifier).text))
+      reflectType ?
+        this.typeReflection(param.type) :
+        ts.createIdentifier(this.context.getTypeDeclarationName((param.name as ts.Identifier).text))
     ];
 
     if (param.questionToken) {
@@ -1005,7 +1006,10 @@ export class Factory {
   public classTypeParameterSymbolConstructorDeclaration(name: string | ts.Identifier): ts.ExpressionStatement {
     return ts.createStatement(
       ts.createBinary(
-        ts.createElementAccess(ts.createThis(), ts.createIdentifier(this.context.getTypeSymbolDeclarationName(name))),
+        ts.createElementAccess(
+          ts.createThis(),
+          ts.createIdentifier(this.context.getTypeSymbolDeclarationName(name))
+        ),
         ts.SyntaxKind.EqualsToken,
         ts.createIdentifier(this.context.getTypeParametersDeclarationName())
       )
@@ -1030,7 +1034,13 @@ export class Factory {
 
   public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.VariableStatement {
     const callExpression = this.typeParameterReflection(typeParameter, prop);
-    return ts.createVariableStatement(undefined, ts.createVariableDeclarationList([ts.createVariableDeclaration(typeParameter.name.text, undefined, callExpression)], ts.NodeFlags.Const));
+    return ts.createVariableStatement(
+      undefined,
+      ts.createVariableDeclarationList(
+        [ts.createVariableDeclaration(typeParameter.name.text, undefined, callExpression)],
+        ts.NodeFlags.Const
+      )
+    );
   }
 
   public typeParametersLiteral(typeParameters: ts.TypeParameterDeclaration[], asStatement = false): ts.Expression {
@@ -1086,7 +1096,7 @@ export class Factory {
         return node;
       }
 
-      if (node.kind === ts.SyntaxKind.FunctionDeclaration || node.kind === ts.SyntaxKind.FunctionExpression || node.kind === ts.SyntaxKind.ArrowFunction) {
+      if (util.isKind(node, ts.SyntaxKind.FunctionDeclaration, ts.SyntaxKind.FunctionExpression, ts.SyntaxKind.ArrowFunction)) {
         return node;
       }
 
@@ -1151,7 +1161,14 @@ export class Factory {
         )
       );
 
-      bodyAssertions.push(ts.createStatement(this.typeAssertion(this.parameterReflection(param, false), ts.createIdentifier(param.name.text))));
+      bodyAssertions.push(
+        ts.createStatement(
+          this.typeAssertion(
+            this.parameterReflection(param, false),
+            ts.createIdentifier(param.name.text)
+          )
+        )
+      );
     }
 
     if (node.type && node.type.kind !== ts.SyntaxKind.AnyKeyword) {
@@ -1171,7 +1188,11 @@ export class Factory {
     }
 
 
-    let body = ts.updateBlock(node.body as ts.Block, this.assertReturnStatements(node.body as ts.Block, node.type).statements);
+    let body = ts.updateBlock(
+      node.body as ts.Block,
+      this.assertReturnStatements(node.body as ts.Block, node.type).statements
+    );
+
     let bodyStatements: ts.Statement[] = (body && body.statements) || [];
 
     bodyStatements.unshift(...bodyAssertions);
@@ -1183,25 +1204,42 @@ export class Factory {
 
     switch (node.kind) {
       case ts.SyntaxKind.Constructor:
-        method = ts.updateConstructor(node, node.decorators, node.modifiers, node.parameters, body);
+        method = ts.updateConstructor(
+          node, node.decorators, node.modifiers, node.parameters, body
+        );
         break;
       case ts.SyntaxKind.MethodDeclaration:
-        method = ts.updateMethod(node, node.decorators, node.modifiers, node.asteriskToken, node.name, node.questionToken, node.typeParameters, node.parameters, node.type, body);
+        method = ts.updateMethod(
+          node, node.decorators, node.modifiers, node.asteriskToken, node.name,
+          node.questionToken, node.typeParameters, node.parameters, node.type, body
+        );
         break;
       case ts.SyntaxKind.GetAccessor:
-        method = ts.updateGetAccessor(node, node.decorators, node.modifiers, node.name, node.parameters, node.type, body);
+        method = ts.updateGetAccessor(
+          node, node.decorators, node.modifiers, node.name, node.parameters, node.type, body
+        );
         break;
       case ts.SyntaxKind.SetAccessor:
-        method = ts.updateSetAccessor(node, node.decorators, node.modifiers, node.name, node.parameters, body);
+        method = ts.updateSetAccessor(
+          node, node.decorators, node.modifiers, node.name, node.parameters, body
+        );
         break;
       case ts.SyntaxKind.FunctionExpression:
-        method = ts.updateFunctionExpression(node, node.modifiers, node.asteriskToken, node.name as ts.Identifier, node.typeParameters, node.parameters, node.type, body);
+        method = ts.updateFunctionExpression(
+          node, node.modifiers, node.asteriskToken, node.name as ts.Identifier,
+          node.typeParameters, node.parameters, node.type, body
+        );
         break;
       case ts.SyntaxKind.FunctionDeclaration:
-        method = ts.updateFunctionDeclaration(node, node.decorators, node.modifiers, node.asteriskToken, node.name as ts.Identifier, node.typeParameters, node.parameters, node.type, body);
+        method = ts.updateFunctionDeclaration(
+          node, node.decorators, node.modifiers, node.asteriskToken, node.name as ts.Identifier,
+          node.typeParameters, node.parameters, node.type, body
+        );
         break;
       case ts.SyntaxKind.ArrowFunction:
-        method = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body);
+        method = ts.updateArrowFunction(
+          node, node.modifiers, node.typeParameters, node.parameters, node.type, body
+        );
         break;
     }
 
@@ -1368,14 +1406,6 @@ export class Factory {
   public match(rule: FactoryState[], state: FactoryState): boolean {
     return rule.indexOf(state) !== -1;
   }
-
-  // public flag(flag: FactoryFlags) {
-  //   return !!(this.flags & flag);
-  // }
-
-  // get flags(): number {
-  //   return this._flags;
-  // }
 
   get scanner(): Scanner {
     return this.context.scanner;
