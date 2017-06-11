@@ -10,14 +10,14 @@ import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
 import { Scanner } from './scanner';
 
+const start = process.hrtime();
+let elapsed = start;
+
 export function transform(entryFile: string, options?: Options): void {
   return transformProgram(entryFile, options) as void;
 }
 
 function transformProgram(entryFile: string, options?: Options): void {
-  const start = process.hrtime();
-  let elapsed = process.hrtime();
-
   emit(bus.events.START);
 
   entryFile = path.normalize(entryFile);
@@ -37,12 +37,6 @@ function transformProgram(entryFile: string, options?: Options): void {
   let currentSourceFile: ts.SourceFile;
 
   return startTransformation();
-
-  function elapsedTime(fromBeginning = false): string {
-    const time = process.hrtime(fromBeginning ? start : elapsed);
-    if (!fromBeginning) elapsed = process.hrtime();
-    return format(time, fromBeginning ? 'ms' : void 0);
-}
 
   function startTransformation(): void {
     let sourceFiles: ts.SourceFile[];
@@ -71,11 +65,11 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
 
-    emit(bus.events.SCAN, elapsedTime());
+    emit(bus.events.SCAN, getElapsedTime());
 
     scanner = new Scanner(program);
 
-    emit(bus.events.TRANSFORM, sourceFiles, elapsedTime());
+    emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
@@ -92,7 +86,7 @@ function transformProgram(entryFile: string, options?: Options): void {
       return;
     }
 
-    emit(bus.events.CLEANUP, elapsedTime());
+    emit(bus.events.CLEANUP, getElapsedTime());
 
     if (!options.keepTemp) {
       deleteTempFiles();
@@ -100,7 +94,7 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     result.dispose();
 
-    emit(bus.events.END, elapsedTime(), elapsedTime(true));
+    emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
   };
 
   function getOutDir(): string {
@@ -161,7 +155,6 @@ function transformProgram(entryFile: string, options?: Options): void {
     const emitResult = program.emit();
 
     // check final result (post-diagnostics)
-
     return check(emitResult.diagnostics, options.log);
   }
 
@@ -199,17 +192,6 @@ function transformProgram(entryFile: string, options?: Options): void {
       currentSourceFile = node;
       context = new MutationContext(node, options, program, host, scanner, transformationContext, path.resolve(tempEntryFile));
     }
-  }
-
-  function firstPassTransformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
-    const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      // if (node && !(node as any).type) util.annotateWithAny(node);
-      return ts.visitEachChild(node, visitor, transformationContext);
-    };
-
-    return (sf: ts.SourceFile) => {
-      return ts.visitNode(sf, visitor);
-    };
   }
 
   function transformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
@@ -259,7 +241,6 @@ function transformProgram(entryFile: string, options?: Options): void {
       return ts.visitNode(sf, visitor);
     }
   }
-
 }
 
 export function getOptions(options: Options = {}): Options {
@@ -268,27 +249,7 @@ export function getOptions(options: Options = {}): Options {
   return opts;
 }
 
-export function getRootNames(rootNames: string | string[]): string[] {
-  if (Array.isArray(rootNames)) {
-    return rootNames;
-  }
-
-  return [rootNames];
-}
-
-export function getTempPath(basePath: string, tempFolderName: string): string {
-  return path.join(path.resolve(basePath), tempFolderName);
-}
-
-export function toTempFilePath(file: string, basePath: string, tempFolderName: string): string {
-  const pathFromBase = path.dirname(path.resolve(file).replace(path.resolve(basePath), ''));
-  const tempPath = getTempPath(basePath, tempFolderName);
-  const fileName = path.basename(file);
-
-  return path.join(tempPath, pathFromBase, fileName);
-}
-
-export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
+function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
   if (diagnostics && diagnostics.length > 0) {
 
     emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
@@ -307,6 +268,32 @@ export function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
   return true;
 }
 
-export function emit(event: string | symbol, ...args: any[]): boolean {
+function emit(event: string | symbol, ...args: any[]): boolean {
   return bus.emit(event, args);
+}
+
+function toTempFilePath(file: string, basePath: string, tempFolderName: string): string {
+  const pathFromBase = path.dirname(path.resolve(file).replace(path.resolve(basePath), ''));
+  const tempPath = getTempPath(basePath, tempFolderName);
+  const fileName = path.basename(file);
+
+  return path.join(tempPath, pathFromBase, fileName);
+}
+
+function getTempPath(basePath: string, tempFolderName: string): string {
+  return path.join(path.resolve(basePath), tempFolderName);
+}
+
+function getRootNames(rootNames: string | string[]): string[] {
+  if (Array.isArray(rootNames)) {
+    return rootNames;
+  }
+
+  return [rootNames];
+}
+
+function getElapsedTime(fromBeginning = false): string {
+  const time = process.hrtime(fromBeginning ? start : elapsed);
+  if (!fromBeginning) elapsed = process.hrtime();
+  return format(time, fromBeginning ? 'ms' : void 0);
 }

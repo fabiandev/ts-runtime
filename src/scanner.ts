@@ -48,12 +48,10 @@ export class Scanner {
   ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
   ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
 
-  constructor(program: ts.Program/*, private defer = false*/) {
+  constructor(program: ts.Program, defer = false) {
     this.program = program;
     this.checker = program.getTypeChecker();
-    // if (!defer) {
-    //   this.scan();
-    // }
+    if (!defer) this.scan();
   }
 
   public scan(): void {
@@ -262,9 +260,8 @@ export class Scanner {
   }
 
   private addDeclaration(symbol: ts.Symbol, fileName: string) {
-    const hash = util.getHash(fileName);
     const name = this.checker.getFullyQualifiedName(symbol);
-    const uid = `${name}.${hash}`;
+    const uid = util.getHashedDeclarationName(name, fileName);
 
     const decl = this.declarations.find(decl => decl.symbol === symbol);
 

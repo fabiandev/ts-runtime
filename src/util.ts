@@ -191,6 +191,10 @@ export function getHash(str: string): number {
   return hash >>> 0;
 }
 
+export function getHashedDeclarationName(name: string, fileName: string) {
+  return `${name}.${getHash(fileName)}`;
+}
+
 export function getIdentifierOfEntityName(node: ts.EntityName): ts.Identifier {
   while (ts.isQualifiedName(node)) {
     node = node.left;

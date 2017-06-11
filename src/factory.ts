@@ -378,13 +378,9 @@ export class Factory {
     let id: ts.Expression;
 
     if (asLiteral) {
-      let sf = typeInfo.declarations[0].getSourceFile().fileName;
-      let hash = util.getHash(sf);
+      let fileName = typeInfo.declarations[0].getSourceFile().fileName;
       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
-      name = name || typeNameText;
-      name = `${name}.${hash}`;
-
-      id = ts.createLiteral(name);
+      id = ts.createLiteral(util.getHashedDeclarationName(name, fileName));
     } else {
       id = ts.createIdentifier(typeNameText);
     }
@@ -869,7 +865,6 @@ export class Factory {
         lastSignature = node;
 
         // return type
-
         const typeInfo = this.scanner.getTypeInfo(node);
         const returnTypeText = typeInfo.typeText;
 
