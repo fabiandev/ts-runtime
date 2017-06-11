@@ -9,6 +9,7 @@ export interface Options {
   libIdentifier?: string;
   libNamespace?: string;
   declarationFile?: string;
+  excludeDeclarationFile?: boolean;
   log?: boolean;
   stackTrace?: number;
 }
@@ -32,6 +33,7 @@ export const defaultOptions: Options = {
   libIdentifier: 't',
   libNamespace: '_',
   declarationFile: 'tsr-declarations',
+  excludeDeclarationFile: false,
   log: true,
   stackTrace: 3
 };

@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as format from 'pretty-time';
 import * as rimraf from 'rimraf';
 import * as ts from 'typescript';
 import * as util from './util';
@@ -14,6 +15,9 @@ export function transform(entryFile: string, options?: Options): void {
 }
 
 function transformProgram(entryFile: string, options?: Options): void {
+  const start = process.hrtime();
+  let elapsed = process.hrtime();
+
   emit(bus.events.START);
 
   entryFile = path.normalize(entryFile);
@@ -33,6 +37,12 @@ function transformProgram(entryFile: string, options?: Options): void {
   let currentSourceFile: ts.SourceFile;
 
   return startTransformation();
+
+  function elapsedTime(fromBeginning = false): string {
+    const time = process.hrtime(fromBeginning ? start : elapsed);
+    if (!fromBeginning) elapsed = process.hrtime();
+    return format(time, fromBeginning ? 'ms' : void 0);
+}
 
   function startTransformation(): void {
     let sourceFiles: ts.SourceFile[];
@@ -61,38 +71,36 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
 
-    setTimeout(() => {
-      emit(bus.events.SCAN);
+    emit(bus.events.SCAN, elapsedTime());
 
-      scanner = new Scanner(program);
+    scanner = new Scanner(program);
 
-      emit(bus.events.TRANSFORM, sourceFiles);
+    emit(bus.events.TRANSFORM, sourceFiles, elapsedTime());
 
-      const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
+    const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
-      writeTempFiles(result, true);
+    writeTempFiles(result, true);
 
-      // do not check post-diagnostics of temp file
-      // check(result.diagnostics, options.log)
+    // do not check post-diagnostics of temp file
+    // check(result.diagnostics, options.log)
 
-      emitDeclarations();
+    emitDeclarations();
 
-      if (!emitTransformed() && !options.finishOnError) {
-        if (!options.keepTemp) deleteTempFiles();
-        emit(bus.events.STOP);
-        return;
-      }
+    if (!emitTransformed() && !options.finishOnError) {
+      if (!options.keepTemp) deleteTempFiles();
+      emit(bus.events.STOP);
+      return;
+    }
 
-      emit(bus.events.CLEANUP);
+    emit(bus.events.CLEANUP, elapsedTime());
 
-      if (!options.keepTemp) {
-        deleteTempFiles();
-      }
+    if (!options.keepTemp) {
+      deleteTempFiles();
+    }
 
-      result.dispose();
+    result.dispose();
 
-      emit(bus.events.END);
-    }, 500)
+    emit(bus.events.END, elapsedTime(), elapsedTime(true));
   };
 
   function getOutDir(): string {
@@ -167,9 +175,14 @@ function transformProgram(entryFile: string, options?: Options): void {
     const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
 
-    declarations.forEach((names, key) => {
-      expressions.unshift(...context.factory.namedDeclarationsReflections(names, key.getDeclarations()));
-    });
+    for (let decl of declarations) {
+      expressions.push(
+        ...context.factory.namedDeclarationsReflections(
+          decl.names,
+          decl.symbol.getDeclarations()
+        )
+      );
+    }
 
     sf = ts.updateSourceFileNode(sf, [
       context.factory.importLibStatement(),

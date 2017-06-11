@@ -23,11 +23,16 @@ export interface TypeInfo {
   symbol?: ts.Symbol;
 }
 
+export interface TsrDeclaration {
+  symbol: ts.Symbol,
+  names: string[]
+}
+
 export class Scanner {
 
   private program: ts.Program;
   private checker: ts.TypeChecker;
-  private declarations: Map<ts.Symbol, string[]> = new Map();
+  private declarations: TsrDeclaration[] = [];
   private aliases: Map<ts.Node, ts.Node> = new Map();
   private properties: Map<ts.Node, TypeInfo> = new Map();
   private scanned: Set<ts.Node> = new Set();
@@ -80,7 +85,7 @@ export class Scanner {
     return this.properties.has(this.getNode(node));
   }
 
-  public getDeclarations(): Map<ts.Symbol, string[]> {
+  public getDeclarations(): TsrDeclaration[] {
     return this.declarations;
   }
 
@@ -115,11 +120,11 @@ export class Scanner {
   }
 
   private scanNode(node: ts.Node): TypeInfo {
-    if (this.scanned.has(node)) {
-      return;
-    }
+    // if (this.scanned.has(node)) {
+    //   return;
+    // }
 
-    this.scanned.add(node);
+    // this.scanned.add(node);
 
     if (!this.shouldScan(node)) {
       return;
@@ -263,15 +268,15 @@ export class Scanner {
     const name = this.checker.getFullyQualifiedName(symbol);
     const uid = `${name}.${hash}`;
 
-    if (!this.declarations.has(symbol)) {
-      this.declarations.set(symbol, [uid])
+    const decl = this.declarations.find(decl => decl.symbol === symbol);
+
+    if (!decl) {
+      this.declarations.unshift({ symbol, names: [uid] });
       return;
     }
 
-    const names = this.declarations.get(symbol);
-
-    if (names.indexOf(uid) === -1) {
-      names.push(uid);
+    if (decl.names.indexOf(uid) === -1) {
+      decl.names.push(uid);
     }
   }
 

@@ -263,9 +263,6 @@ export class Factory {
       return this.libCall('array', args);
     }
 
-    const isSelfReference = this.context.isSelfReference(node);
-    const isDeclared = this.context.isDeclared(node.typeName);
-    const wasDeclared = this.context.wasDeclared(node.typeName);
     const isTypeParameter = util.isTypeParameter(node);
     const flowInto = isTypeParameter && !this.rule(FactoryRule.NoFlowInto);
     const parentClass = !TSR_DECLARATION && isTypeParameter && util.isTypeParameterOfClass(node);
@@ -293,6 +290,10 @@ export class Factory {
 
       return !keyword ? result : this.libCall(keyword, result);
     }
+
+    const isSelfReference = this.context.isSelfReference(node);
+    const isDeclared = this.context.isDeclared(node.typeName);
+    const wasDeclared = this.context.wasDeclared(node.typeName);
 
     if (typeInfo && typeInfo.symbol) {
       if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) || util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)) {

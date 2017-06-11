@@ -1,9 +1,7 @@
-import * as bin from './bin/index';
 import * as bus from './bus';
-import * as lib from './lib/index';
 import * as util from './util';
 
-export { bin, bus, lib, util };
+export { bus, util };
 export * from './context';
 export * from './factory';
 export * from './mutators';

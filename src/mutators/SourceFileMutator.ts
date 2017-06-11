@@ -12,7 +12,7 @@ export class SourceFileMutator extends Mutator {
 
     const declarations: ts.Statement[] = [];
 
-    if (this.context.isEntryFile(node)) {
+    if (!this.options.excludeDeclarationFile && this.context.isEntryFile(node)) {
       declarations.push(this.factory.importDeclarationsStatement());
     }
 
