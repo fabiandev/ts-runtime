@@ -1310,7 +1310,6 @@ export class Factory {
     return this.libCall('flowInto', args);
   }
 
-  // TODO: no tdz if self reference
   public tdz(body: ts.Identifier, name?: string): ts.CallExpression {
     const args = [
       ts.createArrowFunction(
