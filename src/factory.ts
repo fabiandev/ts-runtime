@@ -50,8 +50,6 @@ export class Factory {
     const states = FactoryState as any as { [index: string]: number };
     const stateName = property.charAt(0).toUpperCase() + property.slice(1);
 
-    let lastFlag = 0;
-
     return (...args: any[]) => {
       const state = states[stateName];
 
