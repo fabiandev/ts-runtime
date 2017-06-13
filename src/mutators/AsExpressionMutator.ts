@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import * as util from '../util';
 import { Mutator } from './Mutator';
 
 export class AsExpressionMutator extends Mutator {
@@ -6,7 +7,7 @@ export class AsExpressionMutator extends Mutator {
   protected kind = ts.SyntaxKind.AsExpression;
 
   protected mutate(node: ts.AsExpression): ts.Node {
-    if (node.type.kind === ts.SyntaxKind.AnyKeyword) {
+    if (util.isAnyKeyword(node.type)) {
       return node;
     }
 

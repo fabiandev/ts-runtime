@@ -3,6 +3,8 @@ import * as ts from 'typescript';
 export interface Options {
   compilerOptions?: ts.CompilerOptions;
   annotate?: boolean;
+  assertSafe?: true;
+  assertAny?: false;
   finishOnError?: boolean;
   keepTemp?: boolean;
   tempFolderName?: string;
@@ -27,6 +29,8 @@ export const defaultOptions: Options = {
     preserveConstEnums: true,
   },
   annotate: true,
+  assertSafe: true,
+  assertAny: false,
   finishOnError: false,
   keepTemp: true,
   tempFolderName: '.tsr',

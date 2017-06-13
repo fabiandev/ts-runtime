@@ -1081,11 +1081,11 @@ export class Factory {
 
   public assertReturnStatements<T extends ts.Node>(node: T, type?: ts.TypeNode): T {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
-      if (type && type.kind === ts.SyntaxKind.AnyKeyword) {
+      if (type && util.isAnyKeyword(type)) {
         return node;
       }
 
-      if ((node as any).type && (node as any).type.kind === ts.SyntaxKind.AnyKeyword) {
+      if ((node as any).type && util.isAnyKeyword((node as any).type)) {
         return node;
       }
 
@@ -1093,17 +1093,17 @@ export class Factory {
         return node;
       }
 
-      if (node.kind === ts.SyntaxKind.ReturnStatement) {
-        if (this.context.isSafeAssignment(type, (node as ts.ReturnStatement).expression)) {
+      if (ts.isReturnStatement(node)) {
+        if (this.context.isSafeAssignment(type, node.expression)) {
           return node;
         }
 
         const assertion = this.typeAssertion(
           this.context.getTypeDeclarationName('return'),
-          (node as ts.ReturnStatement).expression
+          node.expression
         );
 
-        return ts.updateReturn((node as ts.ReturnStatement), assertion);
+        return ts.updateReturn(node, assertion);
       }
 
       return ts.visitEachChild(node, visitor, this.context.transformationContext);
@@ -1132,7 +1132,7 @@ export class Factory {
     }
 
     for (let param of node.parameters) {
-      if (param.type.kind === ts.SyntaxKind.AnyKeyword) {
+      if (util.isAnyKeyword(param.type)) {
         continue;
       }
 
@@ -1164,7 +1164,7 @@ export class Factory {
       );
     }
 
-    if (node.type && node.type.kind !== ts.SyntaxKind.AnyKeyword) {
+    if (node.type && !util.isAnyKeyword(node.type)) {
       bodyDeclarations.push(
         ts.createVariableStatement(
           [], ts.createVariableDeclarationList(

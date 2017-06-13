@@ -42,7 +42,7 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transformDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    if (this.context.isAny(node.type)) {
+    if (this.options.assertAny && this.context.isAny(node.type)) {
       return [node];
     }
 
@@ -64,7 +64,7 @@ export class VariableDeclarationListMutator extends Mutator {
   }
 
   private transformConstDeclaration(node: ts.VariableDeclaration): ts.VariableDeclaration[] {
-    if (!node.initializer || !node.type || this.context.isAny(node.type)) {
+    if (!node.initializer || !node.type || (this.options.assertAny && this.context.isAny(node.type))) {
       return [node];
     }
 

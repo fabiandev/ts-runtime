@@ -72,6 +72,12 @@ export function setParent(node: ts.Node): void {
   });
 }
 
+export function isAnyKeyword(node: ts.Node): boolean {
+  if (node.kind === ts.SyntaxKind.AnyKeyword) {
+    return true;
+  }
+}
+
 export function isSynthesized(node: ts.Node): boolean {
   return (node.flags & ts.NodeFlags.Synthesized) === ts.NodeFlags.Synthesized;
 }

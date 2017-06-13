@@ -70,11 +70,11 @@ export class MutationContext {
     return false;
   }
 
-  public isImplementationOfOverload(node: ts.Node) {
+  public isImplementationOfOverload(node: ts.Node): node is ts.FunctionLikeDeclaration {
     return ts.isFunctionLike(node) && this.checker.isImplementationOfOverload(node);
   }
 
-  public isDeclared(node: ts.EntityName) {
+  public isDeclared(node: ts.EntityName): boolean {
     node = util.getIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
@@ -90,7 +90,7 @@ export class MutationContext {
     return false;
   }
 
-  public wasDeclared(node: ts.EntityName) {
+  public wasDeclared(node: ts.EntityName): boolean {
     node = util.getIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
@@ -108,7 +108,7 @@ export class MutationContext {
     return false;
   }
 
-  public isEntryFile(node: ts.SourceFile) {
+  public isEntryFile(node: ts.SourceFile): boolean {
     return path.resolve(node.fileName) === path.resolve(this.entryFilePath);
   }
 
@@ -118,7 +118,7 @@ export class MutationContext {
   }
 
   public isAny(node: ts.Node): boolean {
-    if (node.kind === ts.SyntaxKind.AnyKeyword) {
+    if (util.isAnyKeyword(node)) {
       return true;
     }
 
@@ -128,7 +128,7 @@ export class MutationContext {
       return false;
     }
 
-    if (typeInfo.typeNode.kind === ts.SyntaxKind.AnyKeyword) {
+    if (util.isAnyKeyword(typeInfo.typeNode)) {
       return true;
     }
 
@@ -156,6 +156,10 @@ export class MutationContext {
   }
 
   public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
+    if (this.options.assertSafe) {
+      return false;
+    }
+
     const typeInfo = this.scanner.getTypeInfo(node);
     const otherTypeInfo = this.scanner.getTypeInfo(other);
 

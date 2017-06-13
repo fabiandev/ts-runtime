@@ -216,7 +216,7 @@ function transformProgram(entryFile: string, options?: Options): void {
         scanner.mapNode(node, original);
       }
 
-      if (!node.parent) {
+      if (node && !node.parent) {
         node.parent = original.parent;
         util.setParent(node);
       }
@@ -230,7 +230,7 @@ function transformProgram(entryFile: string, options?: Options): void {
           scanner.mapNode(node, previous);
         }
 
-        if (!node.parent) {
+        if (node && !node.parent) {
           node.parent = previous.parent;
           util.setParent(node);
         }

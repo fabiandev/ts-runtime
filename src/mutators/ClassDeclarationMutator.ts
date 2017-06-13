@@ -128,7 +128,7 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
-    if (this.context.isAny(node.type)) {
+    if (this.options.assertAny && this.context.isAny(node.type)) {
       return node;
     }
 

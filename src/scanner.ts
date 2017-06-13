@@ -62,6 +62,8 @@ export class Scanner {
     for (let sourceFile of sourceFiles) {
       this.scanRecursive(sourceFile);
     }
+
+    return;
   }
 
   public mapNode<T extends ts.Node>(alias: T, original: ts.Node): T {
