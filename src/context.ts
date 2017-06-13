@@ -19,13 +19,8 @@ export class MutationContext {
   private _transformationContext: ts.TransformationContext;
   private _merged: Set<ts.Symbol>;
 
-  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext, entryFilePath: string) {
-    if (!entryFilePath.endsWith('.ts')) {
-      entryFilePath = `${entryFilePath}.ts`;
-    }
-
+  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext) {
     this._skipNodes = [];
-    this._entryFilePath = entryFilePath;
     this._sourceFile = sourceFile;
     this._options = options;
     this._program = program;
@@ -108,13 +103,9 @@ export class MutationContext {
     return false;
   }
 
-  public isEntryFile(node: ts.SourceFile): boolean {
-    return path.resolve(node.fileName) === path.resolve(this.entryFilePath);
-  }
-
   public pathIsOutsideRoot(fileName: string): boolean {
-    const rootDir = this.program.getCompilerOptions().rootDir;
-    return !fileName.startsWith(rootDir);
+    const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
+    return !path.resolve(fileName).startsWith(path.resolve(rootDir));
   }
 
   public isAny(node: ts.Node): boolean {

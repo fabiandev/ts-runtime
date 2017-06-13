@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as format from 'pretty-time';
 import * as rimraf from 'rimraf';
+import * as commondir from 'commondir';
 import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
@@ -12,8 +13,8 @@ import { Scanner } from './scanner';
 
 let start: [number, number], elapsed: [number, number];
 
-export function transform(entryFile: string, options?: Options): void {
-  return transformProgram(entryFile, options) as void;
+export function transform(entryFiles: string[], options?: Options): void {
+  return transformProgram(entryFiles, options) as void;
 }
 
 export function getOptions(options: Options = {}): Options {
@@ -22,21 +23,17 @@ export function getOptions(options: Options = {}): Options {
   return opts;
 }
 
-function transformProgram(entryFile: string, options?: Options): void {
+function transformProgram(entryFiles: string[], options?: Options): void {
   start = elapsed = process.hrtime();
 
   emit(bus.events.START);
 
-  entryFile = path.normalize(entryFile);
-  options = getOptions(options);
+  const commonDir = commondir(entryFiles.map(f => path.dirname(path.resolve(f))));
 
-  options.compilerOptions.rootDir = options.compilerOptions.rootDir || path.dirname(entryFile);
-  options.compilerOptions.preserveConstEnums = true;
+  setCompilerOptions();
 
-  const basePath = options.compilerOptions.rootDir;
-
-  let tempEntryFile: string = entryFile;
-  let tempBasePath: string = basePath;
+  let tempEntryFiles: string[] = entryFiles.map(f => path.resolve(f));
+  let tempBasePath: string = options.compilerOptions.rootDir;
   let host: ts.CompilerHost;
   let program: ts.Program;
   let scanner: Scanner;
@@ -51,7 +48,7 @@ function transformProgram(entryFile: string, options?: Options): void {
     deleteTempFiles();
 
     host = ts.createCompilerHost(options.compilerOptions, true);
-    program = ts.createProgram([entryFile], options.compilerOptions, host);
+    program = ts.createProgram(tempEntryFiles, options.compilerOptions, host);
 
     const diagnostics: ts.Diagnostic[] = [];
 
@@ -80,7 +77,7 @@ function transformProgram(entryFile: string, options?: Options): void {
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
-    writeTempFiles(result, true);
+    writeTempFiles(result);
 
     // do not check post-diagnostics of temp file
     // check(result.diagnostics, options.log)
@@ -105,23 +102,31 @@ function transformProgram(entryFile: string, options?: Options): void {
   };
 
   function getOutDir(): string {
-    return options.compilerOptions.outDir || path.resolve(path.dirname(entryFile));
+    if (options.compilerOptions.outFile) {
+      return path.dirname(options.compilerOptions.outFile);
+    }
+
+    if (options.compilerOptions.outDir) {
+      return options.compilerOptions.outDir;
+    }
+
+    return commonDir;
   }
 
   function deleteTempFiles(): void {
-    const tempPath = getTempPath(basePath, options.tempFolderName);
-    rimraf.sync(getTempPath(basePath, options.tempFolderName));
+    const tempPath = path.join(commonDir, options.tempFolderName);
+    rimraf.sync(tempPath);
   }
 
   function createProgramFromTempFiles(): void {
-    tempEntryFile = toTempFilePath(tempEntryFile, basePath, options.tempFolderName);
-    tempBasePath = getTempPath(tempBasePath, options.tempFolderName);
+    tempEntryFiles = tempEntryFiles.map(f => toTempPath(f));
+    tempBasePath = path.join(tempBasePath, options.tempFolderName);
     options.compilerOptions.rootDir = tempBasePath;
     host = ts.createCompilerHost(options.compilerOptions);
-    program = ts.createProgram([tempEntryFile], options.compilerOptions, host, undefined);
+    program = ts.createProgram(tempEntryFiles, options.compilerOptions, host, undefined);
   }
 
-  function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>, removeTypes = false): void {
+  function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
     const printerOptions: ts.PrinterOptions = {
       removeComments: false
     };
@@ -135,16 +140,18 @@ function transformProgram(entryFile: string, options?: Options): void {
     const printer = ts.createPrinter(printerOptions, printHandlers);
 
     for (let transformed of result.transformed) {
-      const location = toTempFilePath(transformed.fileName, basePath, options.tempFolderName);
+      const filePath = toTempPath(transformed.fileName);
       const source = printer.printFile(transformed);
-      ts.sys.writeFile(location, source);
+      ts.sys.writeFile(filePath, source);
     }
   }
 
   function emitTransformed(): boolean {
-    options.compilerOptions.outDir = getOutDir();
-
     createProgramFromTempFiles();
+
+    if (!options.compilerOptions.outFile && !options.compilerOptions.outDir) {
+      options.compilerOptions.outDir = commonDir;
+    }
 
     const diagnostics: ts.Diagnostic[] = [];
 
@@ -166,8 +173,9 @@ function transformProgram(entryFile: string, options?: Options): void {
   }
 
   function emitDeclarations() {
-    const filename = `${options.declarationFile}.ts`;
-    const outDir = path.dirname(toTempFilePath(tempEntryFile, basePath, options.tempFolderName));
+    const filename = `${options.declarationFile}.js`;
+    const outDir = getOutDir();
+
     const printer = ts.createPrinter();
 
     let sf = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
@@ -189,15 +197,18 @@ function transformProgram(entryFile: string, options?: Options): void {
       ...expressions.map(exp => {
         return ts.createStatement(context.factory.libCall('declare', exp));
       })
-    ])
+    ]);
 
-    ts.sys.writeFile(path.join(outDir, filename), printer.printFile(sf));
+    const printed = printer.printFile(sf);
+    const transpiled = ts.transpile(printed, options.compilerOptions);
+
+    ts.sys.writeFile(path.join(outDir, filename), transpiled);
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
     if (ts.isSourceFile(node) && currentSourceFile !== node) {
       currentSourceFile = node;
-      context = new MutationContext(node, options, program, host, scanner, transformationContext, path.resolve(tempEntryFile));
+      context = new MutationContext(node, options, program, host, scanner, transformationContext);
     }
   }
 
@@ -248,6 +259,28 @@ function transformProgram(entryFile: string, options?: Options): void {
       return ts.visitNode(sf, visitor);
     }
   }
+
+  function setCompilerOptions() {
+    if (options.compilerOptions.outFile) {
+      options.compilerOptions.outFile = path.resolve(options.compilerOptions.outFile);
+    } else if (options.compilerOptions.outDir) {
+      options.compilerOptions.outDir = path.resolve(options.compilerOptions.outDir);
+    }
+
+    if (options.compilerOptions.rootDir) {
+      options.compilerOptions.rootDir = path.resolve(options.compilerOptions.rootDir);
+    } else {
+      options.compilerOptions.rootDir = commonDir;
+    }
+
+    options.compilerOptions.preserveConstEnums = true;
+  }
+
+  function toTempPath(fileName: string): string {
+    const tempPath = path.dirname(fileName).replace(tempBasePath, '');
+    const location = path.join(path.join(tempBasePath, options.tempFolderName, tempPath), path.basename(fileName));
+    return location;
+  }
 }
 
 function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
@@ -271,18 +304,6 @@ function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
 
 function emit(event: string | symbol, ...args: any[]): boolean {
   return bus.emit(event, args);
-}
-
-function toTempFilePath(file: string, basePath: string, tempFolderName: string): string {
-  const pathFromBase = path.dirname(path.resolve(file).replace(path.resolve(basePath), ''));
-  const tempPath = getTempPath(basePath, tempFolderName);
-  const fileName = path.basename(file);
-
-  return path.join(tempPath, pathFromBase, fileName);
-}
-
-function getTempPath(basePath: string, tempFolderName: string): string {
-  return path.join(path.resolve(basePath), tempFolderName);
 }
 
 function getRootNames(rootNames: string | string[]): string[] {

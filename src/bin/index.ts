@@ -20,11 +20,8 @@ function defaultAction() {
     .map(file => path.normalize(file));
 
   if (files.length === 0) {
-    throw new ProgramError('No entry file passed to transform.');
+    throw new ProgramError('No entry file(s) passed to transform.');
   }
-
-  const entryFile: string = files[0];
-  const basePath = path.dirname(entryFile);
 
   options.log = false;
 
@@ -40,7 +37,7 @@ function defaultAction() {
     return;
   }
 
-  transform(entryFile, options);
+  transform(files, options);
 }
 
 function setNoAnnotate() {
@@ -55,11 +52,7 @@ function setDeclarationFileName(fileName: string) {
   const ext = path.extname(fileName);
 
   if (ext) {
-    if (ext !== '.ts') {
-      throw new ProgramError('Declaration file name must be .ts or omitted.');
-    } else {
-      fileName = fileName.slice(0, ext.length * -1);
-    }
+    fileName = fileName.slice(0, ext.length * -1);
   }
 
   if (path.basename(fileName) !== fileName) {
@@ -103,7 +96,7 @@ program
   Turns TypeScript type assertions
   into runtime type checks for you
   --------------------------------`)
-  .usage('[options] <file>')
+  .usage('<file...> [options]')
   .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)
   .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)

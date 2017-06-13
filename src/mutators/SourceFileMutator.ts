@@ -9,15 +9,9 @@ export class SourceFileMutator extends Mutator {
 
   protected mutate(node: ts.SourceFile): ts.SourceFile {
     const statements = util.asNewArray(node.statements);
-
     const declarations: ts.Statement[] = [];
 
-    if (!this.options.excludeDeclarationFile && this.context.isEntryFile(node)) {
-      declarations.push(this.factory.importDeclarationsStatement());
-    }
-
     declarations.push(this.factory.importLibStatement());
-
     statements.unshift(...declarations);
 
     return ts.updateSourceFileNode(node, statements);

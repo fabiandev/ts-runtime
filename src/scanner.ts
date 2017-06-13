@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import * as util from './util';
+import * as path from 'path';
 
 export interface TypeInfo {
   TSR_DECLARATION: boolean;
@@ -47,6 +48,8 @@ export class Scanner {
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
   ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
   ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
+
+  private DisallowedDeclaratins = ts.SymbolFlags.Module;
 
   constructor(program: ts.Program, defer = false) {
     this.program = program;
@@ -176,7 +179,7 @@ export class Scanner {
       ((isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
         (!isExternal && (isDeclaration || isInDeclarationFile))));
 
-    if (TSR_DECLARATION && symbol && (symbol.flags & this.AllowedDeclarations) && (isReference || util.isPartOfTypeNode(node))) {
+    if (TSR_DECLARATION && this.isAllowedDeclarationSymbol(symbol) && (isReference || util.isPartOfTypeNode(node))) {
       this.addDeclaration(symbol, fileName);
       // if (this.defer) {
       //   for (let decl of declarations) {
@@ -214,13 +217,17 @@ export class Scanner {
     return true;
   }
 
+  private isAllowedDeclarationSymbol(symbol: ts.Symbol) {
+    return symbol && symbol.flags && ((symbol.flags & this.AllowedDeclarations) && !(symbol.flags & this.DisallowedDeclaratins));
+  }
+
   private hasDeclarations(symbol: ts.Symbol): boolean {
     return symbol && symbol.declarations && symbol.declarations.length > 0;
   }
 
   private pathIsExternal(fileName: string): boolean {
-    const rootDir = this.program.getCompilerOptions().rootDir;
-    return !fileName.startsWith(rootDir);
+    const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
+    return !path.resolve(fileName).startsWith(path.resolve(rootDir));
   }
 
   private getAsExpression(node: ts.AsExpression): ts.Node {
