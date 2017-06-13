@@ -104,16 +104,16 @@ program
   into runtime type checks for you
   --------------------------------`)
   .usage('[options] <file>')
-  .option('-a, --no-annotate', 'do not annotate classes and functions', setNoAnnotate)
-  .option('-c, --compiler-options <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
-  .option('-d, --declaration-file <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
-  .option('-e, --exclude-declaration-file', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
+  .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)
+  .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
+  .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
+  .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
-  .option('-k, --keep-temp', 'keep temporary files. default to false', setKeepTempFiles)
+  .option('-k, --keepTempFiles', 'keep temporary files. default to false', setKeepTempFiles)
   .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
   .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
-  .option('-s, --stack-trace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
-  .option('-t, --temp-folder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
+  .option('-s, --stackTrace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
+  .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
   .on('--help', () => {
     console.log('  Examples:');
     console.log();
