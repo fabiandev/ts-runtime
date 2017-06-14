@@ -98,20 +98,20 @@ commander
   .usage('<file...> [options]')
   .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)
   .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
-  .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
+  .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
-  .option('-k, --keepTemp', 'keep temporary files. default to false', setKeepTemp)
-  .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
-  .option('-m, --moduleAlias', 'import module-alias on top of every file.', setModuleAlias)
-  .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
+  .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
+  .option('-l, --lib <name>', 'lib import name. defaults to "t"', setLib)
+  .option('-m, --moduleAlias', 'import package module-alias on top of every file.', setModuleAlias)
+  .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to "_"', setNamespace)
   .option('-s, --stackTrace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
-  .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
+  .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolder)
   .on('--help', () => {
     console.log('  Examples:');
     console.log();
-    console.log('    $ tsr entry.ts');
     console.log('    $ tsr entry.ts --force');
+    console.log('    $ tsr src/bin/index.ts src/lib/index.ts');
     console.log('    $ tsr -c \'{ "outDir": "dist" }\' entry.ts');
     console.log();
   });
