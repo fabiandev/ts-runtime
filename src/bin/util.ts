@@ -1,6 +1,21 @@
+import * as ts from 'typescript';
 import * as chalk from 'chalk';
 import { Options } from '../options';
 import { ProgramError } from '../errors';
+
+export function formatDiagnostics(diagnostics: ts.Diagnostic[]): string[] {
+  let formatted: string[] = [];
+
+  for (let diag of diagnostics) {
+    formatted.push(ts.formatDiagnostics([diag], {
+      getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
+      getNewLine: () => ts.sys.newLine,
+      getCanonicalFileName: (f: string) => f
+    }).trim());
+  }
+
+  return formatted.filter(str => str.trim().length > 0);
+}
 
 export function getError(error: string | Error, options?: Options): string {
   let err = typeof error === 'string' ? error : '';

@@ -1,21 +1,19 @@
 #!/usr/bin/env node
 
-import './handlers';
 import * as path from 'path';
 import * as ts from 'typescript';
-import * as program from 'commander';
+import * as commander from 'commander';
+import * as util from './util';
+import * as program from './program';
 import { ProgramError } from '../errors';
 import { Options, defaultOptions } from '../options';
-import { transform, getOptions } from '../transform';
-import * as bus from '../bus';
-import * as util from './util';
 
 const pkg = require('../../package.json');
 const options: Options = Object.assign({}, defaultOptions);
 let compilerOptions: string = '{}';
 
 function defaultAction() {
-  const files: string[] = program.args
+  const files: string[] = commander.args
     .filter(arg => typeof arg === 'string')
     .map(file => path.normalize(file));
 
@@ -23,21 +21,18 @@ function defaultAction() {
     throw new ProgramError('No entry file(s) passed to transform.');
   }
 
-  options.log = false;
-
   const opts = ts.convertCompilerOptionsFromJson(JSON.parse(compilerOptions), '.');
 
+  options.log = false;
   options.compilerOptions = opts.options;
 
-  bus.emit(bus.events.INTERNAL_OPTIONS, options);
-
   if (opts.errors.length > 0) {
-    bus.emit(bus.events.DIAGNOSTICS, [opts.errors]);
-    bus.emit(bus.events.ERROR);
+    program.status.diagnostics(util.formatDiagnostics(opts.errors));
+    program.status.error();
     return;
   }
 
-  transform(files, options);
+  program.start(files, options, pkg.version);
 }
 
 function setNoAnnotate() {
@@ -90,7 +85,7 @@ function setTempFolder(name: string) {
   options.tempFolderName = name;
 }
 
-program
+commander
   .version(pkg.version, '-v, --version')
   .description(`---------  ts-runtime  ---------
   Turns TypeScript type assertions
@@ -116,10 +111,10 @@ program
     console.log();
   });
 
-program.parse(process.argv);
+commander.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-  program.outputHelp();
+  commander.outputHelp();
   process.exit();
 } else {
   defaultAction();

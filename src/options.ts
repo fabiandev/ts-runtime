@@ -32,7 +32,7 @@ export const defaultOptions: Options = {
   assertSafe: true,
   assertAny: false,
   finishOnError: false,
-  keepTemp: true,
+  keepTemp: false,
   tempFolderName: '.tsr',
   libIdentifier: 't',
   libNamespace: '_',

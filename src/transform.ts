@@ -69,36 +69,38 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
 
-    emit(bus.events.SCAN, getElapsedTime());
+    // setTimeout(() => {
+      emit(bus.events.SCAN, getElapsedTime());
 
-    scanner = new Scanner(program);
+      scanner = new Scanner(program);
 
-    emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
+      emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
 
-    const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
+      const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
-    writeTempFiles(result);
+      writeTempFiles(result);
 
-    // do not check post-diagnostics of temp file
-    // check(result.diagnostics, options.log)
+      // do not check post-diagnostics of temp file
+      // check(result.diagnostics, options.log)
 
-    emitDeclarations();
+      emitDeclarations();
 
-    if (!emitTransformed() && !options.finishOnError) {
-      if (!options.keepTemp) deleteTempFiles();
-      emit(bus.events.STOP);
-      return;
-    }
+      if (!emitTransformed() && !options.finishOnError) {
+        if (!options.keepTemp) deleteTempFiles();
+        emit(bus.events.STOP);
+        return;
+      }
 
-    emit(bus.events.CLEANUP, getElapsedTime());
+      emit(bus.events.CLEANUP, getElapsedTime());
 
-    if (!options.keepTemp) {
-      deleteTempFiles();
-    }
+      if (!options.keepTemp) {
+        deleteTempFiles();
+      }
 
-    result.dispose();
+      result.dispose();
 
-    emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
+      emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
+    // }, 25);
   };
 
   function getOutDir(): string {

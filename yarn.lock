@@ -30,12 +30,6 @@
   version "7.0.29"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.29.tgz#ccfcec5b7135c7caf6c4ffb8c7f33102340d99df"
 
-"@types/ora@^0.3.31":
-  version "0.3.31"
-  resolved "https://registry.yarnpkg.com/@types/ora/-/ora-0.3.31.tgz#1a4bf16bd62ec2764b8f40b0e2f4d85c21292f83"
-  dependencies:
-    "@types/node" "*"
-
 "@types/rimraf@^0.0.28":
   version "0.0.28"
   resolved "https://registry.yarnpkg.com/@types/rimraf/-/rimraf-0.0.28.tgz#5562519bc7963caca8abf7f128cae3b594d41d06"
