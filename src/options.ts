@@ -14,6 +14,7 @@ export interface Options {
   excludeDeclarationFile?: boolean;
   log?: boolean;
   stackTrace?: number;
+  moduleAlias?: boolean;
 }
 
 export const defaultOptions: Options = {
@@ -39,5 +40,6 @@ export const defaultOptions: Options = {
   declarationFile: 'tsr-declarations',
   excludeDeclarationFile: false,
   log: true,
-  stackTrace: 3
+  stackTrace: 3,
+  moduleAlias: false,
 };

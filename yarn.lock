@@ -187,6 +187,10 @@ minimatch@^3.0.4:
   dependencies:
     brace-expansion "^1.1.7"
 
+module-alias@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/module-alias/-/module-alias-2.0.0.tgz#9bff2cba6eb181dac8e379d69fe34b066a970988"
+
 nanoseconds@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/nanoseconds/-/nanoseconds-0.1.0.tgz#69ec39fcd00e77ab3a72de0a43342824cd79233a"

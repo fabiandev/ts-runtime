@@ -65,7 +65,7 @@ function setFinishOnError() {
   options.finishOnError = true;
 }
 
-function setKeepTempFiles() {
+function setKeepTemp() {
   options.keepTemp = true;
 }
 
@@ -85,6 +85,10 @@ function setTempFolder(name: string) {
   options.tempFolderName = name;
 }
 
+function setModuleAlias() {
+  options.moduleAlias = true;
+}
+
 commander
   .version(pkg.version, '-v, --version')
   .description(`---------  ts-runtime  ---------
@@ -97,11 +101,12 @@ commander
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to tsr-declarations', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
-  .option('-k, --keepTempFiles', 'keep temporary files. default to false', setKeepTempFiles)
+  .option('-k, --keepTemp', 'keep temporary files. default to false', setKeepTemp)
   .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
   .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
   .option('-s, --stackTrace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
   .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
+  .option('--moduleAlias', 'import module-alias on top of every file.', setModuleAlias)
   .on('--help', () => {
     console.log('  Examples:');
     console.log();

@@ -16,6 +16,9 @@
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck",
     "build:tsr": "ts-node ./src/bin/index src/index.ts ./src/lib/index.ts ./src/bin/index.ts --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'"
   },
+  "_moduleAliases": {
+    "ts-runtime": "dist"
+  },
   "dependencies": {
     "chalk": "^1.1.3",
     "commander": "^2.9.0",
@@ -34,6 +37,7 @@
     "@types/esprima": "^2.1.33",
     "@types/node": "^7.0.2",
     "@types/rimraf": "^0.0.28",
-    "flow-runtime": "^0.12.0"
+    "flow-runtime": "^0.12.0",
+    "module-alias": "^2.0.0"
   }
 }
