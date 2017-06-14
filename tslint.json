@@ -1,5 +1,4 @@
 {
-
   "extends": "tslint:latest",
   "rules": {
     "quotemark": [true, "single"],
