@@ -26,6 +26,7 @@
     "node_modules",
     "dist",
     "src/playground",
+    "src/play",
     "src/_archived"
   ]
 }
