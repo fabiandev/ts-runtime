@@ -103,10 +103,10 @@ commander
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
   .option('-k, --keepTemp', 'keep temporary files. default to false', setKeepTemp)
   .option('-l, --lib <name>', 'lib import name. defaults to t', setLib)
+  .option('-m, --moduleAlias', 'import module-alias on top of every file.', setModuleAlias)
   .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to _', setNamespace)
   .option('-s, --stackTrace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
   .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to .tsr', setTempFolder)
-  .option('--moduleAlias', 'import module-alias on top of every file.', setModuleAlias)
   .on('--help', () => {
     console.log('  Examples:');
     console.log();
