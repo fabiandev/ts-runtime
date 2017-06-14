@@ -1,5 +1,5 @@
 node_modules
-/example/dest
+package-lock.json
 .idea
 .DS_Store
 logs
@@ -10,6 +10,5 @@ pids
 .tsr
 dist
 dist-tsr
-_archived
-playground
-play
+src/playground
+src/play
