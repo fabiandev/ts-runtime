@@ -58,7 +58,7 @@ export class Factory {
       let result = destination.bind(receiver)(...args);
 
       if (this.match(FactoryRule.Nullable, state)) {
-        result = this.nullable(result);
+        result = this.nostrict(result);
       }
 
       this.removeState(state);
@@ -1295,6 +1295,10 @@ export class Factory {
     return this.strictNullChecks ? reflection : this.libCall('nullable', reflection);
   }
 
+  public nostrict<T extends ts.Expression>(reflection: T): T | ts.CallExpression {
+    return this.strictNullChecks ? reflection : this.libCall('nostrict', reflection);
+  }
+
   public intersect(args: ts.Expression | ts.Expression[]): ts.CallExpression {
     return this.libCall('intersect', args);
   }
@@ -1511,6 +1515,7 @@ export enum FactoryState {
   Decorate,
   Annotate,
   Nullable,
+  NoStrict,
   Intersect,
   FlowInto,
   Tdz,
