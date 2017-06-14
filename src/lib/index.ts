@@ -3,7 +3,11 @@ import * as t from 'flow-runtime';
 const voidType = t.void;
 
 t.undef = () => {
-  return t.voidType();
+  return voidType();
+}
+
+t.nostrict = (...args: any[]) => {
+  return t.union(...args, t.null())
 }
 
 t.void = () => {
