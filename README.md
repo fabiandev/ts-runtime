@@ -2,9 +2,9 @@
 
 A package for generating runtime type checks from TypeScript type annotations for JavaScript, using the TypeScript compiler API.  
   
-Please note, that this package is in **beta** and is **not** intended to be used for **for production**.
-Tests have yet to be written.
-Feel free to report bugs and to make suggestions. Pull requests are also very welcome.
+Please note, that this package is in **beta** and resulting code is **not** intended to be used **for production**.
+It is more a **proof of concept** for adding runtime type checks by making use of the recently published TypeScript transformation API and 
+tests have yet to be written. Feel free to report bugs and to make suggestions. Pull requests are also very welcome.
 
 ## Quick Start
 
