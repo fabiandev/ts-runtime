@@ -28,6 +28,10 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
   emit(bus.events.START);
 
+  entryFiles = entryFiles
+    .map(file => path.normalize(file))
+    .map(file => !path.extname(file) ? file + '.ts' : file);
+
   const commonDir = commondir(entryFiles.map(f => path.dirname(path.resolve(f))));
 
   setCompilerOptions();

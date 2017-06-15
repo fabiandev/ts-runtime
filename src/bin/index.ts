@@ -13,9 +13,8 @@ const options: Options = Object.assign({}, defaultOptions);
 let compilerOptions: string = '{}';
 
 function defaultAction() {
-  let files: string[] = commander.args
-    .filter(arg => typeof arg === 'string')
-    .map(file => path.normalize(file));
+  const files: string[] = commander.args
+    .filter(arg => typeof arg === 'string');
 
   if (files.length === 0) {
     throw new ProgramError('No entry file(s) passed to transform.');
@@ -31,8 +30,6 @@ function defaultAction() {
     program.status.error();
     return;
   }
-
-  files = files.map(file => !path.extname(file) ? file + '.ts' : file);
 
   program.start(files, options, pkg.version);
 }

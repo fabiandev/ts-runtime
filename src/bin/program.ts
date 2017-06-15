@@ -21,8 +21,9 @@ export interface ProgramStatus {
 }
 
 let child: cp.ChildProcess;
+let started = false;
 let pkgVersion: string;
-let spinner: any;
+let spinner: any = ora();
 let current = 'Processing';
 let currentPast = 'Processed';
 let hasErrors = false;
@@ -35,6 +36,7 @@ export function start(entryFiles: string[], options: Options, version: string) {
   }
 
   child = cp.fork(path.join(__dirname, './process'));
+  started = true;
   pkgVersion = version;
   current = 'Processing';
   currentPast = 'Processed';
@@ -159,7 +161,9 @@ export const status: ProgramStatus = {
   term: () => {
     hasErrors = true;
 
-    spinner.fail(chalk.red.bold(`${current} was interrupted.`));
+    if (started) {
+      spinner.fail(chalk.red.bold(`${current} was interrupted.`));
+    }
   },
 
   error: (error?: string | Error) => {
