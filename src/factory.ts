@@ -25,7 +25,7 @@ export class Factory {
 
   private _state: Map<FactoryState, number> = new Map();
   private _strictNullChecks: boolean;
-  private _namespace: string = '_';
+  private _namespace: string = '';
   private _lib: string = 't';
   private _load: string = 'ts-runtime/lib';
 
@@ -567,17 +567,13 @@ export class Factory {
     return result;
   }
 
-  public namedDeclarationsReflections(names: string[], declarations: ts.Declaration[]): ts.Expression[] {
+  public namedDeclarationsReflections(name: string, declarations: ts.Declaration[]): ts.Expression[] {
     const expressions: ts.Expression[] = [];
     const firstDeclaration = declarations[0];
-    const expression = this.namedDeclarationReflection(names[0], firstDeclaration);
+    const expression = this.namedDeclarationReflection(name, firstDeclaration);
 
     if (expression) {
       expressions.push(expression);
-
-      for (let i = 1; i < names.length; i++) {
-        expressions.push(this.asType(names[i], this.libCall('ref', ts.createLiteral(names[0]))));
-      }
     }
 
     return expressions;
@@ -601,7 +597,6 @@ export class Factory {
         return this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration));
       case ts.SyntaxKind.TypeAliasDeclaration:
         return this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, name);
-      case ts.SyntaxKind.ModuleDeclaration:
       default:
         throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
     }

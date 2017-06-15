@@ -35,7 +35,7 @@ export class BinaryExpressionMutator extends Mutator {
       return node;
     }
 
-    if (this.options.assertAny && this.context.isAny(node.left)) {
+    if (!this.options.assertAny && this.context.isAny(node.left)) {
       return node;
     }
 

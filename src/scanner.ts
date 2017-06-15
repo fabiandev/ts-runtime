@@ -26,7 +26,7 @@ export interface TypeInfo {
 
 export interface TsrDeclaration {
   symbol: ts.Symbol,
-  names: string[]
+  name: string
 }
 
 export class Scanner {
@@ -269,18 +269,15 @@ export class Scanner {
   }
 
   private addDeclaration(symbol: ts.Symbol, fileName: string) {
+    if (!symbol) return;
+
     const name = this.checker.getFullyQualifiedName(symbol);
     const uid = util.getHashedDeclarationName(name, fileName);
 
-    const decl = this.declarations.find(decl => decl.symbol === symbol);
+    let decl = this.declarations.find(decl => decl.symbol === symbol);
 
     if (!decl) {
-      this.declarations.unshift({ symbol, names: [uid] });
-      return;
-    }
-
-    if (decl.names.indexOf(uid) === -1) {
-      decl.names.push(uid);
+      this.declarations.unshift({ symbol, name: uid });
     }
   }
 

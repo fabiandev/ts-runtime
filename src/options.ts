@@ -11,6 +11,7 @@ export interface Options {
   tempFolderName?: string;
   libIdentifier?: string;
   libNamespace?: string;
+  declarationNamespace?: string;
   declarationFile?: string;
   excludeDeclarationFile?: boolean;
   log?: boolean;
@@ -39,6 +40,7 @@ export const defaultOptions: Options = {
   tempFolderName: '.tsr',
   libIdentifier: 't',
   libNamespace: '_',
+  declarationNamespace: '_',
   declarationFile: 'tsr-declarations',
   excludeDeclarationFile: false,
   log: true,

@@ -203,12 +203,12 @@ export class MutationContext {
 
   public getTypeDeclarationName(node: string | ts.Identifier): string {
     const name = typeof node === 'string' ? node : node.text;
-    return `${this.options.libNamespace}${name}Type`;
+    return `${this.options.declarationNamespace}${name}Type`;
   }
 
   public getInlineTypeName(node: string | ts.Identifier): string {
     const name = typeof node === 'string' ? node : node.text;
-    return `${this.options.libNamespace}${name}TypeInline`;
+    return `${this.options.declarationNamespace}${name}TypeInline`;
   }
 
   public getReturnTypeDeclarationName(): string {
@@ -221,7 +221,7 @@ export class MutationContext {
 
   public getTypeSymbolDeclarationName(node: string | ts.Identifier): string {
     const name = typeof node === 'string' ? node : node.text;
-    return `${this.options.libNamespace}${name}TypeParametersSymbol`;
+    return `${this.options.declarationNamespace}${name}TypeParametersSymbol`;
   }
 
   public getTypeSymbolDeclarationInitializer(node: string | ts.Identifier): string {
@@ -230,7 +230,7 @@ export class MutationContext {
   }
 
   public getTypeParametersDeclarationName(): string {
-    return `${this.options.libNamespace}typeParameters`;
+    return `${this.options.declarationNamespace}typeParameters`;
   }
 
   public getMembers(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {

@@ -9,7 +9,7 @@ import { ProgramError } from './errors';
 import { MutationContext } from './context';
 import { mutators } from './mutators';
 import { Options, defaultOptions } from './options';
-import { Scanner } from './scanner';
+import { Scanner, TsrDeclaration } from './scanner';
 
 let start: [number, number], elapsed: [number, number];
 
@@ -25,6 +25,7 @@ export function getOptions(options: Options = {}): Options {
 
 function transformProgram(entryFiles: string[], options?: Options): void {
   start = elapsed = process.hrtime();
+  options = getOptions(options);
 
   emit(bus.events.START);
 
@@ -74,36 +75,36 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
 
     // setTimeout(() => {
-      emit(bus.events.SCAN, getElapsedTime());
+    emit(bus.events.SCAN, getElapsedTime());
 
-      scanner = new Scanner(program);
+    scanner = new Scanner(program);
 
-      emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
+    emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
 
-      const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
+    const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
 
-      writeTempFiles(result);
+    writeTempFiles(result);
 
-      // do not check post-diagnostics of temp file
-      // check(result.diagnostics, options.log)
+    // do not check post-diagnostics of temp file
+    // check(result.diagnostics, options.log)
 
-      emitDeclarations();
+    emitDeclarations();
 
-      if (!emitTransformed() && !options.force) {
-        if (!options.keepTemp) deleteTempFiles();
-        emit(bus.events.STOP);
-        return;
-      }
+    if (!emitTransformed() && !options.force) {
+      if (!options.keepTemp) deleteTempFiles();
+      emit(bus.events.STOP);
+      return;
+    }
 
-      emit(bus.events.CLEANUP, getElapsedTime());
+    emit(bus.events.CLEANUP, getElapsedTime());
 
-      if (!options.keepTemp) {
-        deleteTempFiles();
-      }
+    if (!options.keepTemp) {
+      deleteTempFiles();
+    }
 
-      result.dispose();
+    result.dispose();
 
-      emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
+    emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
     // }, 25);
   };
 
@@ -186,17 +187,34 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
     let sf = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
 
-    const declarations = scanner.getDeclarations();
     const expressions: ts.Expression[] = [];
+    let names: string[] = []
+    let processed = 0;
 
-    for (let decl of declarations) {
-      expressions.push(
-        ...context.factory.namedDeclarationsReflections(
-          decl.names,
-          decl.symbol.getDeclarations()
-        )
-      );
-    }
+    let declarations: TsrDeclaration[];
+    let length: number;
+
+    do {
+      declarations = scanner.getDeclarations();
+      length = declarations.length;
+
+      for (let i = 0; i < declarations.length - processed; i++) {
+        if (names.indexOf(declarations[i].name) !== -1) {
+          continue;
+        }
+
+        names.push(declarations[i].name);
+
+        expressions.unshift(
+          ...context.factory.namedDeclarationsReflections(
+            declarations[i].name,
+            declarations[i].symbol.getDeclarations()
+          )
+        );
+      }
+
+      processed = length;
+    } while (length !== scanner.getDeclarations().length);
 
     sf = ts.updateSourceFileNode(sf, [
       context.factory.importLibStatement(),
@@ -279,7 +297,16 @@ function transformProgram(entryFiles: string[], options?: Options): void {
       options.compilerOptions.rootDir = commonDir;
     }
 
-    options.compilerOptions.preserveConstEnums = true;
+    if (!options.compilerOptions.preserveConstEnums) {
+      const warning = 'Compiler option preserveConstEnums was changed and set to true by';
+      options.compilerOptions.preserveConstEnums = true;
+
+      if (options.log) {
+        console.warn(warning);
+      } else {
+        emit(bus.events.WARN, warning);
+      }
+    }
   }
 
   function toTempPath(fileName: string): string {
