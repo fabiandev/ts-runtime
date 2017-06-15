@@ -6,7 +6,7 @@ Please note, that this package is in **beta** and is **not** intended to be used
 Tests have yet to be written.
 Feel free to report bugs and to make suggestions. Pull requests are also very welcome.
 
-## Quick Start
+# Quick Start
 
 ```sh
 $ yarn global add ts-runtime
@@ -15,15 +15,15 @@ $ tsr --help
 
 > You can also use `npm -g install ts-runtime`.
 
-## Credits
+# Credits
 
 Type reflections and assertions for the runtime environment are being made possible by [flow-runtime](https://github.com/codemix/flow-runtime), a runtime type system for JavaScript.
 
-## Transformations
+# Transformations
 
 Most of explicit type annotations will be reflected (and checked) at runtime. Checks for implicitly inferred types may be added in a future release. In the following section the most important cases are documented.
 
-### Source File
+## Source File
 
 On top of every source file, the runtime type checking library is imported.
 
@@ -31,11 +31,11 @@ On top of every source file, the runtime type checking library is imported.
 import t from 'ts-runtime/lib';
 ```
 
-### Variables
+## Variables
 
 It will be distinguished between reassignable declarations (`var` and `let`) and constant declarations (`const`).
 
-#### Reassignable Declarations
+### Reassignable Declarations
 
 A variable declaration that may be reassigned at runtime as the following:
 
@@ -51,7 +51,7 @@ let _numType = t.number(), num;
 num = _numType.assert("Hello World!")
 ```
 
-#### Constant Declarations
+### Constant Declarations
 
 A constant declaration does only need to be checked when declared, and no additional variable holding the variable's type, has to be introduced.
 
@@ -65,7 +65,7 @@ The const declaration from above, results in:
 const num = t.number().assert("Hello World!");
 ```
 
-### Assertions
+## Assertions
 
 In TypeScript the above assignments would already be flagged by the compiler. By using the type assertion `as any`, any assignment will be allowed but still caught at runtime with this package.
 
@@ -79,11 +79,11 @@ The above assertion may not be a real world example, but there are situations wh
 t.number().assert(true);
 ```
 
-### Functions
+## Functions
 
 Function parameters and its return value will be checked as well, and functions will be annotated to extract its type reflection at runtime.
 
-#### Function Declarations
+### Function Declarations
 
 This function simply creates a number from a string.
 
@@ -112,7 +112,7 @@ t.annotate(getNumberFromString, t.function(t.param("str", t.string()), t.return(
 
 > Annotations can be turned off, by setting the `annotate` option to `false` or using the `--noAnnotate` flag with the CLI.
 
-#### Function Expressions
+### Function Expressions
 
 Also function expressions will be transformed:
 
@@ -141,7 +141,7 @@ const getNumberFromString = t.annotate(function (str) {
 }, t.function(t.param("str", t.string()), t.return(t.number())));
 ```
 
-#### Arrow Functions
+### Arrow Functions
 
 Arrow function are also supported, with a similar result to function expressions.
 If runtime checks have to be inserted into an arrow function without a body, ts-runtime generates it for you:
@@ -169,7 +169,7 @@ const getNumberFromString = t.annotate((str) => {
 }, t.function(t.param("str", t.string()), t.return(t.number())));
 ```
 
-### Type Queries
+## Type Queries
 
 In the following example, TypeScript gets the type of a variable and uses it as type for another variable declaration.
 
@@ -187,11 +187,11 @@ let _myNumType = t.typeOf(num), myNum = _myNumType.assert("Hello World!");
 
 > Please note, that `num` is not reflected and asserted, because it lacks an explicit type annotation.
 
-### Enums
+## Enums
 
 The TypeScript compiler option `preserveConstEnums` will be always set to `true` by ts-runtime. A warning in the console will let you know.
 
-#### Enum Declarations
+### Enum Declarations
 
 ```ts
 enum Action {
@@ -218,7 +218,7 @@ and annotated by ts-runtime with the reflection below:
 t.annotate(Action, t.enum(t.enumMember(0), t.enumMember(1), t.enumMember(2)));
 ```
 
-#### Enum References
+### Enum References
 
 When using the enum as a type reference, only the numbers `0`, `1`, and `2` can be assigned to `action`:
 
@@ -240,7 +240,7 @@ let saveAction: Action.Save;
 let _saveActionType = t.enumMember(Action.Save), saveAction;
 ```
 
-### Type Aliases
+## Type Aliases
 
 Type aliases are removed entirely by the TypeScript compiler.
 
@@ -264,7 +264,7 @@ const MyType = t.type("MyType", t.object(
 
 > Self references are supported.
 
-### Interfaces
+## Interfaces
 
 Also interfaces would be compiled away.
 
@@ -290,7 +290,7 @@ const MyInterface = t.type("MyInterface", t.intersect(t.ref(BaseInterface), t.ob
 )));
 ```
 
-### Classes
+## Classes
 
 Classes are transformed with support for properties, static properties, static and non-static methods, deriving from other classes (`extends`), implementing interfaces (`implements`), as well as method overloading.
 
@@ -325,7 +325,7 @@ class MyClass {
 }
 ```
 
-### Overloading
+## Overloading
 
 Method overloading is supported for type aliases, interfaces and classes, and generates union types based on the overloads.
 
@@ -355,7 +355,7 @@ class MyInterface {
 
 ```
 
-### Generics
+## Generics
 
 Generics are supported for functions, classes, interfaces and type aliases.
 
@@ -378,13 +378,13 @@ function asArray(val) {
 }
 ```
 
-### Externals and Ambient Declarations
+## Externals and Ambient Declarations
 
 We were seeing a couple of different transformations based on local variables.
 What about external packages, declaration files and ambient declarations?
 They are collected and emitted to a single file.
 
-#### Externals
+### Externals
 
 Imagine the following type reference:
 
@@ -417,7 +417,7 @@ t.declare(t.type("ts.FlowFlags.82613696", t.enum(/* enum members */)));
 t.declare(t.type("ts.FlowNode.82613696", t.object(/* properties */)));
 ```
 
-#### Declarations
+### Declarations
 
 Also local declarations will be included in `tsr-declarations.js`:
 
@@ -435,29 +435,29 @@ The code from above will be reflected as follows:
 t.declare(t.class("MyModule.MyClass.3446180452", t.object()));
 ```
 
-> The generated file will be located at the common directory of all entry files
+> The generated file will be located in the common directory of all entry files
 or in the root of `outDir` or `outFile`. For some controls regarding this file,
 have a look at the options.
 
-## Limitations
+# Limitations
 
 - Only `as number` syntax for type assertions (no angle-bracket syntax: `<number>`).
 - No mapped types reflections yet.
 - readonly or class visibility modifiers are not asserted.
 - No declaration merging.
 - Method overloading is only supported within the same declaration.
-- No class expressions (`const A = class { };`), only class declarations (`class A { }`) can be used.
+- No class expressions (`const A = class { }`), only class declarations (`class A { }`) can be used.
 - `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s and `Identifier`s as expression.
 
-## Options
+# Options
 
-##### annotate
+#### annotate
 Type: `boolean`  
 Default: true  
 
 Specifies if classes and function should be annotated.
 
-##### compilerOptions
+#### compilerOptions
 Type: `ts.CompilerOptions`  
 Default:  
 ```js
@@ -476,38 +476,38 @@ Default:
 
 > The option preserveConstEnum will always be set to true by ts-runtime.
 
-##### declarationFileName
+#### declarationFileName
 Type: `string`  
 Default: "tsr-declarations"  
 
 The file name where all external and ambient declarations will be written to.
 Excludes a path or an extension.
 
-##### importDeclarations
+#### importDeclarations
 Type: `boolean`  
 Default: true  
 
 Specifies if the generated file should be imported on top of every entry file.
 
-##### force
+#### force
 Type: `boolean`  
 Default: false  
 
 Try to continue if TypeScript compiler diagnostics occurred.
 
-##### keepTemp
+#### keepTemp
 Type: `boolean`  
 Default: false  
 
 Do not delete temporary files on finish.
 
-##### tempFolderName
+#### tempFolderName
 Type: `string`  
 Default: ".tsr"  
 
 Name of the directory, where temporary files should be written to.
 
-##### libNamespace
+#### libNamespace
 Type: `string`  
 Default: "_"  
 
@@ -531,25 +531,25 @@ Default: "_"
 If new variables are introduced while transforming, they will be prefixed with
 this specified string.
 
-##### moduleAlias
+#### moduleAlias
 Type: `boolean`  
 Default: false  
 
 Adds `import "module-alias/register";` on top of every file.
 
-##### stackTraceOutput
+#### stackTraceOutput
 Type: `number`  
 Default: 3  
 
 Limit the output of the stack trace. This only takes effect when using the CLI.
 
-##### log
+#### log
 Type: `boolean`  
 Default: true  
 
 Log messages to the console. This option is not available via the CLI.
 
-## API
+# API
 
 It is easy to make use of ts-runtime via Node.js.
 `entryFiles` is a `string[]` and an `Options` object may optionally be passed
@@ -572,7 +572,7 @@ bus.on(bus.events.START, () => {
 transform(entryFiles, { log: false });
 ```
 
-## CLI
+# CLI
 
 ```
   Usage: tsr <file...> [options]
@@ -606,7 +606,7 @@ transform(entryFiles, { log: false });
     $ tsr -c '{ "outDir": "dist" }' entry.ts
 ```
 
-## Building
+# Building
 
 ```sh
 $ git checkout https://github.com/fabiandev/ts-runtime.git
