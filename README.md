@@ -451,13 +451,13 @@ have a look at the options.
 
 ## Options
 
-##### annotate
+#### annotate
 Type: `boolean`  
 Default: true  
 
 Specifies if classes and function should be annotated.
 
-##### compilerOptions
+#### compilerOptions
 Type: `ts.CompilerOptions`  
 Default:  
 ```js
@@ -476,44 +476,44 @@ Default:
 
 > The option preserveConstEnum will always be set to true by ts-runtime.
 
-##### declarationFileName
+#### declarationFileName
 Type: `string`  
 Default: "tsr-declarations"  
 
 The file name where all external and ambient declarations will be written to.
 Excludes a path or an extension.
 
-##### importDeclarations
+#### importDeclarations
 Type: `boolean`  
 Default: true  
 
 Specifies if the generated file should be imported on top of every entry file.
 
-##### force
+#### force
 Type: `boolean`  
 Default: false  
 
 Try to continue if TypeScript compiler diagnostics occurred.
 
-##### keepTemp
+#### keepTemp
 Type: `boolean`  
 Default: false  
 
 Do not delete temporary files on finish.
 
-##### tempFolderName
+#### tempFolderName
 Type: `string`  
 Default: ".tsr"  
 
 Name of the directory, where temporary files should be written to.
 
-##### libNamespace
+#### libNamespace
 Type: `string`  
 Default: "_"  
 
 Prefix for the default library import.
 
-##### libIdentifier
+#### libIdentifier
 Type: `string`  
 Default: "t"  
 
@@ -524,26 +524,26 @@ Looks like the following by default
 import _t from "ts-runtime/lib";
 ```
 
-##### declarationPrefix
+#### declarationPrefix
 Type: `string`  
 Default: "_"  
 
 If new variables are introduced while transforming, they will be prefixed with
 this specified string.
 
-##### moduleAlias
+#### moduleAlias
 Type: `boolean`  
 Default: false  
 
 Adds `import "module-alias/register";` on top of every file.
 
-##### stackTraceOutput
+#### stackTraceOutput
 Type: `number`  
 Default: 3  
 
 Limit the output of the stack trace. This only takes effect when using the CLI.
 
-##### log
+#### log
 Type: `boolean`  
 Default: true  
 
