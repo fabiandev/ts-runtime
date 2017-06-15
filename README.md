@@ -442,7 +442,7 @@ have a look at the options.
 ## Limitations
 
 - Only `as number` syntax for type assertions (no angle-bracket syntax: `<number>`).
-- No mapped types reflections yet.
+- No reflection of mapped types, indexed access types and type operators yet.
 - readonly or class visibility modifiers are not asserted.
 - No declaration merging.
 - Method overloading is only supported within the same declaration.
