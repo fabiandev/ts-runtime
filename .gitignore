@@ -10,5 +10,4 @@ pids
 .tsr
 dist
 dist-tsr
-src/playground
 src/play

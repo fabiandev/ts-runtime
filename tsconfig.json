@@ -10,23 +10,15 @@
     "target": "es5",
     "noImplicitAny": true,
     "preserveConstEnums": true,
-    "removeComments": false,
-    "typeRoots": [
-      "../node_modules/@types",
-      "../src/"
-    ],
-    "types": [
-      "node"
-    ]
+    "removeComments": false
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "node_modules",
+    "dist-tsr",
     "dist",
-    "src/playground",
-    "src/play",
-    "src/_archived"
+    "node_modules",
+    "src/play"
   ]
 }
