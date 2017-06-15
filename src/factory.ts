@@ -126,29 +126,31 @@ export class Factory {
         // type Readonly<T> = {
         //   readonly [P in keyof T]: T[P];
         // }
+        bus.emit(bus.events.WARN, 'Mapped types are not yet supported.');
+
         if (this.context.options.log) {
           console.warn('Mapped types are not yet supported.')
-        } else {
-          bus.emit(bus.events.WARN, 'Mapped types are not yet supported.');
         }
+
         return this.anyTypeReflection();
       case ts.SyntaxKind.IndexedAccessType:
         // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
         //     return o[name]; // o[name] is of type T[K]
         // }
+        bus.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
+
         if (this.context.options.log) {
           console.warn('Indexed acces types are not yet supported.')
-        } else {
-          bus.emit(bus.events.WARN, 'Indexed acces types are not yet supported.');
         }
         return this.anyTypeReflection();
       case ts.SyntaxKind.TypeOperator:
         // let a: keyof MyClass;
+        bus.emit(bus.events.WARN, 'Type operators are not yet supported.');
+
         if (this.context.options.log) {
           console.warn('Type operators are not yet supported.')
-        } else {
-          bus.emit(bus.events.WARN, 'Type operators are not yet supported.');
         }
+
         return this.anyTypeReflection();
       default:
         throw new ProgramError(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
