@@ -20,7 +20,7 @@ export class SourceFileMutator extends Mutator {
 
     if (this.options.importDeclarations && this.context.isEntryFile(node.fileName)) {
       const relativePath = path.relative(path.dirname(node.fileName), this.context.commonDir);
-      const filePath = path.join(relativePath, this.context.options.declarationFile);
+      const filePath = path.join(relativePath, this.context.options.declarationFileName);
       const prefix = !relativePath ? './' : '';
 
       declarations.push(ts.createImportDeclaration(

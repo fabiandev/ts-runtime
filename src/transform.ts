@@ -180,7 +180,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
   }
 
   function emitDeclarations() {
-    const filename = `${options.declarationFile}.js`;
+    const filename = `${options.declarationFileName}.js`;
     const outDir = getOutDir();
 
     const printer = ts.createPrinter();

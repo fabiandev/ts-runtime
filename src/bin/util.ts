@@ -42,7 +42,7 @@ export function getError(error: string | Error, options?: Options): string {
 
     return result[0];
   } else if (options) {
-    let limit = options.stackTrace;
+    let limit = options.stackTraceOutput;
     limit = typeof limit === 'string' ? parseInt(limit) : limit;
     limit = limit < 0 ? 0 : limit;
     limit = limit === undefined ? 3 : limit;

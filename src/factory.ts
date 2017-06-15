@@ -1274,7 +1274,7 @@ export class Factory {
 
   public importDeclarationsStatement(): ts.ImportDeclaration {
     return ts.createImportDeclaration(
-      undefined, undefined, undefined, ts.createLiteral(`./${this.context.options.declarationFile}`)
+      undefined, undefined, undefined, ts.createLiteral(`./${this.context.options.declarationFileName}`)
     );
   }
 

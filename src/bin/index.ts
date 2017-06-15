@@ -53,7 +53,7 @@ function setDeclarationFileName(fileName: string) {
     throw new ProgramError('Declaration file name must not be a path.');
   }
 
-  options.declarationFile = fileName;
+  options.declarationFileName = fileName;
 }
 
 function setExcludeDeclarationFile() {
@@ -72,16 +72,20 @@ function setKeepTemp() {
   options.keepTemp = true;
 }
 
-function setLib(lib: string) {
-  options.libNamespace = lib;
+function setLibIdentifier(identifier: string) {
+  options.libIdentifier = identifier;
 }
 
-function setNamespace(namespace: string) {
+function setLibNamespace(namespace: string) {
   options.libNamespace = namespace;
 }
 
-function setStackTrace(limit: number) {
-  options.stackTrace = limit;
+function setDeclarationNamespace(namespace: string) {
+  options.declarationNamespace = namespace;
+}
+
+function setStackTraceOutput(limit: number) {
+  options.stackTraceOutput = limit;
 }
 
 function setTempFolder(name: string) {
@@ -106,10 +110,11 @@ commander
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
   .option('-i, --importDeclarations', 'automatically import declaration file on top of every entry file. defaults to true', setImportDeclarations)
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
-  .option('-l, --lib <name>', 'lib import name. defaults to "t"', setLib)
+  .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
   .option('-m, --moduleAlias', 'import package module-alias on top of every file.', setModuleAlias)
-  .option('-n, --namespace <namespace>', 'prefix for lib and code additions. defaults to "_"', setNamespace)
-  .option('-s, --stackTrace <limit>', 'output a specified number of the stack trace. defaults to 3', setStackTrace)
+  .option('-n, --libNamespace <namespace>', 'prefix for lib and code additions. defaults to "_"', setLibNamespace)
+  .option('-N, --declarationNamespace <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationNamespace)
+  .option('-s, --stackTraceOutput <limit>', 'output a specified number of lines of the stack trace. defaults to 3', setStackTraceOutput)
   .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolder)
   .on('--help', () => {
     console.log('  Examples:');

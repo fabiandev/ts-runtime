@@ -1,22 +1,22 @@
 import * as ts from 'typescript';
 
 export interface Options {
-  compilerOptions?: ts.CompilerOptions;
   annotate?: boolean;
-  assertSafe?: true;
-  assertAny?: false;
+  compilerOptions?: ts.CompilerOptions;
+  declarationFileName?: string;
+  declarationNamespace?: string;
+  excludeDeclarationFile?: boolean;
   force?: boolean;
   importDeclarations?: boolean;
   keepTemp?: boolean;
-  tempFolderName?: string;
   libIdentifier?: string;
   libNamespace?: string;
-  declarationNamespace?: string;
-  declarationFile?: string;
-  excludeDeclarationFile?: boolean;
-  log?: boolean;
-  stackTrace?: number;
   moduleAlias?: boolean;
+  stackTraceOutput?: number;
+  tempFolderName?: string;
+  log?: boolean;
+  assertSafe?: true;
+  assertAny?: false;
 }
 
 export const defaultOptions: Options = {
@@ -41,9 +41,9 @@ export const defaultOptions: Options = {
   libIdentifier: 't',
   libNamespace: '_',
   declarationNamespace: '_',
-  declarationFile: 'tsr-declarations',
+  declarationFileName: 'tsr-declarations',
   excludeDeclarationFile: false,
   log: true,
-  stackTrace: 3,
+  stackTraceOutput: 3,
   moduleAlias: false,
 };
