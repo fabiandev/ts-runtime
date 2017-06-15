@@ -100,7 +100,7 @@ commander
   --------------------------------`)
   .usage('<file...> [options]')
   .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)
-  .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
+  .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to "{}"', setCompilerOptions)
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
