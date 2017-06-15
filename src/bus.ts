@@ -6,11 +6,10 @@ export const events = {
   STOP: Symbol('stop'),
   ERROR: Symbol('error'),
   WARN: Symbol('warn'),
-  DIAGNOSTICS: Symbol('ts.diagnostics'),
+  DIAGNOSTICS: Symbol('diagnostics'),
   TRANSFORM: Symbol('transform'),
   SCAN: Symbol('transform'),
   CLEANUP: Symbol('cleanup'),
-  INTERNAL_OPTIONS: Symbol('internal.options'),
 };
 
 export const emitter = new EventEmitter();

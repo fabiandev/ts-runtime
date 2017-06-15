@@ -57,15 +57,11 @@ function setDeclarationFileName(fileName: string) {
 }
 
 function setExcludeDeclarationFile() {
-  options.excludeDeclarationFile = true;
+  options.importDeclarations = false;
 }
 
 function setForce() {
   options.force = true;
-}
-
-function setImportDeclarations() {
-  options.importDeclarations = true;
 }
 
 function setKeepTemp() {
@@ -80,8 +76,8 @@ function setLibNamespace(namespace: string) {
   options.libNamespace = namespace;
 }
 
-function setDeclarationNamespace(namespace: string) {
-  options.declarationNamespace = namespace;
+function setDeclarationPrefix(prefix: string) {
+  options.declarationPrefix = prefix;
 }
 
 function setStackTraceOutput(limit: number) {
@@ -108,12 +104,11 @@ commander
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
-  .option('-i, --importDeclarations', 'automatically import declaration file on top of every entry file. defaults to true', setImportDeclarations)
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
   .option('-m, --moduleAlias', 'import package module-alias on top of every file.', setModuleAlias)
   .option('-n, --libNamespace <namespace>', 'prefix for lib and code additions. defaults to "_"', setLibNamespace)
-  .option('-N, --declarationNamespace <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationNamespace)
+  .option('-p, --declarationPrefix <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationPrefix)
   .option('-s, --stackTraceOutput <limit>', 'output a specified number of lines of the stack trace. defaults to 3', setStackTraceOutput)
   .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolder)
   .on('--help', () => {

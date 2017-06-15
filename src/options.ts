@@ -4,13 +4,12 @@ export interface Options {
   annotate?: boolean;
   compilerOptions?: ts.CompilerOptions;
   declarationFileName?: string;
-  declarationNamespace?: string;
-  excludeDeclarationFile?: boolean;
   force?: boolean;
   importDeclarations?: boolean;
   keepTemp?: boolean;
   libIdentifier?: string;
   libNamespace?: string;
+  declarationPrefix?: string;
   moduleAlias?: boolean;
   stackTraceOutput?: number;
   tempFolderName?: string;
@@ -20,6 +19,7 @@ export interface Options {
 }
 
 export const defaultOptions: Options = {
+  annotate: true,
   compilerOptions: {
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
     module: ts.ModuleKind.ES2015,
@@ -31,19 +31,17 @@ export const defaultOptions: Options = {
     removeComments: true,
     preserveConstEnums: true,
   },
-  annotate: true,
-  assertSafe: true,
-  assertAny: false,
+  declarationFileName: 'tsr-declarations',
   force: false,
   importDeclarations: true,
   keepTemp: false,
-  tempFolderName: '.tsr',
   libIdentifier: 't',
   libNamespace: '_',
-  declarationNamespace: '_',
-  declarationFileName: 'tsr-declarations',
-  excludeDeclarationFile: false,
-  log: true,
-  stackTraceOutput: 3,
+  declarationPrefix: '_',
   moduleAlias: false,
+  stackTraceOutput: 3,
+  tempFolderName: '.tsr',
+  log: true,
+  assertSafe: true,
+  assertAny: false,
 };

@@ -300,12 +300,8 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     if (!options.compilerOptions.preserveConstEnums) {
       const warning = 'Compiler option preserveConstEnums was changed and set to true by';
       options.compilerOptions.preserveConstEnums = true;
-
-      if (options.log) {
-        console.warn(warning);
-      } else {
-        emit(bus.events.WARN, warning);
-      }
+      emit(bus.events.WARN, warning);
+      if (options.log) console.warn(warning);
     }
   }
 
