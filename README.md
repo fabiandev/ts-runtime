@@ -6,7 +6,7 @@ Please note, that this package is in **beta** and is **not** intended to be used
 Tests have yet to be written.
 Feel free to report bugs and to make suggestions. Pull requests are also very welcome.
 
-# Quick Start
+## Quick Start
 
 ```sh
 $ yarn global add ts-runtime
