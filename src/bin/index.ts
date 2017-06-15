@@ -13,7 +13,7 @@ const options: Options = Object.assign({}, defaultOptions);
 let compilerOptions: string = '{}';
 
 function defaultAction() {
-  const files: string[] = commander.args
+  let files: string[] = commander.args
     .filter(arg => typeof arg === 'string')
     .map(file => path.normalize(file));
 
@@ -31,6 +31,8 @@ function defaultAction() {
     program.status.error();
     return;
   }
+
+  files = files.map(file => !path.extname(file) ? file + '.ts' : file);
 
   program.start(files, options, pkg.version);
 }
@@ -61,8 +63,12 @@ function setExcludeDeclarationFile() {
   options.excludeDeclarationFile = true;
 }
 
-function setFinishOnError() {
-  options.finishOnError = true;
+function setForce() {
+  options.force = true;
+}
+
+function setImportDeclarations() {
+  options.importDeclarations = true;
 }
 
 function setKeepTemp() {
@@ -100,7 +106,8 @@ commander
   .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to {}', setCompilerOptions)
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
-  .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setFinishOnError)
+  .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
+  .option('-i, --importDeclarations', 'automatically import declaration file on top of every entry file. defaults to true', setImportDeclarations)
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --lib <name>', 'lib import name. defaults to "t"', setLib)
   .option('-m, --moduleAlias', 'import package module-alias on top of every file.', setModuleAlias)

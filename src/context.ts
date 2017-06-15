@@ -7,7 +7,6 @@ import { Scanner } from './scanner';
 
 export class MutationContext {
 
-  private _entryFilePath: string;
   private _options: Options;
   private _sourceFile: ts.SourceFile;
   private _program: ts.Program;
@@ -18,8 +17,10 @@ export class MutationContext {
   private _factory: Factory;
   private _transformationContext: ts.TransformationContext;
   private _merged: Set<ts.Symbol>;
+  private _entryFiles: string[];
+  private _commonDir: string;
 
-  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext) {
+  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext, entryFiles: string[], commonDir: string) {
     this._skipNodes = [];
     this._sourceFile = sourceFile;
     this._options = options;
@@ -30,6 +31,8 @@ export class MutationContext {
     this._factory = new Factory(this, options);
     this._transformationContext = context;
     this._merged = new Set();
+    this._entryFiles = entryFiles;
+    this._commonDir = commonDir;
   }
 
   public skip<T extends ts.Node>(node: T, recursive = false, ...exclude: ts.Node[]): T {
@@ -63,6 +66,10 @@ export class MutationContext {
     }
 
     return false;
+  }
+
+  public isEntryFile(fileName: string) {
+    return this._entryFiles.indexOf(fileName) !== -1;
   }
 
   public isImplementationOfOverload(node: ts.Node): node is ts.FunctionLikeDeclaration {
@@ -322,8 +329,12 @@ export class MutationContext {
     return this._scanner.mapNode.bind(this._scanner);
   }
 
-  get entryFilePath(): string {
-    return this._entryFilePath;
+  get entryFiles(): string[] {
+    return this._entryFiles;
+  }
+
+  get commonDir(): string {
+    return this._commonDir;
   }
 
 }

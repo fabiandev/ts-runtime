@@ -61,7 +61,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     }
 
     // Check original file (pre-diagnostics)
-    if (!check(diagnostics, options.log) && !options.finishOnError) {
+    if (!check(diagnostics, options.log) && !options.force) {
       if (!options.keepTemp) deleteTempFiles();
       emit(bus.events.STOP);
       return;
@@ -85,7 +85,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
       emitDeclarations();
 
-      if (!emitTransformed() && !options.finishOnError) {
+      if (!emitTransformed() && !options.force) {
         if (!options.keepTemp) deleteTempFiles();
         emit(bus.events.STOP);
         return;
@@ -210,7 +210,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
     if (ts.isSourceFile(node) && currentSourceFile !== node) {
       currentSourceFile = node;
-      context = new MutationContext(node, options, program, host, scanner, transformationContext);
+      context = new MutationContext(node, options, program, host, scanner, transformationContext, tempEntryFiles, commonDir);
     }
   }
 

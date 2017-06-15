@@ -5,7 +5,8 @@ export interface Options {
   annotate?: boolean;
   assertSafe?: true;
   assertAny?: false;
-  finishOnError?: boolean;
+  force?: boolean;
+  importDeclarations?: boolean;
   keepTemp?: boolean;
   tempFolderName?: string;
   libIdentifier?: string;
@@ -32,7 +33,8 @@ export const defaultOptions: Options = {
   annotate: true,
   assertSafe: true,
   assertAny: false,
-  finishOnError: false,
+  force: false,
+  importDeclarations: true,
   keepTemp: false,
   tempFolderName: '.tsr',
   libIdentifier: 't',
