@@ -1,6 +1,10 @@
 # ts-runtime
 
-A package for generating runtime type checks from TypeScript type annotations for JavaScript, using the TypeScript compiler API.
+A package for generating runtime type checks from TypeScript type annotations for JavaScript, using the TypeScript compiler API.  
+  
+Please note, that this package is in **beta** and is **not** intended to be used for **for production**.
+Tests have yet to be written.
+Feel free to report bugs and to make suggestions. Pull requests are also very welcome.
 
 ## Quick Start
 
@@ -21,7 +25,7 @@ Most of explicit type annotations will be reflected (and checked) at runtime. Ch
 
 ### Source File
 
-On top of every source file, the library is imported to enable type checks at runtime.
+On top of every source file, the runtime type checking library is imported.
 
 ```ts
 import t from 'ts-runtime/lib';
@@ -29,7 +33,7 @@ import t from 'ts-runtime/lib';
 
 ### Variables
 
-We will distinguish between `var` and `let` declarations and `const` declarations and assume, that the latter will never be reassigned during runtime.
+It will be distinguished between reassignable declarations (`var` and `let`) and constant declarations (`const`).
 
 #### Reassignable Declarations
 
@@ -49,7 +53,7 @@ num = _numType.assert("Hello World!")
 
 #### Constant Declarations
 
-A constant declaration does only need to be checked when declared, and no additional variable, holding the variable's type, has to be introduced.
+A constant declaration does only need to be checked when declared, and no additional variable holding the variable's type, has to be introduced.
 
 ```ts
 const num: number = "Hello World!";
@@ -63,13 +67,13 @@ const num = t.number().assert("Hello World!");
 
 ### Assertions
 
-In TypeScript the above assignments would already be flagged by the compiler. By using the `as any` type assertion, any assignment will be allowed but still caught at runtime. Therefore other than `any` assertions will be checked.
+In TypeScript the above assignments would already be flagged by the compiler. By using the type assertion `as any`, any assignment will be allowed but still caught at runtime with this package.
 
 ```ts
 true as any as number;
 ```
 
-The above assertion may not be a real world example, but there are situations where similar things happen. Imagine calling a function, that returns `any`. While *you know* that the returned value will be a number, you also want the TypeScript compiler to be aware of it and you assert it as a number. Probably this function call is from an external library and a bug is introduced that a boolean value is returned, which will remain unnoticed until checked at runtime.
+The above assertion may not be a real world example, but there are situations where similar things happen. Imagine calling a function, that returns `any`. While *you know* that the returned value will be a number, you also want the TypeScript compiler to be aware of it and you assert it `as number`. Probably this function call is from an external library and a bug is introduced that a boolean value is returned instead, which will remain unnoticed unless checked at runtime:
 
 ```js
 t.number().assert(true);
@@ -77,7 +81,7 @@ t.number().assert(true);
 
 ### Functions
 
-Function parameters and it's return value will be checked as well, and functions will be annotate to extract it's type reflection at runtime.
+Function parameters and its return value will be checked as well, and functions will be annotated to extract its type reflection at runtime.
 
 #### Function Declarations
 
@@ -100,7 +104,7 @@ function getNumberFromString(str) {
 }
 ```
 
-By default the function is also annotated, to get the type reflection of the object at runtime:
+By default the function is also annotated, to get the type reflection of the object at runtime with type queries:
 
 ```js
 t.annotate(getNumberFromString, t.function(t.param("str", t.string()), t.return(t.number())));
@@ -139,7 +143,8 @@ const getNumberFromString = t.annotate(function (str) {
 
 #### Arrow Functions
 
-Arrow function are also supported, with a similar result to function expressions. If runtime checks have to be inserted into an arrow function without a body, ts-runtime generates it for you:
+Arrow function are also supported, with a similar result to function expressions.
+If runtime checks have to be inserted into an arrow function without a body, ts-runtime generates it for you:
 
 ```ts
 const getNumberFromString = (str: string): number => Number(str);
@@ -156,7 +161,7 @@ const getNumberFromString = (str) => {
 };
 ```
 
-Of course also the arrow function are annotated by default:
+Of course, also arrow functions are annotated by default:
 
 ```js
 const getNumberFromString = t.annotate((str) => {
@@ -184,11 +189,9 @@ let _myNumType = t.typeOf(num), myNum = _myNumType.assert("Hello World!");
 
 ### Enums
 
-Please mote that currently the TypeScript compiler option `preserveConstEnums` will be always set to `true` by ts-runtime. A warning will in your console will let you know.
+The TypeScript compiler option `preserveConstEnums` will be always set to `true` by ts-runtime. A warning in the console will let you know.
 
 #### Enum Declarations
-
-The following enum:
 
 ```ts
 enum Action {
@@ -198,7 +201,7 @@ enum Action {
 }
 ```
 
-will be transformed to the following by TypeScript:
+The enum from above will be transformed to the following by TypeScript:
 
 ```js
 var Action;
@@ -217,7 +220,7 @@ t.annotate(Action, t.enum(t.enumMember(0), t.enumMember(1), t.enumMember(2)));
 
 #### Enum References
 
-Using the enum as type reference will be reflected and only the numbers `0`, `1`, and `2` can be assigned to `action`:
+When using the enum as a type reference, only the numbers `0`, `1`, and `2` can be assigned to `action`:
 
 ```ts
 let action: Action;
@@ -232,13 +235,14 @@ The same is true when using a specific enum members as reference. In this exampl
 ```ts
 let saveAction: Action.Save;
 ```
+
 ```js
 let _saveActionType = t.enumMember(Action.Save), saveAction;
 ```
 
 ### Type Aliases
 
-Type aliases usually are removed entirely by the TypeScript compiler.
+Type aliases are removed entirely by the TypeScript compiler.
 
 ```ts
 type MyType = {
@@ -248,7 +252,7 @@ type MyType = {
 }
 ```
 
-The type alias declaratin from above will be replaced with the following reflection:
+The type alias declaration from above will be replaced with the following reflection:
 
 ```js
 const MyType = t.type("MyType", t.object(
@@ -262,7 +266,7 @@ const MyType = t.type("MyType", t.object(
 
 ### Interfaces
 
-Also iterfaces would be compiled away.
+Also interfaces would be compiled away.
 
 ```ts
 interface BaseInterface {
@@ -288,7 +292,7 @@ const MyInterface = t.type("MyInterface", t.intersect(t.ref(BaseInterface), t.ob
 
 ### Classes
 
-Classes are also transformed with support for properties, static properties, static and non-static methods, deriving from other classes, implementing interfaces, as well as method overloading, which will be covered later.
+Classes are transformed with support for properties, static properties, static and non-static methods, deriving from other classes (`extends`), implementing interfaces (`implements`), as well as method overloading.
 
 ```ts
 class MyClass {
@@ -335,7 +339,7 @@ class MyInterface {
 }
 ```
 
-While all overloads are considered, when generating a reflection, the implementation is ignored:
+While all overloads are considered (excluding merged declarations) when generating a reflection, the implementation itself is ignored:
 
 ```js
 @t.annotate(t.class("MyInterface",
@@ -344,8 +348,6 @@ While all overloads are considered, when generating a reflection, the implementa
   )
 ))
 class MyInterface {
-  method(param: number): string;
-  method(param: boolean): string;
   method(param: any): any {
     // implementation
   }
@@ -363,7 +365,8 @@ function asArray<T>(val: T): T[] {
 }
 ```
 
-The above snipped shows a simple function, that wraps the passed parameter in an array, using generics, which results in the following transformation:
+The above snippet shows a simple function that makes use of generics to specify
+the return type, which results in the following transformation:
 
 ```js
 function asArray(val) {
@@ -377,7 +380,9 @@ function asArray(val) {
 
 ### Externals and Ambient Declarations
 
-We were seeing a couple of different transformations based on local variables. What about external packages, declaration files and ambient declarations? They are collected and emitted to a single file.
+We were seeing a couple of different transformations based on local variables.
+What about external packages, declaration files and ambient declarations?
+They are collected and emitted to a single file.
 
 #### Externals
 
@@ -388,7 +393,7 @@ import * as ts from 'typescript';
 let flowNode: ts.FlowNode;
 ```
 
-It points to the interface `FlowNode`, inside the `typescript.d.ts` file, that looks like this:
+It points to the interface `FlowNode` inside `typescript.d.ts`:
 
 ```ts
 interface FlowNode {
@@ -397,13 +402,15 @@ interface FlowNode {
 }
 ```
 
-Because we can't modify the code of externals, and definition files won't be included anyway, the reference is removed and replaced by a string. this string holds the fully qualified name of the reference, and the hashed file name as a suffix, to prevent naming clashes:
+The reference is removed and replaced by a string. This string holds the fully
+qualified name of the reference, and the hashed file name as a suffix, to
+prevent naming clashes:
 
 ```js
 let _flowNodeType = t.ref("ts.FlowNode.82613696"), flowNode;
 ```
 
-The actual reflections go into a single file (`tsr-declaration.js` by default), which has to be loaded before any other code and looks like this for the declaration from above:
+The actual reflections go into a single file (`tsr-declaration.js` by default):
 
 ```js
 t.declare(t.type("ts.FlowFlags.82613696", t.enum(/* enum members */)));
@@ -412,7 +419,7 @@ t.declare(t.type("ts.FlowNode.82613696", t.object(/* properties */)));
 
 #### Declarations
 
-Also local declarations, as shown below, will be included in `tsr-declarations.js`
+Also local declarations will be included in `tsr-declarations.js`:
 
 ```ts
 declare module MyModule {
@@ -422,23 +429,25 @@ declare module MyModule {
 }
 ```
 
-and results in the following globally declared reflection:
+The code from above will be reflected as follows:
 
 ```js
 t.declare(t.class("MyModule.MyClass.3446180452", t.object()));
 ```
 
-> The generated file will be located at the common directory of entry files or in the root of `outDir` or `outFile`. For some controls regarding this file, have a look at the options later in this readme.
+> The generated file will be located at the common directory of all entry files
+or in the root of `outDir` or `outFile`. For some controls regarding this file,
+have a look at the options.
 
 ## Limitations
 
-- Only `as number` syntax for type assertions (no angle-bracket `<number>`).
-- No mapped types reflection yet.
+- Only `as number` syntax for type assertions (no angle-bracket syntax: `<number>`).
+- No mapped types reflections yet.
 - readonly or class visibility modifiers are not asserted.
 - No declaration merging.
-- Method overloading only within same declaration.
-- No class expressions (`const A = class { };`), only class declarations (`class A { }`).
-- `ExpressionWithTypeArguments` can only contain `PropertyAccessExpressions` and `Identifiers`
+- Method overloading is only supported within the same declaration.
+- No class expressions (`const A = class { };`), only class declarations (`class A { }`) can be used.
+- `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s and `Identifier`s as expression.
 
 ## Options
 
@@ -446,7 +455,7 @@ t.declare(t.class("MyModule.MyClass.3446180452", t.object()));
 Type: `boolean`  
 Default: true  
 
-Specifies if classes and function should be annotate with a reflection.
+Specifies if classes and function should be annotated.
 
 ##### compilerOptions
 Type: `ts.CompilerOptions`  
@@ -471,7 +480,8 @@ Default:
 Type: `string`  
 Default: "tsr-declarations"  
 
-The file name where all external and ambient declarations will be written to. Excludes a path or an extension.
+The file name where all external and ambient declarations will be written to.
+Excludes a path or an extension.
 
 ##### importDeclarations
 Type: `boolean`  
@@ -483,7 +493,7 @@ Specifies if the generated file should be imported on top of every entry file.
 Type: `boolean`  
 Default: false  
 
-Try to continue if TypeScript compiler diagnostics occured.
+Try to continue if TypeScript compiler diagnostics occurred.
 
 ##### keepTemp
 Type: `boolean`  
@@ -518,7 +528,8 @@ import _t from "ts-runtime/lib";
 Type: `string`  
 Default: "_"  
 
-If new variables are introduced while transforming, they will be prefixed with this specified string.
+If new variables are introduced while transforming, they will be prefixed with
+this specified string.
 
 ##### moduleAlias
 Type: `boolean`  
@@ -530,17 +541,19 @@ Adds `import "module-alias/register";` on top of every file.
 Type: `number`  
 Default: 3  
 
-Limit the output of the stack trace. This only takes effect via the CLI.
+Limit the output of the stack trace. This only takes effect when using the CLI.
 
 ##### log
 Type: `boolean`  
 Default: true  
 
-Log messages to the console. This option is not available via the CLI and will always be set to false.
+Log messages to the console. This option is not available via the CLI.
 
 ## API
 
-It is easy to make use of ts-runtime via Node. `entryFiles` is a `string[]` and an `options` object may optionally be passed as second parameter.
+It is easy to make use of ts-runtime via Node.js.
+`entryFiles` is a `string[]` and an `Options` object may optionally be passed
+as a second parameter.
 
 ```ts
 import { transform } from 'ts-runtime';
@@ -574,7 +587,7 @@ transform(entryFiles, { log: false });
     -h, --help                               output usage information
     -v, --version                            output the version number
     -a, --noAnnotate                         do not annotate classes and functions
-    -c, --compilerOptions <compilerOptions>  set TypeScript compiler options. defaults to {}
+    -c, --compilerOptions <compilerOptions>  set TypeScript compiler options. defaults to "{}"
     -d, --declarationFileName <fileName>     set file name for global declarations. defaults to "tsr-declarations"
     -e, --excludeDeclarationFile             do not automatically import ambient declarations in the entry file. default to false
     -f, --force                              try to finish on TypeScript compiler error. defaults to false
