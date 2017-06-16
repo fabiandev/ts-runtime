@@ -26,8 +26,7 @@
     "ora": "^1.2.0",
     "pretty-time": "^0.2.0",
     "rimraf": "^2.6.1",
-    "source-map-support": "0.4.3",
-    "typescript": "2.4"
+    "typescript": "^2.4.0"
   },
   "devDependencies": {
     "@types/chalk": "^0.4.31",
