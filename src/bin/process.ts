@@ -45,6 +45,10 @@ bus.on(bus.events.TRANSFORM, (args: any[]) => {
   process.send({ message: 'transform', payload: [fileNames, time] });
 });
 
+bus.on(bus.events.EMIT, (args: any[]) => {
+  process.send({ message: 'emit', payload: args });
+});
+
 bus.on(bus.events.DIAGNOSTICS, (args: any[]) => {
   const diagnostics = args[0] as ts.Diagnostic[];
   let formatted = util.formatDiagnostics(diagnostics);
@@ -56,7 +60,7 @@ bus.on(bus.events.DIAGNOSTICS, (args: any[]) => {
   }
 });
 
-bus.on(bus.events.CLEANUP, (args: any[]) => {
+bus.on(bus.events.CLEAN, (args: any[]) => {
   process.send({ message: 'cleanup', payload: args });
 });
 

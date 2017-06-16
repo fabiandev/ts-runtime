@@ -9,7 +9,8 @@ export const events = {
   DIAGNOSTICS: Symbol('diagnostics'),
   TRANSFORM: Symbol('transform'),
   SCAN: Symbol('transform'),
-  CLEANUP: Symbol('cleanup'),
+  EMIT: Symbol('emit'),
+  CLEAN: Symbol('cleanup'),
 };
 
 export const emitter = new EventEmitter();

@@ -74,7 +74,6 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
     sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
 
-    // setTimeout(() => {
     emit(bus.events.SCAN, getElapsedTime());
 
     scanner = new Scanner(program);
@@ -82,6 +81,8 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
 
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
+
+    emit(bus.events.EMIT, getElapsedTime());
 
     writeTempFiles(result);
 
@@ -96,7 +97,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
       return;
     }
 
-    emit(bus.events.CLEANUP, getElapsedTime());
+    emit(bus.events.CLEAN, getElapsedTime());
 
     if (!options.keepTemp) {
       deleteTempFiles();
@@ -105,7 +106,6 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     result.dispose();
 
     emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
-    // }, 25);
   };
 
   function getOutDir(): string {

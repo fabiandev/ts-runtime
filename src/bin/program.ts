@@ -87,6 +87,14 @@ export const status: ProgramStatus = {
     spinner.start();
   },
 
+  emit: (time: string) => {
+    spinner.succeed(`${current} (${time})`);
+    current = 'Emitting';
+    currentPast = 'Emitted';
+    spinner.text = chalk.bold(current);
+    spinner.start();
+  },
+
   scan: (time: string) => {
     spinner.succeed(`${current} (${time})`);
     current = 'Scanning';
