@@ -306,7 +306,7 @@ At this point, only a very minimal class transformation, with a single method, i
 
 ```js
 class MyClass {
-  method(param: number) {
+  method(param) {
     let _paramType = t.number();
     const _returnType = t.return(t.void());
     t.param("param", _paramType, true).assert(param);
@@ -348,7 +348,7 @@ While all overloads are considered (excluding merged declarations) when generati
   )
 ))
 class MyInterface {
-  method(param: any): any {
+  method(param) {
     // implementation
   }
 }
