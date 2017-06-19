@@ -13,7 +13,7 @@
     "node": ">=6"
   },
   "scripts": {
-    "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json",
+    "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:tsr": "ts-node ./src/bin/index src/index.ts ./src/lib/index.ts ./src/bin/index.ts --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'"
   },
   "_moduleAliases": {
