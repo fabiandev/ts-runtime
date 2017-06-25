@@ -6,6 +6,7 @@ export interface Options {
   declarationFileName?: string;
   force?: boolean;
   excludeDeclarationFile?: boolean;
+  excludeLib?: boolean;
   keepTemp?: boolean;
   libIdentifier?: string;
   libNamespace?: string;
@@ -34,6 +35,7 @@ export const defaultOptions: Options = {
   declarationFileName: 'tsr-declarations',
   force: false,
   excludeDeclarationFile: false,
+  excludeLib: false,
   keepTemp: false,
   libIdentifier: 't',
   libNamespace: '_',

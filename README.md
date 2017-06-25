@@ -489,6 +489,12 @@ Default: false
 
 Specifies if the generated file should be imported on top of every entry file.
 
+#### excludeLib
+Type: `boolean`  
+Default: false  
+
+Specifies if the library import on top of every file should be omitted.
+
 #### force
 Type: `boolean`  
 Default: false  
@@ -590,6 +596,7 @@ transform(entryFiles, { log: false });
     -c, --compilerOptions <compilerOptions>  set TypeScript compiler options. defaults to "{}"
     -d, --declarationFileName <fileName>     set file name for global declarations. defaults to "tsr-declarations"
     -e, --excludeDeclarationFile             do not automatically import ambient declarations in the entry file. default to false
+    -E, --excludeLib                         do not automatically import the runtime library. default to false
     -f, --force                              try to finish on TypeScript compiler error. defaults to false
     -k, --keepTemp                           keep temporary files. defaults to false
     -l, --libIdentifier <name>               lib import name. defaults to "t"

@@ -62,6 +62,10 @@ function setExcludeDeclarationFile() {
   options.excludeDeclarationFile = true;
 }
 
+function setExcludeLib() {
+  options.excludeLib = true;
+}
+
 function setForce() {
   options.force = true;
 }
@@ -105,6 +109,7 @@ commander
   .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to "{}"', setCompilerOptions)
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
+  .option('-E, --excludeLib', 'do not automatically import the runtime library. default to false', setExcludeLib)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
