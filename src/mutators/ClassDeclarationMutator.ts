@@ -33,9 +33,8 @@ export class ClassDeclarationMutator extends Mutator {
     this.assertImplementing(node, members);
     this.setMerged(node);
 
-    const decorators = this.options.annotate ?
-      this.reflectClass(node) :
-      node.decorators;
+    const decorators = this.options.noAnnotate ?
+      node.decorators : this.reflectClass(node);
 
     return ts.updateClassDeclaration(
       node, decorators, node.modifiers, node.name,

@@ -8,7 +8,7 @@ export class FunctionExpressionMutator extends Mutator {
   protected mutate(node: ts.FunctionExpression): ts.Expression {
     let substitution: ts.Expression = this.factory.mutateFunctionBody(node) as ts.FunctionExpression;
 
-    if (this.options.annotate) {
+    if (!this.options.noAnnotate) {
       substitution = this.factory.annotate([
         substitution,
         this.factory.functionReflection(node)

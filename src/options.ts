@@ -1,11 +1,11 @@
 import * as ts from 'typescript';
 
 export interface Options {
-  annotate?: boolean;
+  noAnnotate?: boolean;
   compilerOptions?: ts.CompilerOptions;
   declarationFileName?: string;
   force?: boolean;
-  importDeclarations?: boolean;
+  excludeDeclarationFile?: boolean;
   keepTemp?: boolean;
   libIdentifier?: string;
   libNamespace?: string;
@@ -19,7 +19,7 @@ export interface Options {
 }
 
 export const defaultOptions: Options = {
-  annotate: true,
+  noAnnotate: false,
   compilerOptions: {
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
     module: ts.ModuleKind.ES2015,
@@ -33,7 +33,7 @@ export const defaultOptions: Options = {
   },
   declarationFileName: 'tsr-declarations',
   force: false,
-  importDeclarations: true,
+  excludeDeclarationFile: false,
   keepTemp: false,
   libIdentifier: 't',
   libNamespace: '_',

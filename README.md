@@ -451,9 +451,9 @@ have a look at the options.
 
 ## Options
 
-#### annotate
+#### noAnnotate
 Type: `boolean`  
-Default: true  
+Default: false  
 
 Specifies if classes and function should be annotated.
 
@@ -483,9 +483,9 @@ Default: "tsr-declarations"
 The file name where all external and ambient declarations will be written to.
 Excludes a path or an extension.
 
-#### importDeclarations
+#### excludeDeclarationFile
 Type: `boolean`  
-Default: true  
+Default: false  
 
 Specifies if the generated file should be imported on top of every entry file.
 

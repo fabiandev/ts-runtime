@@ -37,7 +37,7 @@ function defaultAction() {
 }
 
 function setNoAnnotate() {
-  options.annotate = false;
+  options.noAnnotate = true;
 }
 
 function setCompilerOptions(opts: string) {
@@ -59,7 +59,7 @@ function setDeclarationFileName(fileName: string) {
 }
 
 function setExcludeDeclarationFile() {
-  options.importDeclarations = false;
+  options.excludeDeclarationFile = true;
 }
 
 function setForce() {
