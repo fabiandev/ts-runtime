@@ -182,6 +182,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
   function emitDeclarations() {
     const filename = `${options.declarationFileName}.js`;
     const outDir = getOutDir();
+    const location = path.join(outDir, filename);
 
     const printer = ts.createPrinter();
 
@@ -197,6 +198,10 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     do {
       declarations = scanner.getDeclarations();
       length = declarations.length;
+
+      if (length < 1) {
+        return;
+      }
 
       for (let i = 0; i < declarations.length - processed; i++) {
         if (names.indexOf(declarations[i].name) !== -1) {
@@ -216,6 +221,10 @@ function transformProgram(entryFiles: string[], options?: Options): void {
       processed = length;
     } while (length !== scanner.getDeclarations().length);
 
+    if (expressions.length < 1) {
+      return;
+    }
+
     sf = ts.updateSourceFileNode(sf, [
       context.factory.importLibStatement(),
       ...expressions.map(exp => {
@@ -226,7 +235,8 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     const printed = printer.printFile(sf);
     const transpiled = ts.transpile(printed, options.compilerOptions);
 
-    ts.sys.writeFile(path.join(outDir, filename), transpiled);
+    rimraf.sync(location);
+    ts.sys.writeFile(location, transpiled);
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {

@@ -18,7 +18,7 @@ export class SourceFileMutator extends Mutator {
       ));
     }
 
-    if (!this.options.excludeDeclarationFile && this.context.isEntryFile(node.fileName)) {
+    if (!this.options.excludeDeclarationFile && this.context.scanner.getDeclarations().length > 0 && this.context.isEntryFile(node.fileName)) {
       const relativePath = path.relative(path.dirname(node.fileName), this.context.commonDir);
       const filePath = path.join(relativePath, this.context.options.declarationFileName);
       const prefix = !relativePath ? './' : '';
@@ -29,11 +29,13 @@ export class SourceFileMutator extends Mutator {
       ));
     }
 
-    declarations.push(this.factory.importLibStatement());
+    if (!this.options.excludeLib) {
+      declarations.push(this.factory.importLibStatement());
+    }
 
     statements.unshift(...declarations);
 
-    return ts.updateSourceFileNode(node, statements);
+    return declarations.length > 0 ? ts.updateSourceFileNode(node, statements) : node;
   }
 
 }
