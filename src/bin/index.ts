@@ -90,7 +90,7 @@ function setStackTraceOutput(limit: number) {
   options.stackTraceOutput = limit;
 }
 
-function setTempFolder(name: string) {
+function setTempFolderName(name: string) {
   options.tempFolderName = name;
 }
 
@@ -117,7 +117,7 @@ commander
   .option('-n, --libNamespace <namespace>', 'prefix for lib and code additions. defaults to "_"', setLibNamespace)
   .option('-p, --declarationPrefix <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationPrefix)
   .option('-s, --stackTraceOutput <limit>', 'output a specified number of lines of the stack trace. defaults to 3', setStackTraceOutput)
-  .option('-t, --tempFolder <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolder)
+  .option('-t, --tempFolderName <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolderName)
   .on('--help', () => {
     console.log('  Examples:');
     console.log();
