@@ -594,6 +594,7 @@ transform(entryFiles, { log: false });
     -v, --version                            output the version number
     -a, --noAnnotate                         do not annotate classes and functions
     -c, --compilerOptions <compilerOptions>  set TypeScript compiler options. defaults to "{}"
+    -C, --tsConfig <path>                    use the compiler options of the given tsconfig.json
     -d, --declarationFileName <fileName>     set file name for global declarations. defaults to "tsr-declarations"
     -e, --excludeDeclarationFile             do not automatically import ambient declarations in the entry file. default to false
     -E, --excludeLib                         do not automatically import the runtime library. default to false
