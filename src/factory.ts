@@ -1293,7 +1293,7 @@ export class Factory {
   }
 
   public nostrict<T extends ts.Expression>(reflection: T): T | ts.CallExpression {
-    return this.strictNullChecks ? reflection : this.libCall('nostrict', reflection);
+    return this.strictNullChecks ? reflection : this.libCall('nullable', reflection);
   }
 
   public intersect(args: ts.Expression | ts.Expression[]): ts.CallExpression {
