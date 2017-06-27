@@ -1236,6 +1236,7 @@ export class Factory {
     return method;
   }
 
+  // TODO: computed property names are blank in tsr-declarations file
   public propertyNameToLiteralOrExpression(node: ts.PropertyName): ts.Expression | ts.StringLiteral | ts.NumericLiteral {
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
