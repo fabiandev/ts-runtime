@@ -134,7 +134,22 @@ function transformProgram(entryFiles: string[], options?: Options): void {
   }
 
   function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
-    const printer = ts.createPrinter();
+    const printHandlers: ts.PrintHandlers = {
+      // substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
+      //   if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      //     const ids = scanner.getIdentifiers(node.getSourceFile());
+      //     while(ids && ids.has(node.name.text)) {
+      //       node.name.text = `_${node.name.text}`;
+      //     }
+      //
+      //     const identifier = ts.createIdentifier(node.name.text);
+      //     return ts.updateVariableDeclaration(node, identifier, node.type, node.initializer);
+      //   }
+      //   return node;
+      // }
+    };
+
+    const printer = ts.createPrinter(undefined, printHandlers);
 
     for (let transformed of result.transformed) {
       const filePath = toTempPath(transformed.fileName);
