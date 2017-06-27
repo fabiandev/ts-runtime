@@ -15,6 +15,7 @@ export class Scanner {
   private aliases: Map<ts.Node, ts.Node> = new Map();
   private properties: Map<ts.Node, TypeInfo> = new Map();
   private scanned: Set<ts.Node> = new Set();
+  private identifiers: Map<ts.SourceFile, Set<string>> = new Map();
 
   private skip: ts.SyntaxKind[] = [
     ts.SyntaxKind.NamedImports,
@@ -97,6 +98,10 @@ export class Scanner {
     return this.declarations;
   }
 
+  public getIdentifiers(sf: ts.SourceFile): Set<string> {
+    return this.identifiers.get(this.getAliasedNode(sf) as ts.SourceFile);
+  }
+
   public isAllowedDeclarationSymbol(symbol: ts.Symbol) {
     return symbol && symbol.flags && ((symbol.flags & this.AllowedDeclarations) && !(symbol.flags & this.DisallowedDeclaratins));
   }
@@ -153,6 +158,16 @@ export class Scanner {
   }
 
   private scanNode(node: ts.Node): TypeInfo {
+    if (ts.isIdentifier(node)) {
+      const sf = node.getSourceFile();
+
+      if (!this.identifiers.has(sf)) {
+        this.identifiers.set(sf, new Set());
+      }
+
+      this.identifiers.get(sf).add(node.text);
+    }
+
     if (!this.shouldScan(node)) {
       return;
     }
