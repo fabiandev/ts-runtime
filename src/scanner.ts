@@ -2,37 +2,15 @@ import * as ts from 'typescript';
 import * as util from './util';
 import * as path from 'path';
 
-export interface TypeInfo {
-  TSR_DECLARATION: boolean;
-  enclosing?: ts.Node;
-  sourceFile?: ts.SourceFile;
-  fileName?: string;
-  declarations: ts.Declaration[];
-  type: ts.Type;
-  typeText: string;
-  typeNode: ts.TypeNode;
-  baseType?: ts.Type;
-  baseTypeNode?: ts.TypeNode;
-  baseTypeText?: string;
-  isSynthesized: boolean;
-  isReference: boolean;
-  isLiteral: boolean;
-  isAmbient: boolean;
-  isDeclaration: boolean;
-  isExternal: boolean;
-  isInDeclarationFile: boolean;
-  symbol?: ts.Symbol;
-}
-
 export interface TsrDeclaration {
   symbol: ts.Symbol,
   name: string
 }
 
 export class Scanner {
+  private _program: ts.Program;
+  private _checker: ts.TypeChecker;
 
-  private program: ts.Program;
-  private checker: ts.TypeChecker;
   private declarations: TsrDeclaration[] = [];
   private aliases: Map<ts.Node, ts.Node> = new Map();
   private properties: Map<ts.Node, TypeInfo> = new Map();
@@ -52,8 +30,8 @@ export class Scanner {
   private DisallowedDeclaratins = ts.SymbolFlags.Module;
 
   constructor(program: ts.Program, defer = false) {
-    this.program = program;
-    this.checker = program.getTypeChecker();
+    this._program = program;
+    this._checker = program.getTypeChecker();
     if (!defer) this.scan();
   }
 
@@ -119,6 +97,51 @@ export class Scanner {
     return this.declarations;
   }
 
+  public isAllowedDeclarationSymbol(symbol: ts.Symbol) {
+    return symbol && symbol.flags && ((symbol.flags & this.AllowedDeclarations) && !(symbol.flags & this.DisallowedDeclaratins));
+  }
+
+  public hasDeclarations(symbol: ts.Symbol): boolean {
+    return symbol && symbol.declarations && symbol.declarations.length > 0;
+  }
+
+  public pathIsExternal(fileName: string): boolean {
+    const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
+    return !path.resolve(fileName).startsWith(path.resolve(rootDir));
+  }
+
+  public getType(node: ts.Node): ts.Type {
+    const isTypeNode = ts.isTypeNode(node)
+
+    if (isTypeNode) {
+      return this.checker.getTypeFromTypeNode(node as ts.TypeNode);
+    }
+
+    if ((node as any).type) {
+      return this.checker.getTypeFromTypeNode((node as any).type as ts.TypeNode);
+    }
+
+    return this.checker.getTypeAtLocation(node);
+  }
+
+  public getTypeNode(node: ts.Node, type: ts.Type, enclosing?: ts.Node): ts.TypeNode {
+    const isTypeNode = ts.isTypeNode(node);
+
+    if (isTypeNode) {
+      return node as ts.TypeNode;
+    }
+
+    if ((node as any).type && ts.isTypeNode((node as any).type)) {
+      return (node as any).type as ts.TypeNode;
+    }
+
+    return this.checker.typeToTypeNode(type, enclosing || node);
+  }
+
+  public getBaseType(type: ts.Type): ts.Type {
+    return this.checker.getBaseTypeOfLiteralType(type);
+  }
+
   private scanRecursive(entry: ts.Node): void {
     const scanNode = (node: ts.Node) => {
       if (!node) return;
@@ -130,57 +153,16 @@ export class Scanner {
   }
 
   private scanNode(node: ts.Node): TypeInfo {
-    // if (this.scanned.has(node)) {
-    //   return;
-    // }
-
-    // this.scanned.add(node);
-
     if (!this.shouldScan(node)) {
       return;
     }
 
-    if (ts.isAsExpression(node)) {
-      node = this.getAsExpression(node);
-    }
+    node = this.getMappedNode(node);
 
-    const enclosing = node;
-    const type = this.getType(node);
-    const symbol = this.getSymbol(type, node);
-    const typeNode = this.getTypeNode(node, type);
-    const typeText = this.checker.typeToString(type, enclosing);
-    const isLiteral = util.isLiteral(typeNode);
-    const isReference = ts.isTypeReferenceNode(typeNode);
-    const isSynthesized = util.isSynthesized(typeNode);
-    const baseType = isLiteral && this.getBaseType(type);
-    const baseTypeNode = baseType && this.checker.typeToTypeNode(baseType, enclosing);
-    const baseTypeText = baseType && this.checker.typeToString(baseType, enclosing);
+    const typeInfo = new TypeInfo(this, node);
 
-    let declarations: ts.Declaration[] = [];
-    let sourceFile: ts.SourceFile;
-    let fileName: string;
-    let isAmbient = false;
-    let isDeclaration = false;
-    let isInDeclarationFile = false;
-    let isExternal = false;
-
-    if (this.hasDeclarations(symbol)) {
-      declarations = symbol.getDeclarations();
-      const firstDeclaration = declarations[0];
-      sourceFile = firstDeclaration.getSourceFile();
-      fileName = sourceFile.fileName;
-      isAmbient = util.isAmbient(firstDeclaration);
-      isDeclaration = util.isAmbientDeclaration(firstDeclaration);
-      isInDeclarationFile = sourceFile.isDeclarationFile;
-      isExternal = this.pathIsExternal(fileName);
-    }
-
-    const TSR_DECLARATION =
-      ((isExternal && (isAmbient || isDeclaration || isInDeclarationFile) ||
-        (!isExternal && (isDeclaration || isInDeclarationFile))));
-
-    if (TSR_DECLARATION && this.isAllowedDeclarationSymbol(symbol) && (isReference || util.isPartOfTypeNode(node))) {
-      this.addDeclaration(symbol, fileName);
+    if (typeInfo.isTsrDeclaration()) {
+      this.addDeclaration(typeInfo.symbol, typeInfo.fileName);
       // if (this.defer) {
       //   for (let decl of declarations) {
       //     this.scanNode(decl)
@@ -188,17 +170,10 @@ export class Scanner {
       // }
     }
 
-    if (node !== typeNode) {
-      util.setParent(typeNode);
-      this.mapNode(typeNode, node);
+    if (node !== typeInfo.typeNode) {
+      util.setParent(typeInfo.typeNode);
+      this.mapNode(typeInfo.typeNode, node);
     }
-
-    const typeInfo: TypeInfo = {
-      TSR_DECLARATION, enclosing, sourceFile, fileName,
-      declarations, type, typeText, typeNode, baseType, baseTypeNode,
-      baseTypeText, isSynthesized, isReference, isLiteral, isAmbient,
-      isDeclaration, isExternal, isInDeclarationFile, symbol,
-    };
 
     this.properties.set(node, typeInfo);
 
@@ -214,58 +189,27 @@ export class Scanner {
       return false;
     }
 
+    if (this.scanned.has(node)) {
+      return false;
+    }
+
+    this.scanned.add(node);
+
     return true;
   }
 
-  private isAllowedDeclarationSymbol(symbol: ts.Symbol) {
-    return symbol && symbol.flags && ((symbol.flags & this.AllowedDeclarations) && !(symbol.flags & this.DisallowedDeclaratins));
-  }
+  private getMappedNode(node: ts.Node): ts.Node {
+    if (ts.isAsExpression(node)) {
+      return this.getAsExpression(node);
+    }
 
-  private hasDeclarations(symbol: ts.Symbol): boolean {
-    return symbol && symbol.declarations && symbol.declarations.length > 0;
-  }
-
-  private pathIsExternal(fileName: string): boolean {
-    const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
-    return !path.resolve(fileName).startsWith(path.resolve(rootDir));
+    return node;
   }
 
   private getAsExpression(node: ts.AsExpression): ts.Node {
     let expression = node.expression;
     this.mapNode(node, expression);
     return expression;
-  }
-
-  private getType(node: ts.Node): ts.Type {
-    const isTypeNode = ts.isTypeNode(node)
-
-    if (isTypeNode) {
-      return this.checker.getTypeFromTypeNode(node as ts.TypeNode);
-    }
-
-    if ((node as any).type) {
-      return this.checker.getTypeFromTypeNode((node as any).type as ts.TypeNode);
-    }
-
-    return this.checker.getTypeAtLocation(node);
-  }
-
-  private getTypeNode(node: ts.Node, type: ts.Type, enclosing?: ts.Node): ts.TypeNode {
-    const isTypeNode = ts.isTypeNode(node);
-
-    if (isTypeNode) {
-      return node as ts.TypeNode;
-    }
-
-    if ((node as any).type && ts.isTypeNode((node as any).type)) {
-      return (node as any).type as ts.TypeNode;
-    }
-
-    return this.checker.typeToTypeNode(type, enclosing || node);
-  }
-
-  private getBaseType(type: ts.Type): ts.Type {
-    return this.checker.getBaseTypeOfLiteralType(type);
   }
 
   private addDeclaration(symbol: ts.Symbol, fileName: string) {
@@ -279,6 +223,208 @@ export class Scanner {
     if (!decl) {
       this.declarations.unshift({ symbol, name: uid });
     }
+  }
+
+  get program(): ts.Program {
+    return this._program;
+  }
+
+  get checker(): ts.TypeChecker {
+    return this._checker;
+  }
+
+}
+
+export class TypeInfo {
+  private _symbol?: ts.Symbol;
+  private _TSR_DECLARATION: boolean;
+  private _isTsrDeclaration: boolean;
+  private _enclosing?: ts.Node;
+  private _sourceFile?: ts.SourceFile;
+  private _fileName?: string;
+  private _declarations: ts.Declaration[];
+  private _type: ts.Type;
+
+  private _typeText: string;
+  private _typeNode: ts.TypeNode;
+  private _baseType?: ts.Type;
+  private _baseTypeNode?: ts.TypeNode;
+  private _baseTypeText?: string;
+
+  private _isSynthesized: boolean;
+  private _isReference: boolean;
+  private _isLiteral: boolean;
+
+  private _isAmbient: boolean;
+  private _isDeclaration: boolean;
+  private _isExternal: boolean;
+  private _isInDeclarationFile: boolean;
+
+  constructor(private scanner: Scanner, enclosing: ts.Node) {
+    this._enclosing = enclosing;
+  }
+
+  public isTsrDeclaration(): boolean {
+    if (this._isTsrDeclaration === undefined) {
+      this._isTsrDeclaration = this.TSR_DECLARATION &&
+        this.scanner.isAllowedDeclarationSymbol(this.symbol) &&
+        (this.isReference || util.isPartOfTypeNode(this.enclosing))
+    }
+
+    return this._isTsrDeclaration;
+  }
+
+  public hasDeclarations(): boolean {
+    return this.symbol && this.symbol.declarations && this.symbol.declarations.length > 0;
+  }
+
+  get TSR_DECLARATION(): boolean {
+    if (this._TSR_DECLARATION === undefined) {
+      this._TSR_DECLARATION = ((this.isExternal && (this.isAmbient || this.isDeclaration || this.isInDeclarationFile) ||
+        (!this.isExternal && (this.isDeclaration || this.isInDeclarationFile))));
+    }
+
+    return this._TSR_DECLARATION;
+  }
+
+  get symbol(): ts.Symbol {
+    if (this._symbol === undefined) {
+      this._symbol = this.scanner.getSymbol(this.type, this.enclosing);
+
+      if (this._symbol === undefined) {
+        this._symbol = null;
+      }
+    }
+
+    return this._symbol;
+  }
+
+  get enclosing(): ts.Node {
+    return this._enclosing;
+  }
+
+  get sourceFile(): ts.SourceFile {
+    return this.firstDeclaration && this.firstDeclaration.getSourceFile();
+  }
+
+  get fileName(): string {
+    return this.sourceFile && this.sourceFile.fileName;
+  }
+
+  get declarations(): ts.Declaration[] {
+    if (!this.symbol || !this.symbol.declarations) {
+      return [];
+    }
+
+    return this.symbol.declarations;
+  }
+
+  get firstDeclaration(): ts.Declaration {
+    return this.declarations[0];
+  }
+
+  get type(): ts.Type {
+    if (!this._type) {
+      this._type = this.scanner.getType(this.enclosing);
+    }
+
+    return this._type;
+  }
+
+  get typeText(): string {
+    if (!this._typeText) {
+      this._typeText = this.scanner.checker.typeToString(this.type, this.enclosing);
+    }
+
+    return this._typeText;
+  }
+
+  get typeNode(): ts.TypeNode {
+    if (!this._typeNode) {
+      this._typeNode = this.scanner.getTypeNode(this.enclosing, this.type);
+    }
+
+    return this._typeNode;
+  }
+
+  get baseType(): ts.Type {
+    if (this.isLiteral && !this._baseType) {
+      this._baseType = this.scanner.getBaseType(this.type);
+    }
+
+    return this._baseType;
+  }
+
+  get baseTypeNode(): ts.TypeNode {
+    if (this.isLiteral && !this._baseTypeNode) {
+      this._baseTypeNode = this.scanner.checker.typeToTypeNode(this.baseType, this.enclosing);
+    }
+
+    return this._baseTypeNode;
+  }
+
+  get baseTypeText(): string {
+    if (this.isLiteral && !this._baseTypeNode) {
+      this._baseTypeText = this.scanner.checker.typeToString(this.baseType, this.enclosing);
+    }
+
+    return this._baseTypeText;
+  }
+
+  get isSynthesized(): boolean {
+    if (this._isSynthesized === undefined) {
+      this._isSynthesized = util.isSynthesized(this.typeNode);
+    }
+
+    return this._isSynthesized;
+  }
+
+  get isReference(): boolean {
+    if (this._isReference === undefined) {
+      this._isReference = ts.isTypeReferenceNode(this.typeNode)
+    }
+
+    return this._isReference;
+  }
+
+  get isLiteral(): boolean {
+    if (this._isLiteral === undefined) {
+      this._isLiteral = util.isLiteral(this.typeNode);
+    }
+
+    return this._isLiteral;
+  }
+
+  get isAmbient(): boolean {
+    if (this.hasDeclarations() && this._isAmbient === undefined) {
+      this._isAmbient = util.isAmbient(this.firstDeclaration);
+    }
+
+    return this._isAmbient;
+  }
+
+  get isDeclaration(): boolean {
+    if (this.hasDeclarations() && this._isDeclaration === undefined) {
+      this._isDeclaration = util.isAmbientDeclaration(this.firstDeclaration);
+    }
+
+    return this._isDeclaration;
+  }
+
+  get isInDeclarationFile(): boolean {
+    if (this.hasDeclarations() && this._isInDeclarationFile === undefined) {
+      this._isInDeclarationFile = this.sourceFile.isDeclarationFile;
+    }
+
+    return this._isInDeclarationFile;
+  }
+
+  get isExternal(): boolean {
+    if (this.hasDeclarations() && this._isExternal === undefined) {
+      this._isExternal = this.scanner.pathIsExternal(this.fileName);
+    }
+
+    return this._isExternal;
   }
 
 }
