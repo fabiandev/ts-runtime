@@ -29,10 +29,10 @@ export class Scanner {
 
   private DisallowedDeclaratins = ts.SymbolFlags.Module;
 
-  constructor(program: ts.Program, defer = false) {
+  constructor(program: ts.Program) {
     this._program = program;
     this._checker = program.getTypeChecker();
-    if (!defer) this.scan();
+    this.scan();
   }
 
   public scan(): void {
@@ -163,11 +163,6 @@ export class Scanner {
 
     if (typeInfo.isTsrDeclaration()) {
       this.addDeclaration(typeInfo.symbol, typeInfo.fileName);
-      // if (this.defer) {
-      //   for (let decl of declarations) {
-      //     this.scanNode(decl)
-      //   }
-      // }
     }
 
     if (node !== typeInfo.typeNode) {
