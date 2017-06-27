@@ -263,7 +263,7 @@ export class TypeInfo {
     if (this._isTsrDeclaration === undefined) {
       this._isTsrDeclaration = this.TSR_DECLARATION &&
         this.scanner.isAllowedDeclarationSymbol(this.symbol) &&
-        (this.isReference || util.isPartOfTypeNode(this.enclosing))
+        (util.isPartOfTypeNode(this.enclosing) || (this.isReference && this.enclosing.getSourceFile().isDeclarationFile));
     }
 
     return this._isTsrDeclaration;
