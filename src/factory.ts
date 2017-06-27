@@ -705,7 +705,7 @@ export class Factory {
   public constructorReflection(node: ts.ConstructorDeclaration): ts.CallExpression {
     return this.libCall('property', [
       ts.createLiteral('constructor'),
-      this.functionReflection(node)
+      this.nullable(this.functionReflection(node))
     ]);
   }
 
@@ -716,7 +716,7 @@ export class Factory {
   public methodSignatureReflection(node: MethodLikeNode): ts.CallExpression {
     return this.libCall(util.isStatic(node) ? 'staticProperty' : 'property', [
       this.propertyNameToLiteralOrExpression(node.name),
-      this.functionReflection(node)
+      this.nullable(this.functionReflection(node))
     ]);
   }
 
@@ -1553,5 +1553,10 @@ export const FactoryRule = {
     FactoryState.TypeReferenceReflection,
     FactoryState.FunctionTypeReflection,
     FactoryState.ConstructorTypeReflection
+  ],
+  Property: [
+    FactoryState.PropertySignatureReflection,
+    FactoryState.MethodSignatureReflection,
+    FactoryState.ConstructorReflection
   ]
 };
