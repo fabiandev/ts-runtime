@@ -443,6 +443,7 @@ have a look at the options.
 
 - Only `as number` syntax for type assertions (no angle-bracket syntax: `<number>`).
 - No reflection of mapped types, indexed access types and type operators yet.
+- No support for string enums.
 - readonly or class visibility modifiers are not asserted.
 - No declaration merging.
 - Method overloading is only supported within the same declaration.
