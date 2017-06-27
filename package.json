@@ -27,6 +27,7 @@
     "flow-runtime": "^0.13.0",
     "ora": "^1.2.0",
     "pretty-time": "^0.2.0",
+    "regenerator-runtime": "^0.10.5",
     "rimraf": "^2.6.1",
     "typescript": "^2.4.0"
   },
