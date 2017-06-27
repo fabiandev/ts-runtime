@@ -134,17 +134,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
   }
 
   function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
-    const printerOptions: ts.PrinterOptions = {
-      removeComments: false
-    };
-
-    const printHandlers: ts.PrintHandlers = {
-      substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
-        return node;
-      }
-    };
-
-    const printer = ts.createPrinter(printerOptions, printHandlers);
+    const printer = ts.createPrinter();
 
     for (let transformed of result.transformed) {
       const filePath = toTempPath(transformed.fileName);
@@ -184,7 +174,15 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     const outDir = getOutDir();
     const location = path.join(outDir, filename);
 
-    const printer = ts.createPrinter();
+    const printHandlers: ts.PrintHandlers = {
+      substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
+        node.parent = undefined;
+        node.flags = ts.NodeFlags.Synthesized;
+        return node;
+      }
+    };
+
+    const printer = ts.createPrinter(undefined, printHandlers);
 
     let sf = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
 
