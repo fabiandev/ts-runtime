@@ -201,36 +201,46 @@ export class MutationContext {
     return search(node) || false;
   }
 
-  public getTypeDeclarationName(node: string | ts.Identifier): string {
-    const name = typeof node === 'string' ? node : node.text;
-    return `${this.options.declarationPrefix}${name}Type`;
+  public getIdentifier(text: string): string {
+    const ids = this.scanner.getIdentifiers(this.sourceFile);
+
+    while(ids && ids.has(text)) {
+      text = `_${text}`;
+    }
+
+    return text;
   }
 
-  public getInlineTypeName(node: string | ts.Identifier): string {
+  public getTypeDeclarationName(node: string | ts.Identifier): string {
     const name = typeof node === 'string' ? node : node.text;
-    return `${this.options.declarationPrefix}${name}TypeInline`;
+    return this.getIdentifier(`${this.options.declarationPrefix}${name}Type`);
   }
 
   public getReturnTypeDeclarationName(): string {
     return this.getTypeDeclarationName('return');
   }
 
+  public getInlineTypeName(node: string | ts.Identifier): string {
+    const name = typeof node === 'string' ? node : node.text;
+    return this.getIdentifier(`${this.options.declarationPrefix}${name}TypeInline`);
+  }
+
   public getLibDeclarationName(): string {
-    return `${this.options.libNamespace}${this.options.libIdentifier}`;
+    return this.getIdentifier(`${this.options.libNamespace}${this.options.libIdentifier}`);
   }
 
   public getTypeSymbolDeclarationName(node: string | ts.Identifier): string {
     const name = typeof node === 'string' ? node : node.text;
-    return `${this.options.declarationPrefix}${name}TypeParametersSymbol`;
+    return this.getIdentifier(`${this.options.declarationPrefix}${name}TypeParametersSymbol`);
   }
 
   public getTypeSymbolDeclarationInitializer(node: string | ts.Identifier): string {
     const name = typeof node === 'string' ? node : node.text;
-    return `${name}TypeParameters`;
+    return this.getIdentifier(`${name}TypeParameters`);
   }
 
   public getTypeParametersDeclarationName(): string {
-    return `${this.options.declarationPrefix}typeParameters`;
+    return this.getIdentifier(`${this.options.declarationPrefix}typeParameters`);
   }
 
   public getMembers(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {

@@ -1421,7 +1421,7 @@ export class Factory {
   }
 
   get lib(): string {
-    return `${this.namespace}${this._lib}`;
+    return this.context.getIdentifier(`${this.namespace}${this._lib}`);
   }
 
   get package(): string {

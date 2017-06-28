@@ -38,7 +38,7 @@ export const defaultOptions: Options = {
   excludeLib: false,
   keepTemp: false,
   libIdentifier: 't',
-  libNamespace: '_',
+  libNamespace: '',
   declarationPrefix: '_',
   moduleAlias: false,
   stackTraceOutput: 3,
