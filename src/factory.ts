@@ -594,21 +594,21 @@ export class Factory {
   public namedDeclarationReflection(name: string, declaration: ts.Declaration): ts.Expression {
     switch (declaration.kind) {
       case ts.SyntaxKind.InterfaceDeclaration:
-        return this.libCall('declare', this.interfaceReflection(declaration as ts.InterfaceDeclaration, name));
+        return this.libCall('declare', [ts.createLiteral(name), this.interfaceReflection(declaration as ts.InterfaceDeclaration, name)]);
       case ts.SyntaxKind.ClassDeclaration:
-        return this.libCall('declare', this.classReflection(declaration as ts.ClassDeclaration, name));
+        return this.libCall('declare', [ts.createLiteral(name), this.classReflection(declaration as ts.ClassDeclaration, name)]);
       case ts.SyntaxKind.TypeLiteral:
-        return this.libCall('declare', this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode)));
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode))]);
       case ts.SyntaxKind.EnumDeclaration:
-        return this.libCall('declare', this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration)));
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration))]);
       case ts.SyntaxKind.EnumMember:
-        return this.libCall('declare', this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember)));
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember))]);
       case ts.SyntaxKind.FunctionDeclaration:
-        return this.libCall('declare', this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration)));
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration))]);
       case ts.SyntaxKind.VariableDeclaration:
-        return this.libCall('declare', this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration)));
+        return this.libCall('declare', [ts.createLiteral(name), this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration))]);
       case ts.SyntaxKind.TypeAliasDeclaration:
-        return this.libCall('declare', this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, name));
+        return this.libCall('declare', [ts.createLiteral(name), this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, name)]);
       case ts.SyntaxKind.FunctionType:
         return this.libCall('declare', [ts.createLiteral(name), this.functionTypeReflection(declaration as ts.FunctionTypeNode)]);
       default:
