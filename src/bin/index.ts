@@ -26,15 +26,22 @@ function defaultAction() {
     throw new ProgramError('No entry file(s) passed to transform.');
   }
 
-  parsedCompilerOptions = JSON.parse(compilerOptions);
+  try {
+    parsedCompilerOptions = JSON.parse(compilerOptions);
+  } catch (e) {
+    program.status.error(`Could not parse compiler configuration.`);
+    return;
+  }
+
+  const resolvedTsConfigPath = path.resolve(tsConfigPath);
 
   if (tsConfigPath) {
-    if (!ts.sys.fileExists(tsConfigPath)) {
+    if (!ts.sys.fileExists(resolvedTsConfigPath)) {
       program.status.error(`Could not load configuration from ${tsConfigPath}`);
       return;
     }
 
-    const tsConfig = require(path.resolve(tsConfigPath));
+    const tsConfig = require(resolvedTsConfigPath);
 
     if (tsConfig.hasOwnProperty('compilerOptions')) {
       parsedCompilerOptions = tsConfig.compilerOptions;
@@ -141,7 +148,7 @@ commander
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
   .option('-m, --moduleAlias', 'import package module-alias on top of every file.', setModuleAlias)
-  .option('-n, --libNamespace <namespace>', 'prefix for lib and code additions. defaults to "_"', setLibNamespace)
+  .option('-n, --libNamespace <namespace>', 'prefix for lib and code additions. defaults to ""', setLibNamespace)
   .option('-p, --declarationPrefix <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationPrefix)
   .option('-s, --stackTraceOutput <limit>', 'output a specified number of lines of the stack trace. defaults to 3', setStackTraceOutput)
   .option('-t, --tempFolderName <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolderName)
@@ -149,8 +156,8 @@ commander
     console.log('  Examples:');
     console.log();
     console.log('    $ tsr entry.ts --force');
-    console.log('    $ tsr src/bin/index.ts src/lib/index.ts');
-    console.log('    $ tsr -c \'{ "outDir": "dist" }\' entry.ts');
+    console.log('    $ tsr entry1 entry2 entry3');
+    console.log('    $ tsr -c tsconfig.json');
     console.log();
   });
 

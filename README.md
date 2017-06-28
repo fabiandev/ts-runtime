@@ -516,7 +516,7 @@ Name of the directory, where temporary files should be written to.
 
 #### libNamespace
 Type: `string`  
-Default: "_"  
+Default: ""  
 
 Prefix for the default library import.
 
@@ -528,7 +528,7 @@ Identifier of the default library import, prefixed by its namespace.
 Looks like the following by default
 
 ```ts
-import _t from "ts-runtime/lib";
+import t from "ts-runtime/lib";
 ```
 
 #### declarationPrefix
@@ -603,7 +603,7 @@ transform(entryFiles, { log: false });
     -k, --keepTemp                           keep temporary files. defaults to false
     -l, --libIdentifier <name>               lib import name. defaults to "t"
     -m, --moduleAlias                        import package module-alias on top of every file.
-    -n, --libNamespace <namespace>           prefix for lib and code additions. defaults to "_"
+    -n, --libNamespace <namespace>           prefix for lib and code additions. defaults to ""
     -p, --declarationPrefix <namespace>      prefix for added variables. defaults to "_"
     -s, --stackTraceOutput <limit>           output a specified number of lines of the stack trace. defaults to 3
     -t, --tempFolder <name>                  set folder name for temporary files. defaults to ".tsr"
