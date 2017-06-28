@@ -21,14 +21,16 @@ export class Scanner {
     ts.SyntaxKind.NamedImports,
     ts.SyntaxKind.NamespaceImport,
     ts.SyntaxKind.ImportClause,
-    ts.SyntaxKind.SourceFile
+    ts.SyntaxKind.SourceFile,
+    ts.SyntaxKind.EndOfFileToken
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
-  ts.SymbolFlags.Enum | ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias |
-  ts.SymbolFlags.Function | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable;
+    ts.SymbolFlags.RegularEnum | ts.SymbolFlags.ConstEnum | ts.SymbolFlags.Enum |
+    ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Function |
+    ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable | ts.SymbolFlags.Type;
 
-  private DisallowedDeclaratins = ts.SymbolFlags.Module;
+  private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter;
 
   constructor(program: ts.Program) {
     this._program = program;
@@ -87,9 +89,15 @@ export class Scanner {
   }
 
   public getSymbol(type: ts.Type, node: ts.Node): ts.Symbol {
-    let symbol = type && (type.aliasSymbol || type.symbol ||
-      (ts.isQualifiedName(node) || ts.isIdentifier(node) || ts.isEntityName(node) ?
-        this.checker.getSymbolAtLocation(node) : undefined));
+    let symbol: ts.Symbol;
+
+    if (type) {
+      symbol = type.symbol || type.aliasSymbol;
+    }
+
+    if (!symbol && node) {
+      symbol = this.checker.getSymbolAtLocation(node);
+    }
 
     return symbol;
   }
@@ -149,7 +157,6 @@ export class Scanner {
 
   private scanRecursive(entry: ts.Node): void {
     const scanNode = (node: ts.Node) => {
-      if (!node) return;
       this.scanNode(node);
       ts.forEachChild(node, scanNode);
     };
@@ -157,7 +164,7 @@ export class Scanner {
     ts.forEachChild(entry, scanNode);
   }
 
-  private scanNode(node: ts.Node): TypeInfo {
+  private scanNode(node: ts.Node): ts.Node {
     if (ts.isIdentifier(node)) {
       const sf = node.getSourceFile();
 
@@ -187,7 +194,7 @@ export class Scanner {
 
     this.properties.set(node, typeInfo);
 
-    return typeInfo;
+    return node;
   }
 
   private shouldScan(node: ts.Node): boolean {
@@ -213,7 +220,39 @@ export class Scanner {
       return this.getAsExpression(node);
     }
 
+    node = this.getNameExpression(node);
+
     return node;
+  }
+
+  private getNameExpression(node: ts.Node): ts.Node {
+    let expr = node;
+
+    if ((node as any).typeName) {
+      expr = (node as any).typeName;
+    }
+
+    if ((node as any).exprName) {
+      expr = (node as any).exprName;
+    }
+
+    if ((node as any).parameterName) {
+      expr = (node as any).parameterName;
+    }
+
+    // if ((node as any).name) {
+    //   expr = (node as any).name;
+    // }
+
+    if ((node as any).tagName) {
+      expr = (node as any).tagName;
+    }
+
+    if (expr !== node) {
+      this.mapNode(node, expr);
+    }
+
+    return expr;
   }
 
   private getAsExpression(node: ts.AsExpression): ts.Node {
@@ -228,9 +267,9 @@ export class Scanner {
     const name = this.checker.getFullyQualifiedName(symbol);
     const uid = util.getHashedDeclarationName(name, fileName);
 
-    let decl = this.declarations.find(decl => decl.symbol === symbol);
+    let index = this.declarations.findIndex(decl => decl.symbol === symbol);
 
-    if (!decl) {
+    if (index === -1) {
       this.declarations.unshift({ symbol, name: uid });
     }
   }
@@ -277,8 +316,8 @@ export class TypeInfo {
   public isTsrDeclaration(): boolean {
     if (this._isTsrDeclaration === undefined) {
       this._isTsrDeclaration = this.TSR_DECLARATION &&
-        this.scanner.isAllowedDeclarationSymbol(this.symbol) &&
-        (util.isPartOfTypeNode(this.enclosing) || (this.isReference && this.enclosing.getSourceFile().isDeclarationFile));
+        this.scanner.isAllowedDeclarationSymbol(this.symbol)
+        && (util.isPartOfTypeNode(this.enclosing) || (this.enclosing.getSourceFile().isDeclarationFile));
     }
 
     return this._isTsrDeclaration;
@@ -288,7 +327,7 @@ export class TypeInfo {
     return this.symbol && this.symbol.declarations && this.symbol.declarations.length > 0;
   }
 
-  get TSR_DECLARATION(): boolean {
+  private get TSR_DECLARATION(): boolean {
     if (this._TSR_DECLARATION === undefined) {
       this._TSR_DECLARATION = ((this.isExternal && (this.isAmbient || this.isDeclaration || this.isInDeclarationFile) ||
         (!this.isExternal && (this.isDeclaration || this.isInDeclarationFile))));
@@ -314,7 +353,7 @@ export class TypeInfo {
   }
 
   get sourceFile(): ts.SourceFile {
-    return this.firstDeclaration && this.firstDeclaration.getSourceFile();
+    return (this.firstDeclaration && this.firstDeclaration.getSourceFile()) || (this.enclosing && this.enclosing.getSourceFile());
   }
 
   get fileName(): string {
@@ -326,7 +365,7 @@ export class TypeInfo {
       return [];
     }
 
-    return this.symbol.declarations;
+    return this.symbol.getDeclarations();
   }
 
   get firstDeclaration(): ts.Declaration {
@@ -422,8 +461,8 @@ export class TypeInfo {
   }
 
   get isInDeclarationFile(): boolean {
-    if (this.hasDeclarations() && this._isInDeclarationFile === undefined) {
-      this._isInDeclarationFile = this.sourceFile.isDeclarationFile;
+    if (this._isInDeclarationFile === undefined) {
+      this._isInDeclarationFile = this.sourceFile && this.sourceFile.isDeclarationFile;
     }
 
     return this._isInDeclarationFile;

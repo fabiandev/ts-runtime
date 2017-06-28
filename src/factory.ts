@@ -258,7 +258,7 @@ export class Factory {
     const typeNameText: string = util.getEntityNameText(node.typeName);
     const isArray = typeNameText.toLowerCase() === 'array';
     const typeInfo = this.scanner.getTypeInfo(node);
-    const TSR_DECLARATION = !!typeInfo && typeInfo.TSR_DECLARATION;
+    const TSR_DECLARATION = typeInfo.isTsrDeclaration();
 
     let args: ts.Expression[] = [];
 
@@ -301,8 +301,6 @@ export class Factory {
     }
 
     const isSelfReference = this.context.isSelfReference(node);
-    const isDeclared = this.context.isDeclared(node.typeName);
-    const wasDeclared = this.context.wasDeclared(node.typeName);
 
     if (typeInfo && typeInfo.symbol) {
       if (util.hasFlag(typeInfo.symbol, ts.SymbolFlags.RegularEnum) || util.hasFlag(typeInfo.symbol, ts.SymbolFlags.ConstEnum)) {
@@ -313,18 +311,17 @@ export class Factory {
     }
 
     if (asLiteral && !isSelfReference) {
-      let sf = typeInfo.declarations[0].getSourceFile().fileName;
+      let sf = typeInfo.sourceFile.fileName;
       let hash = util.getHash(sf);
       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
       name = name || typeNameText;
       name = `${name}.${hash}`;
-
       identifier = ts.createLiteral(name);
     } else {
       identifier = ts.createIdentifier(typeNameText);
     }
 
-    if (!wasDeclared && isDeclared && !isSelfReference && !asLiteral) {
+    if (!isSelfReference && !asLiteral && !isTypeParameter && !this.context.wasDeclared(node.typeName) && this.context.isDeclared(node.typeName)) {
       identifier = this.tdz(identifier as ts.Identifier);
     }
 
@@ -358,13 +355,8 @@ export class Factory {
       util.getIdentifierOfPropertyAccessExpressionOrFail(node.expression as ts.PropertyAccessExpression) :
       node.expression as ts.Identifier;
 
-    const wasDeclared = this.context.wasDeclared(identifier);
-    const isDeclared = this.context.isDeclared(identifier);
     const typeInfo = this.scanner.getTypeInfo(node);
-    const asLiteral = typeInfo && typeInfo.TSR_DECLARATION;
-    const typeNameText = ts.isIdentifier(node.expression) ?
-      node.expression.text :
-      util.getPropertyAccessExpressionTextOrFail(node.expression as ts.PropertyAccessExpression);
+    const asLiteral = typeInfo && typeInfo.isTsrDeclaration();
 
     let keyword = 'ref';
 
@@ -384,10 +376,14 @@ export class Factory {
       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
       id = ts.createLiteral(util.getHashedDeclarationName(name, fileName));
     } else {
+      const typeNameText = ts.isIdentifier(node.expression) ?
+        node.expression.text :
+        util.getPropertyAccessExpressionTextOrFail(node.expression as ts.PropertyAccessExpression);
+
       id = ts.createIdentifier(typeNameText);
     }
 
-    if (!asLiteral && !wasDeclared && isDeclared) {
+    if (!asLiteral && !this.context.wasDeclared(identifier) && this.context.isDeclared(identifier)) {
       id = this.tdz(id as ts.Identifier);
     }
 
@@ -584,21 +580,23 @@ export class Factory {
   public namedDeclarationReflection(name: string, declaration: ts.Declaration): ts.Expression {
     switch (declaration.kind) {
       case ts.SyntaxKind.InterfaceDeclaration:
-        return this.interfaceReflection(declaration as ts.InterfaceDeclaration, name);
+        return this.libCall('declare', this.interfaceReflection(declaration as ts.InterfaceDeclaration, name));
       case ts.SyntaxKind.ClassDeclaration:
-        return this.classReflection(declaration as ts.ClassDeclaration, name);
+        return this.libCall('declare', this.classReflection(declaration as ts.ClassDeclaration, name));
       case ts.SyntaxKind.TypeLiteral:
-        return this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode));
+        return this.libCall('declare', this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode)));
       case ts.SyntaxKind.EnumDeclaration:
-        return this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration));
+        return this.libCall('declare', this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration)));
       case ts.SyntaxKind.EnumMember:
-        return this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember));
+        return this.libCall('declare', this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember)));
       case ts.SyntaxKind.FunctionDeclaration:
-        return this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration));
+        return this.libCall('declare', this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration)));
       case ts.SyntaxKind.VariableDeclaration:
-        return this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration));
+        return this.libCall('declare', this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration)));
       case ts.SyntaxKind.TypeAliasDeclaration:
-        return this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, name);
+        return this.libCall('declare', this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, name));
+      case ts.SyntaxKind.FunctionType:
+        return this.libCall('declare', [ts.createLiteral(name), this.functionTypeReflection(declaration as ts.FunctionTypeNode)]);
       default:
         throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
     }
