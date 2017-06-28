@@ -271,6 +271,32 @@ export class MutationContext {
     return Array.from(merged);
   }
 
+  public getAllMembers(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
+      const typeInfo = this.scanner.getTypeInfo(node);
+      const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
+      let type: ts.Type;
+
+      if (!typeInfo) {
+        type = this.checker.getTypeAtLocation(node);
+      } else {
+        type = typeInfo.type;
+      }
+
+      if (!type) {
+        return node.members;
+      }
+
+      (type.getProperties() || []).forEach(sym => {
+        for (let typeElement of (sym.getDeclarations() || [])) {
+          if(ts.isTypeElement(typeElement) || ts.isClassElement(typeElement)) {
+            merged.add(typeElement);
+          }
+        }
+      });
+
+      return Array.from(merged);
+    }
+
   public setMerged(symbol: ts.Symbol) {
     return this._merged.add(symbol);
   }
