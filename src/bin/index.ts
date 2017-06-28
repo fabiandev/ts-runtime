@@ -33,14 +33,13 @@ function defaultAction() {
     return;
   }
 
-  const resolvedTsConfigPath = path.resolve(tsConfigPath);
-
   if (tsConfigPath) {
-    if (!ts.sys.fileExists(resolvedTsConfigPath)) {
+    if (!ts.sys.fileExists(tsConfigPath)) {
       program.status.error(`Could not load configuration from ${tsConfigPath}.`);
       return;
     }
 
+    const resolvedTsConfigPath = path.resolve(tsConfigPath);
     const tsConfig = require(resolvedTsConfigPath);
 
     if (tsConfig.hasOwnProperty('compilerOptions')) {

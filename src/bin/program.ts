@@ -162,9 +162,11 @@ export const status: ProgramStatus = {
   },
 
   warn: (warning: string, defer = true) => {
-    if (defer && warnings.indexOf(warning) === -1) {
+    if (warnings.indexOf(warning) === -1) {
       warnings.push(warning);
-    } else {
+    } else
+
+    if(!defer) {
       spinner.warn(warning);
     }
   },
