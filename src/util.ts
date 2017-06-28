@@ -99,7 +99,7 @@ export function isAmbientDeclaration(node: ts.Node): boolean {
     }
   } while (node = node.parent);
 
-  return false
+  return false;
 }
 
 export function isPartOfTypeNode(node: ts.Node) {
