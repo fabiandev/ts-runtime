@@ -190,6 +190,10 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     const location = path.join(outDir, filename);
     rimraf.sync(location);
 
+    const printerOptions: ts.PrinterOptions = {
+      removeComments: false
+    };
+
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
         node.parent = undefined;
@@ -198,7 +202,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
       }
     };
 
-    const printer = ts.createPrinter(undefined, printHandlers);
+    const printer = ts.createPrinter(printerOptions, printHandlers);
 
     let sf = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
 
@@ -242,7 +246,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     sf = ts.updateSourceFileNode(sf, [
       context.factory.importLibStatement(),
       ...expressions.map(exp => {
-        return ts.createStatement(context.factory.libCall('declare', exp));
+        return ts.createStatement(exp);
       })
     ]);
 
