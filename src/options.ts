@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 
 export interface Options {
+  libDeclarations?: boolean;
   noAnnotate?: boolean;
   compilerOptions?: ts.CompilerOptions;
   declarationFileName?: string;
@@ -32,6 +33,7 @@ export const defaultOptions: Options = {
     removeComments: true,
     preserveConstEnums: true,
   },
+  libDeclarations: false,
   declarationFileName: 'tsr-declarations',
   force: false,
   excludeDeclarationFile: false,

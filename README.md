@@ -417,6 +417,8 @@ t.declare(t.type("ts.FlowFlags.82613696", t.enum(/* enum members */)));
 t.declare(t.type("ts.FlowNode.82613696", t.object(/* properties */)));
 ```
 
+> By default declarations from built in libs (such as DOM, or ES6) are not reflected, but inferred at runtime.
+
 #### Declarations
 
 Also local declarations will be included in `tsr-declarations.js`:
@@ -531,6 +533,12 @@ Looks like the following by default
 import t from "ts-runtime/lib";
 ```
 
+#### libIdentifier
+Type: `boolean`  
+Default: false  
+
+By default, built in libraries, such as DOM or ES6, are not reflected, but inferred at runtime.
+
 #### declarationPrefix
 Type: `string`  
 Default: "_"  
@@ -594,25 +602,26 @@ transform(entryFiles, { log: false });
     -h, --help                               output usage information
     -v, --version                            output the version number
     -a, --noAnnotate                         do not annotate classes and functions
-    -c, --compilerOptions <compilerOptions>  set TypeScript compiler options. defaults to "{}"
-    -C, --tsConfig <path>                    use the compiler options of the given tsconfig.json
+    -c, --tsConfig <path>                    use the compiler options of the given tsconfig.json
+    -C, --compilerOptions <compilerOptions>  set TypeScript compiler options. defaults to "{}"
     -d, --declarationFileName <fileName>     set file name for global declarations. defaults to "tsr-declarations"
     -e, --excludeDeclarationFile             do not automatically import ambient declarations in the entry file. default to false
-    -E, --excludeLib                         do not automatically import the runtime library. default to false
+    -E, --excludeLib                         do not automatically import the runtime library. defaults to false
     -f, --force                              try to finish on TypeScript compiler error. defaults to false
     -k, --keepTemp                           keep temporary files. defaults to false
     -l, --libIdentifier <name>               lib import name. defaults to "t"
+    -L, --libDeclarations                    reflect declarations from global libs (e.g. DOM). defaults to false
     -m, --moduleAlias                        import package module-alias on top of every file.
     -n, --libNamespace <namespace>           prefix for lib and code additions. defaults to ""
     -p, --declarationPrefix <namespace>      prefix for added variables. defaults to "_"
     -s, --stackTraceOutput <limit>           output a specified number of lines of the stack trace. defaults to 3
-    -t, --tempFolder <name>                  set folder name for temporary files. defaults to ".tsr"
+    -t, --tempFolderName <name>              set folder name for temporary files. defaults to ".tsr"
 
   Examples:
 
     $ tsr entry.ts --force
-    $ tsr src/bin/index.ts src/lib/index.ts
-    $ tsr -c '{ "outDir": "dist" }' entry.ts
+    $ tsr src/entry1 bin/entry2 lib/entry3
+    $ tsr -c tsconfig.json
 ```
 
 ## Building

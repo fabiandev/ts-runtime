@@ -321,7 +321,14 @@ export class Factory {
       identifier = ts.createIdentifier(typeNameText);
     }
 
-    if (!isSelfReference && !asLiteral && !isTypeParameter && !this.context.wasDeclared(node.typeName) && this.context.isDeclared(node.typeName)) {
+    let tdz = !isSelfReference && !asLiteral && !isTypeParameter &&
+      !this.context.wasDeclared(node.typeName) && this.context.isDeclared(node.typeName);
+
+    if (!this.context.options.libDeclarations && !typeInfo.isExternalModule) {
+      tdz = false;
+    }
+
+    if (tdz) {
       identifier = this.tdz(identifier as ts.Identifier);
     }
 
@@ -383,7 +390,13 @@ export class Factory {
       id = ts.createIdentifier(typeNameText);
     }
 
-    if (!asLiteral && !this.context.wasDeclared(identifier) && this.context.isDeclared(identifier)) {
+    let tdz = !asLiteral && !this.context.wasDeclared(identifier) && this.context.isDeclared(identifier);
+
+    if (!this.context.options.libDeclarations && !typeInfo.isExternalModule) {
+      tdz = false;
+    }
+
+    if (tdz) {
       id = this.tdz(id as ts.Identifier);
     }
 

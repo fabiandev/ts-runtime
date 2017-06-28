@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import * as util from './util';
 import * as path from 'path';
+import { Options } from './options';
 
 export interface TsrDeclaration {
   symbol: ts.Symbol,
@@ -8,6 +9,7 @@ export interface TsrDeclaration {
 }
 
 export class Scanner {
+  private _options: Options;
   private _program: ts.Program;
   private _checker: ts.TypeChecker;
 
@@ -28,11 +30,12 @@ export class Scanner {
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
     ts.SymbolFlags.RegularEnum | ts.SymbolFlags.ConstEnum | ts.SymbolFlags.Enum |
     ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Function |
-    ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Variable | ts.SymbolFlags.Type;
+    /* ts.SymbolFlags.TypeLiteral | */ ts.SymbolFlags.Variable | ts.SymbolFlags.Type;
 
-  private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter;
+  private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter | ts.SymbolFlags.TypeLiteral;
 
-  constructor(program: ts.Program) {
+  constructor(program: ts.Program, options: Options) {
+    this._options = options;
     this._program = program;
     this._checker = program.getTypeChecker();
     this.scan();
@@ -180,7 +183,6 @@ export class Scanner {
     }
 
     node = this.getMappedNode(node);
-
     const typeInfo = new TypeInfo(this, node);
 
     if (typeInfo.isTsrDeclaration()) {
@@ -274,6 +276,10 @@ export class Scanner {
     }
   }
 
+  get options(): Options {
+    return this._options;
+  }
+
   get program(): ts.Program {
     return this._program;
   }
@@ -304,6 +310,7 @@ export class TypeInfo {
   private _isReference: boolean;
   private _isLiteral: boolean;
 
+  private _isExternalModule: boolean;
   private _isAmbient: boolean;
   private _isDeclaration: boolean;
   private _isExternal: boolean;
@@ -315,6 +322,10 @@ export class TypeInfo {
 
   public isTsrDeclaration(): boolean {
     if (this._isTsrDeclaration === undefined) {
+      if (!this.scanner.options.libDeclarations && !this.isExternalModule) {
+        return this._isTsrDeclaration = false;
+      }
+
       this._isTsrDeclaration = this.TSR_DECLARATION &&
         this.scanner.isAllowedDeclarationSymbol(this.symbol)
         && (util.isPartOfTypeNode(this.enclosing) || (this.enclosing.getSourceFile().isDeclarationFile));
@@ -474,6 +485,14 @@ export class TypeInfo {
     }
 
     return this._isExternal;
+  }
+
+  get isExternalModule(): boolean {
+    if (this.hasDeclarations() && this._isExternalModule === undefined) {
+      this._isExternalModule = ts.isExternalModule(this.sourceFile);
+    }
+
+    return this._isExternalModule;
   }
 
 }

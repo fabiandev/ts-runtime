@@ -184,7 +184,27 @@ export class MutationContext {
   }
 
   public hasSelfReference(node: ts.Node): boolean {
-    const typeInfo = this.scanner.getTypeInfo((node as any).name || node);
+    const typeInfo = this.scanner.getTypeInfo(node);
+    const members: Map<string, ts.Symbol> =
+      typeInfo && typeInfo.symbol && typeInfo.symbol.members as any;
+
+    if (!members) {
+      return false;
+    }
+
+    for (let [key, member] of Array.from(members)) {
+      for (let decl of member.getDeclarations() || []) {
+        if (this.hasApparentSelfReference(decl)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  public hasApparentSelfReference(node: ts.Node): boolean {
+    const typeInfo = this.scanner.getTypeInfo(node);
 
     const search = (node: ts.Node): boolean => {
       if (ts.isTypeReferenceNode(node)) {

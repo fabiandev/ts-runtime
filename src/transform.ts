@@ -76,7 +76,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
     emit(bus.events.SCAN, getElapsedTime());
 
-    scanner = new Scanner(program);
+    scanner = new Scanner(program, options);
 
     emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
 
