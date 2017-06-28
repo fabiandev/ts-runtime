@@ -37,7 +37,7 @@ function defaultAction() {
 
   if (tsConfigPath) {
     if (!ts.sys.fileExists(resolvedTsConfigPath)) {
-      program.status.error(`Could not load configuration from ${tsConfigPath}`);
+      program.status.error(`Could not load configuration from ${tsConfigPath}.`);
       return;
     }
 
@@ -156,7 +156,7 @@ commander
     console.log('  Examples:');
     console.log();
     console.log('    $ tsr entry.ts --force');
-    console.log('    $ tsr entry1 entry2 entry3');
+    console.log('    $ tsr src/entry1 bin/entry2 lib/entry3');
     console.log('    $ tsr -c tsconfig.json');
     console.log();
   });
