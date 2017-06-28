@@ -188,6 +188,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     const filename = `${options.declarationFileName}.js`;
     const outDir = getOutDir();
     const location = path.join(outDir, filename);
+    rimraf.sync(location);
 
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
@@ -248,7 +249,6 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     const printed = printer.printFile(sf);
     const transpiled = ts.transpile(printed, options.compilerOptions);
 
-    rimraf.sync(location);
     ts.sys.writeFile(location, transpiled);
   }
 
