@@ -14,7 +14,7 @@ export interface ProgramStatus {
   cleanup: (time: string) => void;
   diagnostics: (diags: string[], total?: number) => void;
   end: (time: string, totalTime: string) => void;
-  warn: (warning: string) => void;
+  warn: (warning: string, defer?: boolean) => void;
   stop: () => void;
   term: () => void;
   error: (error?: string | Error) => void;
@@ -29,20 +29,27 @@ let currentPast = 'Processed';
 let hasErrors = false;
 let numDiagnostics = 0;
 let warnings: string[] = [];
+let options: Options;
 
-export function start(entryFiles: string[], options: Options, version: string) {
-  if (child) {
-    return;
-  }
-
-  child = cp.fork(path.join(__dirname, './process'));
-  started = true;
+export function start(opts: Options, version: string) {
   pkgVersion = version;
   current = 'Processing';
   currentPast = 'Processed';
   hasErrors = false;
   numDiagnostics = 0;
   warnings = [];
+  options = opts;
+  status.init();
+  status.start();
+}
+
+export function transform(entryFiles: string[]) {
+  if (child) {
+    return;
+  }
+
+  child = cp.fork(path.join(__dirname, './process'));
+  started = true;
 
   child.on('exit', code => {
     status.term();
@@ -61,7 +68,6 @@ export function start(entryFiles: string[], options: Options, version: string) {
     }
   });
 
-  status.init();
   child.send({ message: 'startTransformation', payload: [entryFiles, options] });
 }
 
@@ -74,7 +80,7 @@ export const status: ProgramStatus = {
   start: () => {
     current = 'Processing';
     currentPast = 'Processed';
-    spinner.info(chalk.bold(`ts-runtime v${pkgVersion}`));
+    if (!started) spinner.info(chalk.bold(`ts-runtime v${pkgVersion}`));
     spinner.text = current;
     spinner.start();
   },
@@ -155,9 +161,11 @@ export const status: ProgramStatus = {
     process.exit(0);
   },
 
-  warn: (warning: string) => {
-    if (warnings.indexOf(warning) === -1) {
+  warn: (warning: string, defer = true) => {
+    if (defer && warnings.indexOf(warning) === -1) {
       warnings.push(warning);
+    } else {
+      spinner.warn(warning);
     }
   },
 

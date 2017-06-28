@@ -9,13 +9,16 @@ import * as program from './program';
 import { ProgramError } from '../errors';
 import { Options, defaultOptions } from '../options';
 
-const pkgFile = find.sync('package.json', {cwd: __dirname});
+const pkgFile = find.sync('package.json', { cwd: __dirname });
 const pkg = require(pkgFile);
 const options: Options = Object.assign({}, defaultOptions);
 let compilerOptions: string = '{}';
+let parsedCompilerOptions: any;
 let tsConfigPath: string;
 
 function defaultAction() {
+  program.start(options, pkg.version);
+
   const files: string[] = commander.args
     .filter(arg => typeof arg === 'string');
 
@@ -23,17 +26,25 @@ function defaultAction() {
     throw new ProgramError('No entry file(s) passed to transform.');
   }
 
-  compilerOptions = JSON.parse(compilerOptions);
+  parsedCompilerOptions = JSON.parse(compilerOptions);
 
-  if (tsConfigPath && ts.sys.fileExists(tsConfigPath)) {
+  if (tsConfigPath) {
+    if (!ts.sys.fileExists(tsConfigPath)) {
+      program.status.error(`Could not load configuration from ${tsConfigPath}`);
+      return;
+    }
+
     const tsConfig = require(path.resolve(tsConfigPath));
 
     if (tsConfig.hasOwnProperty('compilerOptions')) {
-      compilerOptions = tsConfig.compilerOptions;
+      parsedCompilerOptions = tsConfig.compilerOptions;
+    } else {
+      program.status.warn(`No compiler options found in ${tsConfigPath}, used defaults.`);
+      parsedCompilerOptions = {};
     }
   }
 
-  const opts = ts.convertCompilerOptionsFromJson(compilerOptions, '.');
+  const opts = ts.convertCompilerOptionsFromJson(parsedCompilerOptions, '.');
 
   options.log = false;
   options.compilerOptions = opts.options;
@@ -44,7 +55,7 @@ function defaultAction() {
     return;
   }
 
-  program.start(files, options, pkg.version);
+  program.transform(files);
 }
 
 function useTsConfig(path: string) {
@@ -121,8 +132,8 @@ commander
   --------------------------------`)
   .usage('<file...> [options]')
   .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)
-  .option('-c, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to "{}"', setCompilerOptions)
-  .option('-C, --tsConfig <path>', 'use the compiler options of the given tsconfig.json', useTsConfig)
+  .option('-c, --tsConfig <path>', 'use the compiler options of the given tsconfig.json', useTsConfig)
+  .option('-C, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to "{}"', setCompilerOptions)
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-E, --excludeLib', 'do not automatically import the runtime library. default to false', setExcludeLib)
