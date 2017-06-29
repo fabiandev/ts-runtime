@@ -8,6 +8,7 @@ export interface TsrDeclaration {
   name: string
 }
 
+// TODO: only scan required nodes and build symbol table for other purposes
 export class Scanner {
   private _options: Options;
   private _program: ts.Program;
@@ -24,13 +25,16 @@ export class Scanner {
     ts.SyntaxKind.NamespaceImport,
     ts.SyntaxKind.ImportClause,
     ts.SyntaxKind.SourceFile,
-    ts.SyntaxKind.EndOfFileToken
+    ts.SyntaxKind.EndOfFileToken,
+    ts.SyntaxKind.ObjectBindingPattern,
+    ts.SyntaxKind.ArrayBindingPattern,
+    ts.SyntaxKind.VariableDeclaration,
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
     ts.SymbolFlags.RegularEnum | ts.SymbolFlags.ConstEnum | ts.SymbolFlags.Enum |
     ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Function |
-    /* ts.SymbolFlags.TypeLiteral | */ ts.SymbolFlags.Variable | ts.SymbolFlags.Type;
+    /* ts.SymbolFlags.TypeLiteral | */ ts.SymbolFlags.Variable;
 
   private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter | ts.SymbolFlags.TypeLiteral;
 
@@ -234,21 +238,21 @@ export class Scanner {
       expr = (node as any).typeName;
     }
 
-    if ((node as any).exprName) {
-      expr = (node as any).exprName;
-    }
+    // if ((node as any).exprName) {
+    //   expr = (node as any).exprName;
+    // }
 
-    if ((node as any).parameterName) {
-      expr = (node as any).parameterName;
-    }
+    // if ((node as any).parameterName) {
+    //   expr = (node as any).parameterName;
+    // }
 
     // if ((node as any).name) {
     //   expr = (node as any).name;
     // }
-
-    if ((node as any).tagName) {
-      expr = (node as any).tagName;
-    }
+    //
+    // if ((node as any).tagName) {
+    //   expr = (node as any).tagName;
+    // }
 
     if (expr !== node) {
       this.mapNode(node, expr);
