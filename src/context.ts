@@ -136,7 +136,7 @@ export class MutationContext {
   public isSelfReference(node: ts.TypeReferenceNode): boolean {
     let next: ts.Node = node;
 
-    const typeInfo = this.scanner.getTypeInfo(node);
+    const typeInfo = this.scanner.getTypeInfo(node.typeName);
 
     while (next.parent) {
       next = next.parent;
@@ -184,18 +184,16 @@ export class MutationContext {
   // }
 
   public hasSelfReference(node: ts.Node): boolean {
-    const symbol = this.scanner.getNodeSymbol(node);
-    const members: Map<string, ts.Symbol> = symbol && symbol.members as any;
+    const symbol = this.scanner.getNodeSymbol((node as any).name  || (node as any).typeName || node);
+    const declarations = symbol.getDeclarations();
 
-    if (!members) {
+    if (!declarations) {
       return false;
     }
 
-    for (let [key, member] of Array.from(members)) {
-      for (let decl of member.getDeclarations() || []) {
-        if (this.hasApparentSelfReference(decl)) {
-          return true;
-        }
+    for (let decl of declarations || []) {
+      if (this.hasApparentSelfReference(decl)) {
+        return true;
       }
     }
 
@@ -203,8 +201,8 @@ export class MutationContext {
   }
 
   public hasApparentSelfReference(node: ts.Node): boolean {
-    const nodeSymbol = this.scanner.getNodeSymbol(node);
-
+    const nodeSymbol = this.scanner.getNodeSymbol((node as any).name  || (node as any).typeName || node);
+    console.log(nodeSymbol.name);
     const search = (node: ts.Node): boolean => {
       if (ts.isTypeReferenceNode(node)) {
         const symbol = this.scanner.getNodeSymbol(node.typeName);
@@ -223,7 +221,7 @@ export class MutationContext {
   public getIdentifier(text: string): string {
     const ids = this.scanner.getIdentifiers(this.sourceFile);
 
-    while(ids && ids.has(text)) {
+    while (ids && ids.has(text)) {
       text = `_${text}`;
     }
 
@@ -290,30 +288,30 @@ export class MutationContext {
   }
 
   public getAllMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
-      const nodeSymbol = this.scanner.getNodeSymbol(node.name);
-      const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
-      let type: ts.Type;
+    const nodeSymbol = this.scanner.getNodeSymbol(node.name);
+    const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
+    let type: ts.Type;
 
-      if (!nodeSymbol) {
-        type = this.checker.getTypeAtLocation(node);
-      } else {
-        type = this.checker.getDeclaredTypeOfSymbol(nodeSymbol);
-      }
-
-      if (!type) {
-        return node.members;
-      }
-
-      (type.getProperties() || []).forEach(sym => {
-        for (let typeElement of (sym.getDeclarations() || [])) {
-          if(ts.isTypeElement(typeElement) || ts.isClassElement(typeElement)) {
-            merged.add(typeElement);
-          }
-        }
-      });
-
-      return Array.from(merged);
+    if (!nodeSymbol) {
+      type = this.checker.getTypeAtLocation(node);
+    } else {
+      type = this.checker.getDeclaredTypeOfSymbol(nodeSymbol);
     }
+
+    if (!type) {
+      return node.members;
+    }
+
+    (type.getProperties() || []).forEach(sym => {
+      for (let typeElement of (sym.getDeclarations() || [])) {
+        if (ts.isTypeElement(typeElement) || ts.isClassElement(typeElement)) {
+          merged.add(typeElement);
+        }
+      }
+    });
+
+    return Array.from(merged);
+  }
 
   public setMerged(symbol: ts.Symbol) {
     return this._merged.add(symbol);
