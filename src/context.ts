@@ -202,7 +202,7 @@ export class MutationContext {
 
   public hasApparentSelfReference(node: ts.Node): boolean {
     const nodeSymbol = this.scanner.getNodeSymbol((node as any).name  || (node as any).typeName || node);
-    console.log(nodeSymbol.name);
+
     const search = (node: ts.Node): boolean => {
       if (ts.isTypeReferenceNode(node)) {
         const symbol = this.scanner.getNodeSymbol(node.typeName);
