@@ -50,7 +50,8 @@ export class Scanner {
     ts.SyntaxKind.SetAccessor,
     ts.SyntaxKind.Parameter,
     ts.SyntaxKind.PropertySignature,
-    ts.SyntaxKind.PropertyDeclaration
+    ts.SyntaxKind.PropertyDeclaration,
+    ts.SyntaxKind.ConstructSignature,
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
