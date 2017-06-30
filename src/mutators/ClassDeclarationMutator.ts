@@ -43,13 +43,8 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private setMerged(node: ts.ClassDeclaration) {
-    const typeInfo = this.scanner.getTypeInfo(node);
-
-    if (!typeInfo) {
-      return;
-    }
-
-    this.context.setMerged(typeInfo.symbol);
+    const nodeSymbol = this.scanner.getNodeSymbol(node.name);
+    this.context.setMerged(nodeSymbol);
   }
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
@@ -73,8 +68,6 @@ export class ClassDeclarationMutator extends Mutator {
     let statements = util.asNewArray(constructor.body.statements);
 
     for (let impl of implementsClause.types || []) {
-      const typeInfo = this.scanner.getTypeInfo(impl);
-
       const assertion = ts.createStatement(
         this.factory.typeAssertion(
           this.factory.expressionWithTypeArgumentsReflection(impl),

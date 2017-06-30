@@ -14,12 +14,12 @@ export class InterfaceDeclarationMutator extends Mutator {
   }
 
   private removeInterface(node: ts.InterfaceDeclaration): boolean {
-    const typeInfo = this.scanner.getTypeInfo(node);
-    const willBeDeclaredInClass = this.willBeDeclaredInClass(typeInfo.declarations);
-    const wasMerged = this.context.wasMerged(typeInfo.symbol);
+    const nodeSymbol = this.scanner.getNodeSymbol(node.name);
+    const willBeDeclaredInClass = this.willBeDeclaredInClass(nodeSymbol.getDeclarations());
+    const wasMerged = this.context.wasMerged(nodeSymbol);
 
     if (!willBeDeclaredInClass) {
-      this.context.setMerged(typeInfo.symbol);
+      this.context.setMerged(nodeSymbol);
     }
 
     return willBeDeclaredInClass || wasMerged;

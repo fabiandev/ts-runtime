@@ -136,13 +136,13 @@ export class MutationContext {
   public isSelfReference(node: ts.TypeReferenceNode): boolean {
     let next: ts.Node = node;
 
-    const typeInfo = this.scanner.getTypeInfo((node as any).name || node);
+    const typeInfo = this.scanner.getTypeInfo(node);
 
     while (next.parent) {
       next = next.parent;
 
       if (ts.isClassDeclaration(next) || ts.isInterfaceDeclaration(next) || ts.isTypeAliasDeclaration(next)) {
-        const symbol = this.scanner.getTypeInfo(next.name || next).symbol;
+        const symbol = this.scanner.getNodeSymbol(next.name);
 
         if (typeInfo.symbol === symbol) {
           return true;
@@ -153,40 +153,39 @@ export class MutationContext {
     return false;
   }
 
-  public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
-    if (this.options.assertSafe) {
-      return false;
-    }
-
-    const typeInfo = this.scanner.getTypeInfo(node);
-    const otherTypeInfo = this.scanner.getTypeInfo(other);
-
-    if (!typeInfo || !otherTypeInfo) {
-      return false;
-    }
-
-    let nodeTypeText = typeInfo.typeText;
-    let otherTypeText = otherTypeInfo.typeText;
-
-    if (!nodeTypeText || !otherTypeText) {
-      return false;
-    }
-
-    if (!strict && nodeTypeText === 'any') {
-      return true;
-    }
-
-    if (!strict && !typeInfo.isLiteral && otherTypeInfo.isLiteral) {
-      otherTypeText = otherTypeInfo.baseTypeText;
-    }
-
-    return nodeTypeText === otherTypeText;
-  }
+  // public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
+  //   if (this.options.assertSafe) {
+  //     return false;
+  //   }
+  //
+  //   const typeInfo = this.scanner.getTypeInfo(node);
+  //   const otherTypeInfo = this.scanner.getTypeInfo(other);
+  //
+  //   if (!typeInfo || !otherTypeInfo) {
+  //     return false;
+  //   }
+  //
+  //   let nodeTypeText = typeInfo.typeText;
+  //   let otherTypeText = otherTypeInfo.typeText;
+  //
+  //   if (!nodeTypeText || !otherTypeText) {
+  //     return false;
+  //   }
+  //
+  //   if (!strict && nodeTypeText === 'any') {
+  //     return true;
+  //   }
+  //
+  //   if (!strict && !typeInfo.isLiteral && otherTypeInfo.isLiteral) {
+  //     otherTypeText = otherTypeInfo.baseTypeText;
+  //   }
+  //
+  //   return nodeTypeText === otherTypeText;
+  // }
 
   public hasSelfReference(node: ts.Node): boolean {
-    const typeInfo = this.scanner.getTypeInfo(node);
-    const members: Map<string, ts.Symbol> =
-      typeInfo && typeInfo.symbol && typeInfo.symbol.members as any;
+    const symbol = this.scanner.getNodeSymbol(node);
+    const members: Map<string, ts.Symbol> = symbol && symbol.members as any;
 
     if (!members) {
       return false;
@@ -204,13 +203,13 @@ export class MutationContext {
   }
 
   public hasApparentSelfReference(node: ts.Node): boolean {
-    const typeInfo = this.scanner.getTypeInfo(node);
+    const nodeSymbol = this.scanner.getNodeSymbol(node);
 
     const search = (node: ts.Node): boolean => {
       if (ts.isTypeReferenceNode(node)) {
-        const symbol = this.scanner.getTypeInfo(node.typeName).symbol;
+        const symbol = this.scanner.getNodeSymbol(node.typeName);
 
-        if (typeInfo.symbol === symbol) {
+        if (nodeSymbol === symbol) {
           return true;
         }
       }
@@ -263,18 +262,17 @@ export class MutationContext {
     return this.getIdentifier(`${this.options.declarationPrefix}typeParameters`);
   }
 
-  public getMembers(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
-    const typeInfo = this.scanner.getTypeInfo(node);
+  public getMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
+    const nodeSymbol = this.scanner.getNodeSymbol(node.name);
     const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
-    let type: ts.Type = typeInfo.type;
 
-    if (!type) {
+    if (!nodeSymbol) {
       return util.asArray(node.members as (ts.TypeElement | ts.ClassElement)[]);
     }
 
     const members: ts.Symbol[] = [];
 
-    typeInfo.symbol.members.forEach((member, key) => {
+    nodeSymbol.members.forEach((member, key) => {
       if (member.flags & ts.SymbolFlags.TypeParameter) {
         return;
       }
@@ -291,15 +289,15 @@ export class MutationContext {
     return Array.from(merged);
   }
 
-  public getAllMembers(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration | ts.TypeLiteralNode): (ts.TypeElement | ts.ClassElement)[] {
-      const typeInfo = this.scanner.getTypeInfo(node);
+  public getAllMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
+      const nodeSymbol = this.scanner.getNodeSymbol(node.name);
       const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
       let type: ts.Type;
 
-      if (!typeInfo) {
+      if (!nodeSymbol) {
         type = this.checker.getTypeAtLocation(node);
       } else {
-        type = typeInfo.type;
+        type = this.checker.getDeclaredTypeOfSymbol(nodeSymbol);
       }
 
       if (!type) {

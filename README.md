@@ -450,7 +450,8 @@ have a look at the options.
 - No declaration merging.
 - Method overloading is only supported within the same declaration.
 - No class expressions (`const A = class { }`), only class declarations (`class A { }`) can be used.
-- `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s and `Identifier`s as expression.
+- `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s as expression with an `Identifier` as name.
+- No JSX support.
 
 ## Options
 

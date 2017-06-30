@@ -19,24 +19,45 @@ export class Scanner {
   private properties: Map<ts.Node, TypeInfo> = new Map();
   private scanned: Set<ts.Node> = new Set();
   private identifiers: Map<ts.SourceFile, Set<string>> = new Map();
+  private symbols: Map<ts.Node, ts.Symbol> = new Map();
 
-  private skip: ts.SyntaxKind[] = [
-    ts.SyntaxKind.NamedImports,
-    ts.SyntaxKind.NamespaceImport,
-    ts.SyntaxKind.ImportClause,
-    ts.SyntaxKind.SourceFile,
-    ts.SyntaxKind.EndOfFileToken,
-    ts.SyntaxKind.ObjectBindingPattern,
-    ts.SyntaxKind.ArrayBindingPattern,
-    ts.SyntaxKind.VariableDeclaration,
+  // private skip: ts.SyntaxKind[] = [
+  //   ts.SyntaxKind.NamedImports,
+  //   ts.SyntaxKind.NamespaceImport,
+  //   ts.SyntaxKind.ImportClause,
+  //   ts.SyntaxKind.SourceFile,
+  //   ts.SyntaxKind.EndOfFileToken,
+  //   ts.SyntaxKind.ObjectBindingPattern,
+  //   ts.SyntaxKind.ArrayBindingPattern,
+  //   ts.SyntaxKind.VariableDeclaration,
+  // ];
+
+  private scanNodes: ts.SyntaxKind[] = [
+    ts.SyntaxKind.Identifier,
+    ts.SyntaxKind.QualifiedName,
+    ts.SyntaxKind.ExpressionWithTypeArguments,
+    ts.SyntaxKind.ComputedPropertyName,
+    ts.SyntaxKind.TypeReference,
+    ts.SyntaxKind.MethodSignature,
+    ts.SyntaxKind.MethodDeclaration,
+    ts.SyntaxKind.CallSignature,
+    ts.SyntaxKind.CallExpression,
+    ts.SyntaxKind.FunctionDeclaration,
+    ts.SyntaxKind.FunctionExpression,
+    ts.SyntaxKind.ArrowFunction,
+    ts.SyntaxKind.Constructor,
+    ts.SyntaxKind.GetAccessor,
+    ts.SyntaxKind.SetAccessor,
+    ts.SyntaxKind.Parameter,
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
-    ts.SymbolFlags.RegularEnum | ts.SymbolFlags.ConstEnum | ts.SymbolFlags.Enum |
-    ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Function |
+  ts.SymbolFlags.RegularEnum | ts.SymbolFlags.ConstEnum | ts.SymbolFlags.Enum |
+  ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Function |
     /* ts.SymbolFlags.TypeLiteral | */ ts.SymbolFlags.Variable;
 
-  private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter | ts.SymbolFlags.TypeLiteral;
+  private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter |
+  ts.SymbolFlags.TypeLiteral;
 
   constructor(program: ts.Program, options: Options) {
     this._options = options;
@@ -69,6 +90,14 @@ export class Scanner {
 
   public getTypeInfo(node: ts.Node): TypeInfo {
     return this.properties.get(this.getNode(node));
+  }
+
+  public getNodeSymbol(node: ts.Node): ts.Symbol {
+    return this.symbols.get(this.getNode(node));
+  }
+
+  public hasNodeSymbol(node: ts.Node): boolean {
+    return this.symbols.has(this.getNode(node));
   }
 
   public hasTypeInfo(node: ts.Node): boolean {
@@ -182,6 +211,18 @@ export class Scanner {
       this.identifiers.get(sf).add(node.text);
     }
 
+    // let nodeSymbol = this.checker.getSymbolAtLocation(
+    //   (node as any).name || (node as any).typeName ||
+    //   (node as any).exprName || (node as any).tagName
+    // );
+    //
+
+    let nodeSymbol = this.checker.getSymbolAtLocation(node);
+
+    if (nodeSymbol) {
+      this.symbols.set(node, nodeSymbol);
+    }
+
     if (!this.shouldScan(node)) {
       return;
     }
@@ -208,7 +249,11 @@ export class Scanner {
       return false;
     }
 
-    if (this.skip.indexOf(node.kind) !== -1) {
+    // if (this.skip.indexOf(node.kind) !== -1) {
+    //   return false;
+    // }
+
+    if (this.scanNodes.indexOf(node.kind) === -1) {
       return false;
     }
 

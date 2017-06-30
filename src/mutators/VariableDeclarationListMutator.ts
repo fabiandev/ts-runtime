@@ -53,9 +53,9 @@ export class VariableDeclarationListMutator extends Mutator {
       return [typeDefinition, node];
     }
 
-    if (this.context.isSafeAssignment(node.type, node.initializer)) {
-      return [typeDefinition, node];
-    }
+    // if (this.context.isSafeAssignment(node.type, node.initializer)) {
+    //   return [typeDefinition, node];
+    // }
 
     const initializer = this.factory.typeAssertion(nodeName, node.initializer);
     const assignment = ts.updateVariableDeclaration(node, node.name, node.type, initializer);
@@ -72,9 +72,9 @@ export class VariableDeclarationListMutator extends Mutator {
       return [node];
     }
 
-    if (this.context.isSafeAssignment(node.type, node.initializer)) {
-      return [node];
-    }
+    // if (this.context.isSafeAssignment(node.type, node.initializer)) {
+    //   return [node];
+    // }
 
     const nodeName = this.context.getTypeDeclarationName((node.name as ts.Identifier).text);
     const initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);

@@ -1103,9 +1103,9 @@ export class Factory {
       }
 
       if (ts.isReturnStatement(node)) {
-        if (this.context.isSafeAssignment(type, node.expression)) {
-          return node;
-        }
+        // if (this.context.isSafeAssignment(type, node.expression)) {
+        //   return node;
+        // }
 
         const assertion = this.typeAssertion(
           this.context.getTypeDeclarationName('return'),

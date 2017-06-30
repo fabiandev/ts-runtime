@@ -11,9 +11,9 @@ export class AsExpressionMutator extends Mutator {
       return node;
     }
 
-    if (this.context.isSafeAssignment(node.type, node.expression)) {
-      return node;
-    }
+    // if (this.context.isSafeAssignment(node.type, node.expression)) {
+    //   return node;
+    // }
 
     return this.factory.typeReflectionAndAssertion(node.type, node.expression);
   }
