@@ -29,6 +29,7 @@ export const defaultOptions: Options = {
     lib: ["lib.es2015.d.ts"],
     strictNullChecks: true,
     experimentalDecorators: true,
+    emitDecoratorMetadata: true,
     sourceMap: false,
     removeComments: true,
     preserveConstEnums: true,

@@ -49,6 +49,8 @@ export class Scanner {
     ts.SyntaxKind.GetAccessor,
     ts.SyntaxKind.SetAccessor,
     ts.SyntaxKind.Parameter,
+    ts.SyntaxKind.PropertySignature,
+    ts.SyntaxKind.PropertyDeclaration
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
@@ -128,7 +130,7 @@ export class Scanner {
     let symbol: ts.Symbol;
 
     if (type) {
-      symbol = type.symbol || type.aliasSymbol;
+      symbol = type.aliasSymbol || type.symbol;
     }
 
     if (!symbol && node) {

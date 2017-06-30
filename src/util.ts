@@ -73,6 +73,10 @@ export function setParent(node: ts.Node): void {
 }
 
 export function isAnyKeyword(node: ts.Node): boolean {
+  if (!node) {
+    return false;
+  }
+
   if (node.kind === ts.SyntaxKind.AnyKeyword) {
     return true;
   }
@@ -315,6 +319,33 @@ export function declarationCanHaveTypeAnnotation(node: ts.Node) {
 
 export function extendsClauseHasTypeArguments(node: ts.HeritageClause): boolean {
   return node && node.types && node.types[0] && node.types[0].typeArguments && node.types[0].typeArguments.length > 0;
+}
+
+export function canHaveType(node: any): node is { type: ts.TypeNode } {
+  if (!node) {
+    return false;
+  }
+
+  switch (node.kind) {
+    case ts.SyntaxKind.VariableDeclaration:
+    case ts.SyntaxKind.ObjectBindingPattern:
+    case ts.SyntaxKind.ArrayBindingPattern:
+    case ts.SyntaxKind.Parameter:
+    case ts.SyntaxKind.PropertySignature:
+    case ts.SyntaxKind.PropertyDeclaration:
+    case ts.SyntaxKind.MethodSignature:
+    case ts.SyntaxKind.CallSignature:
+    case ts.SyntaxKind.ConstructSignature:
+    case ts.SyntaxKind.IndexSignature:
+    case ts.SyntaxKind.MethodDeclaration:
+    case ts.SyntaxKind.GetAccessor:
+    case ts.SyntaxKind.FunctionExpression:
+    case ts.SyntaxKind.ArrowFunction:
+    case ts.SyntaxKind.FunctionDeclaration:
+      return true;
+  }
+
+  return false;
 }
 
 export function annotateWithAny(node: ts.Node): boolean {

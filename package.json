@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
-    "build:tsr": "ts-node ./src/bin/index src/index.ts ./src/lib/index.ts ./src/bin/index.ts --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES5\", \"lib\": [\"ESNext\"]}'"
+    "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"

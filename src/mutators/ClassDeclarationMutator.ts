@@ -120,6 +120,11 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
+    // TODO: Property decorators are causing problems, as they won't be writeable any more
+    if (true === true) {
+      return node;
+    }
+
     if (!this.options.assertAny && this.context.isAny(node.type)) {
       return node;
     }

@@ -130,6 +130,12 @@ export class MutationContext {
       return true;
     }
 
+    if (typeInfo.symbol && typeInfo.symbol.valueDeclaration && util.canHaveType(typeInfo.symbol.valueDeclaration)) {
+      if (typeInfo.symbol.valueDeclaration.type === undefined || util.isAnyKeyword(typeInfo.symbol.valueDeclaration.type)) {
+        return true;
+      }
+    }
+
     return false;
   }
 

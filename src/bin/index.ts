@@ -122,8 +122,8 @@ function setDeclarationPrefix(prefix: string) {
   options.declarationPrefix = prefix;
 }
 
-function setStackTraceOutput(limit: number) {
-  options.stackTraceOutput = limit;
+function setStackTraceOutput(limit: string) {
+  options.stackTraceOutput = parseInt(limit);
 }
 
 function setTempFolderName(name: string) {

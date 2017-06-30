@@ -549,7 +549,7 @@ export class Factory {
     }
 
     if (hasExtender) {
-      extender = this.libCall('extend', extendsClause.types.map(expressionWithTypeArguments => {
+      extender = this.libCall('extends', extendsClause.types.map(expressionWithTypeArguments => {
         return this.typeReflection(expressionWithTypeArguments);
       }));
 

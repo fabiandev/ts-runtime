@@ -35,7 +35,7 @@ t.undef = () => {
 }
 
 t.nostrict = (...args: any[]) => {
-  return t.union(...args, t.null())
+  return t.union(...args, t.null(), t.undef());
 }
 
 t.void = () => {

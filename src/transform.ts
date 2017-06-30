@@ -269,6 +269,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
       if (node && !(node as any).type) {
         if (util.annotateWithAny(node)) {
+          // do nothing for now
         }
       }
 

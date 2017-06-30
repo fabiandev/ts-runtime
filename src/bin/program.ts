@@ -58,7 +58,7 @@ export function transform(entryFiles: string[]) {
     process.exit(code);
   });
 
-  child.on('message', (data: { message: string, payload: any[] }) => {
+  child.on('message', (data: { message: string, payload: any }) => {
     if (typeof status[data.message] === 'function') {
       if (Array.isArray(data.payload)) {
         status[data.message](...data.payload);
