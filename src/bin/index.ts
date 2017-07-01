@@ -8,8 +8,8 @@ import * as program from './program';
 import { ProgramError } from '../errors';
 import { Options, defaultOptions } from '../options';
 
-const pkgDir = ts.sys.fileExists('../package.json') ?
-  '../package.json' : '../../package.json';
+const pkgDir = ts.sys.fileExists(path.join(__dirname, '../package.json')) ?
+  path.join(__dirname, '../package.json') : path.join(__dirname, '../../package.json');
 
 const pkg = require(pkgDir);
 const options: Options = Object.assign({}, defaultOptions);
