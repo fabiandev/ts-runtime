@@ -119,6 +119,7 @@ export class ClassDeclarationMutator extends Mutator {
     return members;
   }
 
+  // TODO: Define getters and setters for properties, to always check them
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
     // TODO: Property decorators are causing problems, as they won't be writeable any more
     // if (true === true) {
