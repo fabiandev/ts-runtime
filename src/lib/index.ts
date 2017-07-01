@@ -6,6 +6,16 @@ const voidType = t.void;
 const intersect = t.intersect;
 const declare = t.declare;
 const ref = t.ref;
+const decorate = t.decorate;
+
+t.decorate = (type: any, shouldAssert?: boolean) => {
+  return (input: any, propertyName: any, descriptor: any, hm: any) => {
+    const decorator = decorate.bind(t)(type, shouldAssert)(input, propertyName, descriptor);
+    if (descriptor) descriptor.writable = true;
+    input.writable = true;
+    Object.defineProperty(input, propertyName, decorator);
+  };
+}
 
 t.declare = (name: string, type: any) => {
   map.set(name, type);

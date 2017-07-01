@@ -121,17 +121,17 @@ export class ClassDeclarationMutator extends Mutator {
 
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
     // TODO: Property decorators are causing problems, as they won't be writeable any more
-    if (true === true) {
-      return node;
-    }
+    // if (true === true) {
+    //   return node;
+    // }
 
     if (!this.options.assertAny && this.context.isAny(node.type)) {
       return node;
     }
 
-    if (!node.initializer) {
-      return node;
-    }
+    // if (!node.initializer) {
+    //   return node;
+    // }
 
     const decorators = util.asNewArray(node.decorators);
     const typeReflection = this.factory.typeReflection(node.type);

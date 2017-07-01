@@ -544,8 +544,8 @@ export class Factory {
     }
 
     if (intersections.length > 0) {
-      // reflection = [this.propertyAccessCall(this.intersect([...intersections, this.asObject(reflection)]), 'unwrap')];
-      reflection = [this.intersect([...intersections, this.asObject(reflection)]) ];
+      reflection = [this.propertyAccessCall(this.intersect([...intersections, this.asObject(reflection)]), 'unwrap')];
+      // reflection = [this.intersect([...intersections, this.asObject(reflection)]) ];
     }
 
     if (hasExtender) {
