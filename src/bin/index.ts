@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import * as path from 'path';
-import * as find from 'find-up';
 import * as ts from 'typescript';
 import * as commander from 'commander';
 import * as util from './util';
@@ -9,8 +8,10 @@ import * as program from './program';
 import { ProgramError } from '../errors';
 import { Options, defaultOptions } from '../options';
 
-const pkgFile = find.sync('package.json', { cwd: __dirname });
-const pkg = require(pkgFile);
+const pkgDir = ts.sys.fileExists('../package.json') ?
+  '../package.json' : '../../package.json';
+
+const pkg = require(pkgDir);
 const options: Options = Object.assign({}, defaultOptions);
 let compilerOptions: string = '{}';
 let parsedCompilerOptions: any;
