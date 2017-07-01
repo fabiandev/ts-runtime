@@ -9,7 +9,7 @@ const ref = t.ref;
 const decorate = t.decorate;
 
 t.decorate = (type: any, shouldAssert?: boolean) => {
-  return (input: any, propertyName: any, descriptor: any, hm: any) => {
+  return (input: any, propertyName: any, descriptor: any) => {
     const decorator = decorate.bind(t)(type, shouldAssert)(input, propertyName, descriptor);
     if (descriptor) descriptor.writable = true;
     input.writable = true;
