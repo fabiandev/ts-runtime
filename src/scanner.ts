@@ -157,6 +157,7 @@ export class Scanner {
     return symbol && symbol.declarations && symbol.declarations.length > 0;
   }
 
+  // TODO: refactor to not use path module
   public pathIsExternal(fileName: string): boolean {
     const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
     return !path.resolve(fileName).startsWith(path.resolve(rootDir));

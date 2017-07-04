@@ -1,4 +1,4 @@
-import * as path from 'path';
+// import * as path from 'path';
 import * as ts from 'typescript';
 import * as util from './util';
 import { Factory } from './factory';
@@ -110,10 +110,10 @@ export class MutationContext {
     return false;
   }
 
-  public pathIsOutsideRoot(fileName: string): boolean {
-    const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
-    return !path.resolve(fileName).startsWith(path.resolve(rootDir));
-  }
+  // public pathIsOutsideRoot(fileName: string): boolean {
+  //   const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
+  //   return !path.resolve(fileName).startsWith(path.resolve(rootDir));
+  // }
 
   public isAny(node: ts.Node): boolean {
     if (util.isAnyKeyword(node)) {
