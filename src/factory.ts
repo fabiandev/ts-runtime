@@ -543,8 +543,9 @@ export class Factory {
       });
     }
 
+    // TODO: For now, do not include interfaces in the reflection, as they must be implemented in the prototype chain.
     if (intersections.length > 0) {
-      reflection = [this.propertyAccessCall(this.intersect([...intersections, this.asObject(reflection)]), 'unwrap')];
+      // reflection = [this.propertyAccessCall(this.intersect([...intersections, this.asObject(reflection)]), 'unwrap')];
       // reflection = [this.intersect([...intersections, this.asObject(reflection)]) ];
     }
 
