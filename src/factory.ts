@@ -273,9 +273,9 @@ export class Factory {
     }
 
     const isTypeParameter = util.isTypeParameter(node);
-    const flowInto = isTypeParameter && !this.rule(FactoryRule.NoFlowInto);
     const parentClass = !TSR_DECLARATION && isTypeParameter && util.isTypeParameterOfClass(node);
     const isClassTypeParameter = !!parentClass;
+    const flowInto = isTypeParameter && !this.rule(FactoryRule.NoFlowInto);
     const asLiteral = !isTypeParameter && TSR_DECLARATION;
 
     let result: ts.Expression;

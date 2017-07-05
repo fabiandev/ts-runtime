@@ -5,9 +5,13 @@ import { Mutator } from './Mutator';
 type MethodLikeProperty = ts.ConstructorDeclaration | ts.MethodDeclaration |
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
+type PropertySubstitution = ts.PropertyDeclaration | ts.GetAccessorDeclaration |
+  ts.SetAccessorDeclaration;
+
 export class ClassDeclarationMutator extends Mutator {
 
   protected kind = ts.SyntaxKind.ClassDeclaration;
+  protected initializers: ts.Statement[] = [];
 
   protected mutate(node: ts.ClassDeclaration): ts.Node {
     const members: ts.ClassElement[] = [];
@@ -21,7 +25,7 @@ export class ClassDeclarationMutator extends Mutator {
           members.push(this.mutateMethodDeclaration(member as MethodLikeProperty));
           break;
         case ts.SyntaxKind.PropertyDeclaration:
-          members.push(this.mutatePropertyDeclaration(member as ts.PropertyDeclaration));
+          members.push(...util.asArray(this.mutatePropertyDeclaration(member as ts.PropertyDeclaration)));
           break;
         case ts.SyntaxKind.IndexSignature:
         default:
@@ -29,9 +33,11 @@ export class ClassDeclarationMutator extends Mutator {
       }
     }
 
+    this.addInitializers(node, members);
     this.declareTypeParameters(node, members);
     this.assertImplementing(node, members);
     this.setMerged(node);
+
 
     const decorators = this.options.noAnnotate ?
       node.decorators : this.reflectClass(node);
@@ -55,6 +61,17 @@ export class ClassDeclarationMutator extends Mutator {
     decorators.unshift(decorator);
 
     return decorators;
+  }
+
+  private addInitializers(node: ts.ClassDeclaration, members: ts.ClassElement[]): void {
+    const constructor = this.getConstructor(members);
+    let statements = util.asNewArray(constructor.body.statements);
+
+    for (let initializer of this.initializers) {
+      statements = util.insertAfterSuper(statements, initializer);
+    }
+
+    this.updateConstructor(members, constructor, statements);
   }
 
   private assertImplementing(node: ts.ClassDeclaration, members: ts.ClassElement[]): ts.ClassElement[] {
@@ -99,10 +116,12 @@ export class ClassDeclarationMutator extends Mutator {
     let thisStatement: ts.Statement;
     let bindStatement: ts.Statement;
 
+    const insert: ts.Statement[] = [];
+
     if (hasTypeParameters) {
       typeParametersStatement = this.factory.typeParametersLiteralDeclaration(node.typeParameters);
       thisStatement = this.factory.classTypeParameterSymbolConstructorDeclaration(node.name);
-      util.insertBeforeSuper(statements, typeParametersStatement);
+      insert.push(typeParametersStatement);
     }
 
     if (extendsClauseHasTypeArguments) {
@@ -111,7 +130,8 @@ export class ClassDeclarationMutator extends Mutator {
       );
     }
 
-    util.insertAfterSuper(statements, [thisStatement, bindStatement].filter(statement => !!statement));
+    insert.push(...[thisStatement, bindStatement].filter(statement => !!statement));
+    util.insertAfterSuper(statements, insert);
     this.updateConstructor(members, constructor, statements);
 
     members.unshift(this.factory.classTypeParameterSymbolPropertyDeclaration(node.name));
@@ -120,38 +140,78 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   // TODO: Define getters and setters for properties, to always check them
-  private mutatePropertyDeclaration(node: ts.PropertyDeclaration): ts.PropertyDeclaration {
-    // TODO: Property decorators are causing problems, as they won't be writeable any more
-    // if (true === true) {
-    //   return node;
-    // }
-
+  private mutatePropertyDeclaration(node: ts.PropertyDeclaration): PropertySubstitution | PropertySubstitution[] {
     if (!this.options.assertAny && this.context.isAny(node.type)) {
       return node;
     }
 
-    // if (!node.initializer) {
-    //   return node;
-    // }
-
-    const decorators = util.asNewArray(node.decorators);
-    const typeReflection = this.factory.typeReflection(node.type);
-
-    let decorator: ts.Decorator;
-
-    if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
-      decorator = ts.createDecorator(this.factory.decorate(
-        ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
-          ts.createBlock([ts.createReturn(typeReflection)], true)
-        )
-      ));
-    } else {
-      decorator = ts.createDecorator(this.factory.decorate(typeReflection));
+    if (ts.isComputedPropertyName(node.name)) {
+      return node;
     }
 
-    decorators.unshift(decorator);
+    if (util.hasModifier(node, ts.SyntaxKind.AbstractKeyword)) {
+      return node;
+    }
 
-    return this.map(ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer), node);
+    // const decorators = util.asNewArray(node.decorators);
+    //
+    // if (node.initializer) {
+    //   const typeReflection = this.factory.typeReflection(node.type);
+    //
+    //   let decorator: ts.Decorator;
+    //
+    //   if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
+    //     decorator = ts.createDecorator(this.factory.decorate(
+    //       ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
+    //         ts.createBlock([ts.createReturn(typeReflection)], true)
+    //       )
+    //     ));
+    //   } else {
+    //     decorator = ts.createDecorator(this.factory.decorate(typeReflection));
+    //   }
+    //
+    //   decorators.unshift(decorator);
+    // }
+
+    // ts.createGetAccessor(undefined, node.modifiers, )
+
+    let name = node.name.text;
+    if (!ts.isComputedPropertyName(node.name)) {
+      name = this.context.getPropertyName(this.node as ts.ClassDeclaration, `_${node.name.text}`)
+    }
+
+    this.initializers.push(ts.createStatement(
+      ts.createBinary(
+        ts.createPropertyAccess(ts.createThis(), name),
+        ts.SyntaxKind.FirstAssignment,
+        this.factory.typeReflectionAndAssertion(node.type, node.initializer)
+      )
+    ));
+
+    const property = this.map(ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.type, undefined), node);
+
+    let setAccessor: ts.SetAccessorDeclaration;
+    if (!util.hasModifier(node, ts.SyntaxKind.ReadonlyKeyword)) {
+      setAccessor = this.factory.mutateFunctionBody(ts.createSetAccessor(undefined, node.modifiers, node.name, [
+        ts.createParameter(undefined, undefined, undefined, node.name.text, undefined, node.type)
+      ], ts.createBlock([ts.createStatement(
+        ts.createBinary(ts.createPropertyAccess(ts.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name)
+      )], true
+      ))) as ts.SetAccessorDeclaration;
+    }
+
+    const getAccessor = ts.createGetAccessor(undefined, node.modifiers, node.name, undefined, node.type, ts.createBlock(
+      [ts.createReturn(
+        ts.createPropertyAccess(
+          ts.createThis(),
+          name
+        )
+      )], true
+    ));
+
+    node.name.text = name;
+
+    return [property, getAccessor, setAccessor].filter(val => !!val);
   }
 
   private mutateMethodDeclaration(node: MethodLikeProperty): MethodLikeProperty {

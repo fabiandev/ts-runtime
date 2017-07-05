@@ -285,7 +285,8 @@ export function insertBeforeSuper(statements: ts.Statement[], insert: ts.Stateme
   if (index !== -1) {
     statements.splice(index + offset, 0, ...insert)
   } else {
-    statements.splice(statements.length, 0, ...insert);
+    statements.unshift(...insert);
+    // statements.splice(statements.length, 0, ...insert);
   }
 
   return statements;

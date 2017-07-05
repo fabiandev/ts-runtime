@@ -224,6 +224,40 @@ export class MutationContext {
     return search(node) || false;
   }
 
+  public hasProperty(node: ts.ClassDeclaration, name: string): boolean {
+    const typeInfo = this.scanner.getTypeInfo(node);
+
+    if (!typeInfo || !typeInfo.type) {
+      return false;
+    }
+
+    for (let prop of typeInfo.type.getProperties()) {
+      if (prop.name === name) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public getPropertyName(node: ts.ClassDeclaration, name: string): string {
+    const typeInfo = this.scanner.getTypeInfo(node);
+
+    if (!typeInfo || !typeInfo.type) {
+      return name;
+    }
+
+    const ids = typeInfo.type.getProperties().map(prop => {
+      return prop.name;
+    })
+
+    while (ids && ids.indexOf(name) !== -1) {
+      name = `_${name}`;
+    }
+
+    return name;
+  }
+
   public getIdentifier(text: string): string {
     const ids = this.scanner.getIdentifiers(this.sourceFile);
 
