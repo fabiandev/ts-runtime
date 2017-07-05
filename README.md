@@ -446,7 +446,9 @@ have a look at the options.
 - Only `as number` syntax for type assertions (no angle-bracket syntax: `<number>`).
 - No reflection of mapped types, indexed access types and type operators yet.
 - No support for string enums.
-- readonly or class visibility modifiers are not asserted.
+- `readonly` is currently only supported for classes.
+- Class visibility modifiers are not asserted.
+- Class type parameters are only checked when extending, at this time.
 - No declaration merging.
 - Method overloading is only supported within the same declaration.
 - No class expressions (`const A = class { }`), only class declarations (`class A { }`) can be used.
