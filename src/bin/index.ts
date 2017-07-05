@@ -176,7 +176,7 @@ commander
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-E, --excludeLib', 'do not automatically import the runtime library. defaults to false', setExcludeLib)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
-  .option('-F, --fast', 'No fancy status for the command line, but faster processing', setFast)
+  .option('-F, --fast', 'no fancy status for the command line, but faster processing. defaults to false', setFast)
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
   .option('-L, --libDeclarations', 'reflect declarations from global libs (e.g. DOM). defaults to false', setLibDeclarations)

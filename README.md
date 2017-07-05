@@ -611,6 +611,7 @@ transform(entryFiles, { log: false });
     -e, --excludeDeclarationFile             do not automatically import ambient declarations in the entry file. default to false
     -E, --excludeLib                         do not automatically import the runtime library. defaults to false
     -f, --force                              try to finish on TypeScript compiler error. defaults to false
+    -F, --fast                               no fancy status for the command line, but faster processing. defaults to false
     -k, --keepTemp                           keep temporary files. defaults to false
     -l, --libIdentifier <name>               lib import name. defaults to "t"
     -L, --libDeclarations                    reflect declarations from global libs (e.g. DOM). defaults to false
