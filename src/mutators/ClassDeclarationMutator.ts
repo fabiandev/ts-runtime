@@ -139,7 +139,6 @@ export class ClassDeclarationMutator extends Mutator {
     return members;
   }
 
-  // TODO: Define getters and setters for properties, to always check them
   private mutatePropertyDeclaration(node: ts.PropertyDeclaration): PropertySubstitution | PropertySubstitution[] {
     if (!this.options.assertAny && this.context.isAny(node.type)) {
       return node;
@@ -153,6 +152,7 @@ export class ClassDeclarationMutator extends Mutator {
       return node;
     }
 
+    // Do not use decorators (for now at least), but define getters and setters for properties.
     // const decorators = util.asNewArray(node.decorators);
     //
     // if (node.initializer) {
@@ -172,7 +172,6 @@ export class ClassDeclarationMutator extends Mutator {
     //
     //   decorators.unshift(decorator);
     // }
-
     // ts.createGetAccessor(undefined, node.modifiers, )
 
     let name = node.name.text;

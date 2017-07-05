@@ -19,7 +19,6 @@ export class SourceFileMutator extends Mutator {
     }
 
     if (!this.options.excludeDeclarationFile && this.context.scanner.getDeclarations().length > 0 && this.context.isEntryFile(node.fileName)) {
-      // TODO: refactor to not use path module
       const relativePath = path.relative(path.dirname(node.fileName), this.context.commonDir);
       const filePath = path.join(relativePath, this.context.options.declarationFileName);
       const prefix = !relativePath ? './' : '';

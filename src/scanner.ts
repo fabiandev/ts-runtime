@@ -8,7 +8,6 @@ export interface TsrDeclaration {
   name: string
 }
 
-// TODO: only scan required nodes and build symbol table for other purposes
 export class Scanner {
   private _options: Options;
   private _program: ts.Program;
@@ -157,10 +156,9 @@ export class Scanner {
     return symbol && symbol.declarations && symbol.declarations.length > 0;
   }
 
-  // TODO: refactor to not use path module
   public pathIsExternal(fileName: string): boolean {
     const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
-    return !path.resolve(fileName).startsWith(path.resolve(rootDir));
+    return !fileName.startsWith(rootDir);
   }
 
   public getType(node: ts.Node): ts.Type {

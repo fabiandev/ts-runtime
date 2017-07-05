@@ -537,17 +537,19 @@ export class Factory {
     let extender: ts.Expression;
     let intersections: ts.Expression[] = [];
 
-    if (hasIntersections) {
-      intersections = implementsClause.types.map(expressionWithTypeArguments => {
-        return this.typeReflection(expressionWithTypeArguments);
-      });
-    }
-
-    // TODO: For now, do not include interfaces in the reflection, as they must be implemented in the prototype chain.
-    if (intersections.length > 0) {
-      // reflection = [this.propertyAccessCall(this.intersect([...intersections, this.asObject(reflection)]), 'unwrap')];
-      // reflection = [this.intersect([...intersections, this.asObject(reflection)]) ];
-    }
+    // Do not include interfaces in the reflection for now, as they must be implemented in the prototype chain.
+    // See: https://github.com/codemix/flow-runtime/issues/127
+    //
+    // if (hasIntersections) {
+    //   intersections = implementsClause.types.map(expressionWithTypeArguments => {
+    //     return this.typeReflection(expressionWithTypeArguments);
+    //   });
+    // }
+    //
+    // if (intersections.length > 0) {
+    //   // reflection = [this.propertyAccessCall(this.intersect([...intersections, this.asObject(reflection)]), 'unwrap')];
+    //   // reflection = [this.intersect([...intersections, this.asObject(reflection)]) ];
+    // }
 
     if (hasExtender) {
       extender = this.libCall('extends', extendsClause.types.map(expressionWithTypeArguments => {
