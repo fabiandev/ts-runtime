@@ -185,7 +185,7 @@ commander
   .option('-p, --declarationPrefix <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationPrefix)
   .option('-s, --stackTraceOutput <limit>', 'output a specified number of lines of the stack trace. defaults to 3', setStackTraceOutput)
   .option('-t, --tempFolderName <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolderName)
-  .on('--help', () => {
+  .on('-h, --help', () => {
     console.log('  Examples:');
     console.log();
     console.log('    $ tsr entry.ts --force');
