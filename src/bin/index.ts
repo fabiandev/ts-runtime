@@ -5,6 +5,7 @@ import * as ts from 'typescript';
 import * as commander from 'commander';
 import * as util from './util';
 import * as program from './program';
+import { transform } from '../transform';
 import { ProgramError } from '../errors';
 import { Options, defaultOptions } from '../options';
 
@@ -13,12 +14,19 @@ const pkgDir = ts.sys.fileExists(path.join(__dirname, '../package.json')) ?
 
 const pkg = require(pkgDir);
 const options: Options = Object.assign({}, defaultOptions);
+
 let compilerOptions: string = '{}';
 let parsedCompilerOptions: any;
 let tsConfigPath: string;
+let fastMode = false;
 
 function defaultAction() {
-  program.start(options, pkg.version);
+  if (fastMode) {
+    options.log = true;
+  } else {
+    program.start(options, pkg.version);
+    options.log = false;
+  }
 
   const files: string[] = commander.args
     .filter(arg => typeof arg === 'string');
@@ -30,14 +38,12 @@ function defaultAction() {
   try {
     parsedCompilerOptions = JSON.parse(compilerOptions);
   } catch (e) {
-    program.status.error(`Could not parse compiler configuration.`);
-    return;
+    throw new ProgramError(`Could not parse compiler configuration.`);
   }
 
   if (tsConfigPath) {
     if (!ts.sys.fileExists(tsConfigPath)) {
-      program.status.error(`Could not load configuration from ${tsConfigPath}.`);
-      return;
+      throw new ProgramError(`Could not load configuration from ${tsConfigPath}.`);
     }
 
     const resolvedTsConfigPath = path.resolve(tsConfigPath);
@@ -46,23 +52,40 @@ function defaultAction() {
     if (tsConfig.hasOwnProperty('compilerOptions')) {
       parsedCompilerOptions = tsConfig.compilerOptions;
     } else {
-      program.status.warn(`No compiler options found in ${tsConfigPath}, used defaults.`);
+      if (options.log) {
+        console.warn(`No compiler options found in ${tsConfigPath}, used defaults.`);
+      } else {
+        program.status.warn(`No compiler options found in ${tsConfigPath}, used defaults.`);
+      }
       parsedCompilerOptions = {};
     }
   }
 
   const opts = ts.convertCompilerOptionsFromJson(parsedCompilerOptions, '.');
 
-  options.log = false;
   options.compilerOptions = opts.options;
 
   if (opts.errors.length > 0) {
+    const formattedDiagnostics = util.formatDiagnostics(opts.errors);
+
+    if (options.log) {
+      for (let diagnostic of formattedDiagnostics) {
+        console.error(diagnostic);
+      }
+
+      process.exit(1);
+    }
+
     program.status.diagnostics(util.formatDiagnostics(opts.errors));
     program.status.error();
     return;
   }
 
-  program.transform(files);
+  if (fastMode) {
+    transform(files, options);
+  } else {
+    program.transform(files);
+  }
 }
 
 function useTsConfig(path: string) {
@@ -101,6 +124,10 @@ function setExcludeLib() {
 
 function setForce() {
   options.force = true;
+}
+
+function setFast() {
+  fastMode = true;
 }
 
 function setKeepTemp() {
@@ -149,6 +176,7 @@ commander
   .option('-e, --excludeDeclarationFile', 'do not automatically import ambient declarations in the entry file. default to false', setExcludeDeclarationFile)
   .option('-E, --excludeLib', 'do not automatically import the runtime library. defaults to false', setExcludeLib)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
+  .option('-F, --fast', 'No fancy status for the command line, but faster processing', setFast)
   .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
   .option('-L, --libDeclarations', 'reflect declarations from global libs (e.g. DOM). defaults to false', setLibDeclarations)
