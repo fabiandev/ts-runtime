@@ -168,4 +168,5 @@ function onCodeChange(event: monaco.editor.IModelContentChangedEvent) {
 }
 
 const win = window as any;
+win.require.config({ paths: { 'vs': 'min/vs' }});
 win.require(['vs/editor/editor.main'], init);

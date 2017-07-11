@@ -53,7 +53,7 @@ module.exports = {
     new CopyWebpackPlugin([
       {
         from: 'node_modules/monaco-editor/min/vs',
-        to: 'vs'
+        to: 'min/vs'
       }, {
         from: 'node_modules/monaco-editor/min-maps/vs',
         to: 'min-maps/vs'
