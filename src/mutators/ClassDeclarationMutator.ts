@@ -16,6 +16,9 @@ export class ClassDeclarationMutator extends Mutator {
   protected mutate(node: ts.ClassDeclaration): ts.Node {
     const members: ts.ClassElement[] = [];
 
+    const decorators = this.options.noAnnotate ?
+      node.decorators : this.reflectClass(node);
+
     for (let member of node.members) {
       switch (member.kind) {
         case ts.SyntaxKind.Constructor:
@@ -37,10 +40,6 @@ export class ClassDeclarationMutator extends Mutator {
     this.declareTypeParameters(node, members);
     this.assertImplementing(node, members);
     this.setMerged(node);
-
-
-    const decorators = this.options.noAnnotate ?
-      node.decorators : this.reflectClass(node);
 
     return ts.updateClassDeclaration(
       node, decorators, node.modifiers, node.name,
@@ -64,6 +63,10 @@ export class ClassDeclarationMutator extends Mutator {
   }
 
   private addInitializers(node: ts.ClassDeclaration, members: ts.ClassElement[]): void {
+    if (this.initializers.length === 0) {
+      return;
+    }
+
     const constructor = this.getConstructor(members);
     let statements = util.asNewArray(constructor.body.statements);
 
