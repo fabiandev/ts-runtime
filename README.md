@@ -6,6 +6,11 @@ Please note, that this package is in **beta** and resulting code is **not** inte
 It is more a **proof of concept** for adding runtime type checks by making use of the recently published TypeScript transformation API and 
 tests have yet to be written. Feel free to report bugs and to make suggestions. Pull requests are also very welcome.
 
+## Playground
+
+You can test `ts-runtime` on the playground:  
+https://fabiandev.github.io/ts-runtime/
+
 ## Quick Start
 
 ```sh
