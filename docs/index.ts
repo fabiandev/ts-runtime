@@ -140,14 +140,9 @@ function runCode() {
     return element.name === 'tsr-declarations.js';
   });
 
-  console.log(result);
-  console.log(declarationsReflection);
-
   if (declarationsReflection) {
     declarations = declarationsReflection.text;
   }
-
-  console.log(declarations);
 
   let libIdentifier = 't';
 
@@ -168,16 +163,13 @@ function runCode() {
     const regexDeclarations = /import ".*tsr-declarations";\s/ig;
     const matchesContentsDeclarations = new RegExp(regexDeclarations).exec(contents);
 
-    console.log(matchesContentsDeclarations);
     if (matchesContentsDeclarations !== null) {
       if (typeof matchesContentsDeclarations[0] === 'string') {
         contents = contents.replace(matchesContentsDeclarations[0], '')
       }
     }
 
-    console.log(declarations);
     const matchesDeclarationsLib = new RegExp(regexLib).exec(declarations);
-    console.log(matchesDeclarationsLib);
 
     if (matchesDeclarationsLib !== null) {
       if (typeof matchesDeclarationsLib[0] === 'string') {

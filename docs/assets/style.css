@@ -12,16 +12,17 @@ body {
 
 #console-content {
   z-index: 50;
+  padding-top: 40px;
 }
 
 #console-bg {
   z-index: 10;
-  text-align: center;
   position: relative;
-  top: 115px;
-  color: #fff;
+  top: 30px;
+  left: 10px;
+  color: #333;
   font-family: "Courier New", Courier, monospace;
-  font-size: 25px;
+  font-size: 15px;
 }
 
 #run-code {
