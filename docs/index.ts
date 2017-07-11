@@ -11,6 +11,8 @@ let jsEditor: monaco.editor.IStandaloneCodeEditor;
 
 const worker: Worker = new TransformWorker();
 
+let result: FileReflection[];
+
 worker.onmessage = function(e) {
   if (e.data.name === 'transformed') {
     const transformed: FileReflection[] = e.data.data;
@@ -18,6 +20,7 @@ worker.onmessage = function(e) {
     const loading = document.getElementById('processing');
     loading.style.display = 'none';
 
+    result = transformed;
     jsEditor.getModel().setValue(transformed[0].text);
   }
 
@@ -98,6 +101,20 @@ function fadeOut(target: HTMLElement) {
   }, 5);
 }
 
+function find<T>(input: T[], test: (element: T) => boolean): T {
+  if (!Array.isArray(input)) {
+    return null;
+  }
+
+  for (let el of input) {
+    if (test(el)) {
+      return el;
+    }
+  }
+
+  return null;
+}
+
 function runCode() {
   const win = window.open('');
   win.document.head.innerHTML = '<title>ts-runtime Playground</title></head>';
@@ -105,24 +122,72 @@ function runCode() {
 
   const script = document.createElement('script');
 
-  let contents = jsEditor.getValue();
+  let contents: string;
+
+  let contentsReflection = find(result, (element) => {
+    return element.name === 'src/playground.js';
+  });
+
+  if (contentsReflection) {
+    contents = contentsReflection.text;
+  } else {
+    contents = jsEditor.getValue();
+  }
+
+  let declarations: string;
+
+  let declarationsReflection = find(result, (element) => {
+    return element.name === 'tsr-declarations.js';
+  });
+
+  console.log(result);
+  console.log(declarationsReflection);
+
+  if (declarationsReflection) {
+    declarations = declarationsReflection.text;
+  }
+
+  console.log(declarations);
+
   let libIdentifier = 't';
 
-  const regex = /import(.*)from "ts-runtime\/lib";\s/ig;
-  const matches = regex.exec(contents)
+  const regexLib = /import(.*)from "ts-runtime\/lib";\s/ig;
+  const matchesContentsLib = new RegExp(regexLib).exec(contents)
 
-  if (matches !== null) {
-    if (typeof matches[0] === 'string') {
-      contents = contents.replace(matches[0], '')
+  if (matchesContentsLib !== null) {
+    if (typeof matchesContentsLib[0] === 'string') {
+      contents = contents.replace(matchesContentsLib[0], '')
     }
 
-    if (typeof matches[1] === 'string') {
-      libIdentifier = matches[1].trim();
+    if (typeof matchesContentsLib[1] === 'string') {
+      libIdentifier = matchesContentsLib[1].trim();
+    }
+  }
+
+  if (declarations) {
+    const regexDeclarations = /import ".*tsr-declarations";\s/ig;
+    const matchesContentsDeclarations = new RegExp(regexDeclarations).exec(contents);
+
+    console.log(matchesContentsDeclarations);
+    if (matchesContentsDeclarations !== null) {
+      if (typeof matchesContentsDeclarations[0] === 'string') {
+        contents = contents.replace(matchesContentsDeclarations[0], '')
+      }
+    }
+
+    console.log(declarations);
+    const matchesDeclarationsLib = new RegExp(regexLib).exec(declarations);
+    console.log(matchesDeclarationsLib);
+
+    if (matchesDeclarationsLib !== null) {
+      if (typeof matchesDeclarationsLib[0] === 'string') {
+        declarations = declarations.replace(matchesDeclarationsLib[0], '');
+      }
     }
   }
 
   const lib = document.createElement('script');
-  lib.innerHTML = `const ${libIdentifier} = window.t.default`;
+  lib.innerHTML = `var ${libIdentifier} = window.t.default;`;
 
   const code = document.createElement('script');
   code.innerHTML = contents;
@@ -130,9 +195,17 @@ function runCode() {
   win.document.body.appendChild(script);
 
   script.onload = function() {
-    win.document.getElementById('indicator').innerHTML = 'Ready.';
     win.document.body.appendChild(lib);
+
+    if (declarations) {
+      let decl = document.createElement('script');
+      decl.innerHTML = declarations;
+      win.document.body.appendChild(decl);
+    }
+
     win.document.body.appendChild(code);
+
+    win.document.getElementById('indicator').innerHTML = 'Ready.';
   };
 
   script.src = `${window.location.href}/assets/ts-runtime.lib.js`;
@@ -168,5 +241,5 @@ function onCodeChange(event: monaco.editor.IModelContentChangedEvent) {
 }
 
 const win = window as any;
-win.require.config({ paths: { 'vs': 'min/vs' }});
+win.require.config({ paths: { 'vs': 'min/vs' } });
 win.require(['vs/editor/editor.main'], init);
