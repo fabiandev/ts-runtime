@@ -157,7 +157,8 @@ export class Scanner {
   }
 
   public pathIsExternal(fileName: string): boolean {
-    const rootDir = this.program.getCompilerOptions().rootDir + path.sep;
+    const r = this.program.getCompilerOptions().rootDir;
+    const rootDir = !r ? '' : r + path.sep;
     return !fileName.startsWith(rootDir);
   }
 
@@ -373,7 +374,7 @@ export class TypeInfo {
 
   public isTsrDeclaration(): boolean {
     if (this._isTsrDeclaration === undefined) {
-      if (!this.scanner.options.libDeclarations && !this.isExternalModule) {
+      if (this.isExternal && !this.scanner.options.libDeclarations && !this.isExternalModule) {
         return this._isTsrDeclaration = false;
       }
 

@@ -7,7 +7,7 @@ import * as util from './util';
 import * as bus from './bus';
 import { ProgramError } from './errors';
 import { MutationContext } from './context';
-import { mutators } from './mutators';
+import { getMutators } from './mutators';
 import { Options, defaultOptions } from './options';
 import { Scanner, TsrDeclaration } from './scanner';
 
@@ -19,7 +19,7 @@ export function transform(entryFiles: string[], options?: Options): void {
 
 export function getOptions(options: Options = {}): Options {
   const opts = Object.assign({}, defaultOptions, options);
-  opts.compilerOptions = Object.assign({}, defaultOptions.compilerOptions, options.compilerOptions || {});
+  opts.compilerOptions = Object.assign({}, defaultOptions.compilerOptions, options && options.compilerOptions || {});
   return opts;
 }
 
@@ -284,7 +284,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
         util.setParent(node);
       }
 
-      for (let mutator of mutators) {
+      for (let mutator of getMutators()) {
         let previous = node;
 
         node = mutator.mutateNode(node, context);
@@ -326,7 +326,7 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     }
 
     if (!options.compilerOptions.preserveConstEnums) {
-      const warning = 'Compiler option preserveConstEnums was changed and set to true by';
+      const warning = 'Compiler option "preserveConstEnums" was enabled.';
       options.compilerOptions.preserveConstEnums = true;
       emit(bus.events.WARN, warning);
       if (options.log) console.warn(warning);

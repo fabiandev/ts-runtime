@@ -179,13 +179,15 @@ export class ClassDeclarationMutator extends Mutator {
       name = this.context.getPropertyName(this.node as ts.ClassDeclaration, `_${node.name.text}`)
     }
 
-    this.initializers.push(ts.createStatement(
-      ts.createBinary(
-        ts.createPropertyAccess(ts.createThis(), name),
-        ts.SyntaxKind.FirstAssignment,
-        this.factory.typeReflectionAndAssertion(node.type, node.initializer)
-      )
-    ));
+    if (node.initializer) {
+      this.initializers.push(ts.createStatement(
+        ts.createBinary(
+          ts.createPropertyAccess(ts.createThis(), name),
+          ts.SyntaxKind.FirstAssignment,
+          this.factory.typeReflectionAndAssertion(node.type, node.initializer)
+        )
+      ));
+    }
 
     const property = this.map(ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.type, undefined), node);
 

@@ -165,8 +165,8 @@ function setModuleAlias() {
 commander
   .version(pkg.version, '-v, --version')
   .description(`---------  ts-runtime  ---------
-  Turns TypeScript type assertions
-  into runtime type checks for you
+  Turn TypeScript type annotations
+  --> into runtime type checks <--
   --------------------------------`)
   .usage('<file...> [options]')
   .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)

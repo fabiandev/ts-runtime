@@ -26,16 +26,26 @@ export {
   VariableDeclarationListMutator,
 };
 
-export const mutators: Mutator[] = [
-  new ArrowFunctionMutator(),
-  new AsExpressionMutator(),
-  new BinaryExpressionMutator(),
-  new BlockLikeMutator(),
-  new ClassDeclarationMutator(),
-  new FunctionDeclarationMutator(),
-  new FunctionExpressionMutator(),
-  new InterfaceDeclarationMutator(),
-  new SourceFileMutator(),
-  new TypeAliasDeclarationMutator(),
-  new VariableDeclarationListMutator(),
+export const mutators: (typeof Mutator)[] = [
+  ArrowFunctionMutator,
+  AsExpressionMutator,
+  BinaryExpressionMutator,
+  BlockLikeMutator,
+  ClassDeclarationMutator,
+  FunctionDeclarationMutator,
+  FunctionExpressionMutator,
+  InterfaceDeclarationMutator,
+  SourceFileMutator,
+  TypeAliasDeclarationMutator,
+  VariableDeclarationListMutator,
 ];
+
+export function getMutators(): Mutator[] {
+  const instances: Mutator[] = [];
+
+  for (let mutator of mutators) {
+    instances.push(new (mutator as any)());
+  }
+
+  return instances;
+}
