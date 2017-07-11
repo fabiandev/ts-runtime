@@ -8,8 +8,7 @@ tests have yet to be written. Feel free to report bugs and to make suggestions. 
 
 ## Playground
 
-You can test `ts-runtime` on the playground:  
-https://fabiandev.github.io/ts-runtime/
+You can try `ts-runtime` on the playground: https://fabiandev.github.io/ts-runtime/
 
 ## Quick Start
 
