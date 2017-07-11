@@ -5,7 +5,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es6"],
+    "lib": ["es2016", "dom", "webworker", "scripthost"],
     "moduleResolution": "node",
     "target": "es5",
     "noImplicitAny": true,
