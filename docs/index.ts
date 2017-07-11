@@ -33,7 +33,7 @@ function init() {
   tsEditor = monaco.editor.create(document.getElementById('editor-ts'), {
     value: [
       'let foo: string;',
-      'foo = "bar";'
+      'foo = 1 as any;'
     ].join('\n'),
     language: 'typescript',
     automaticLayout: true
@@ -43,7 +43,7 @@ function init() {
     value: [
       'import t from "ts-runtime/lib";',
       'let _fooType = t.string(), foo;',
-      'foo = _fooType.assert("bar");',
+      'foo = _fooType.assert(1);',
       ''
     ].join('\n'),
     language: 'javascript',
