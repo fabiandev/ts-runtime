@@ -346,11 +346,13 @@ function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
     emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
 
     if (log) {
-      console.error(ts.formatDiagnostics(diagnostics, {
-        getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
-        getNewLine: () => ts.sys.newLine,
-        getCanonicalFileName: (f: string) => f
-      }));
+      for (let diag of diagnostics) {
+        console.error(ts.formatDiagnostics([diag], {
+          getCurrentDirectory: () => '',
+          getNewLine: () => '\n',
+          getCanonicalFileName: (f: string) => f
+        }));
+      }
     }
 
     return false;

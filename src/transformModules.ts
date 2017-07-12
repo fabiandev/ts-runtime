@@ -88,11 +88,13 @@ function transformProgram(sources: FileReflection[], options?: Options): FileRef
     }
 
     if (diagnostics.length > 0) {
-      console.error(ts.formatDiagnostics(diagnostics, {
-        getCurrentDirectory: () => '',
-        getNewLine: () => '\n',
-        getCanonicalFileName: (f: string) => f
-      }));
+      for (let diag of diagnostics) {
+        console.error(ts.formatDiagnostics([diag], {
+          getCurrentDirectory: () => '',
+          getNewLine: () => '\n',
+          getCanonicalFileName: (f: string) => f
+        }));
+      }
     }
 
     scanner = new Scanner(program, options);
