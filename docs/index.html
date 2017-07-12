@@ -3,15 +3,17 @@
 
 <head>
   <meta charset="utf8">
-  <script type="text/javascript">
-    document.write("<base href='" + document.location.href + "' />");
-  </script>
+
   <title>ts-runtime Playground</title>
   <link rel="icon" href="assets/favicon.ico">
   <link rel="stylesheet" href="assets/normalize.css">
   <link rel="stylesheet" href="assets/style.css">
+  <script>
+    var versionElement = document.createElement('script');
+    versionElement.src = `version.js?${(new Date()).getTime()}`;
+    document.getElementsByTagName('head')[0].appendChild(versionElement);
+  </script>
 </head>
-
 <body>
   <div id="loading">
     <span class="loader">
@@ -46,13 +48,23 @@
   </div>
   <div id="console" class="grid grid-pad">
     <div class="col-1-1">
-      <div id="console-bg">Console:</div>
+      <div id="console-heading">
+      Console Output:
+      </div>
+    </div>
+    <div class="col-1-1">
       <div class="console" id="console-content"></div>
     </div>
   </div>
 
   <script src="min/vs/loader.js"></script>
-  <script src="bundle.js"></script>
+  <script>
+  versionElement.onload = function() {
+    var bundleElement = document.createElement('script');
+    bundleElement.src = `bundle.js?${window.VERSION.default}`;
+    document.getElementsByTagName('body')[0].appendChild(bundleElement);
+  };
+  </script>
 </body>
 </head>
 

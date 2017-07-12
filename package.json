@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
-    "build:docs": "yarn build:docs:lib && node_modules/.bin/webpack --config webpack.docs.config.js",
+    "build:docs": "yarn build:docs:lib && yarn build:docs:playground",
+    "build:docs:playground": "node_modules/.bin/rimraf docs/*worker.js* && node_modules/.bin/webpack --config webpack.docs.config.js",
     "build:docs:lib": "node_modules/.bin/webpack --config webpack.lib.config.js",
     "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'",
     "build:tsr:fast": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --fast --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
