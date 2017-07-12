@@ -1,6 +1,16 @@
 /// <reference path="../../node_modules/monaco-editor/monaco.d.ts" />
 /// <reference path="./loader.d.ts" />
 
+/*
+ * TODO: Playground
+ * - Extensible compiler options
+ * - Efficiently compute run code page
+ * - Capture console output in run code page
+ * - Possibility to tranform/run multiple file reflections
+ * - Show tsr-declarations.js in transform result if emitted
+ * - Use templates and two way binding (probably vue or react)
+ */
+
 import debounce = require('lodash.debounce');
 import { FileReflection } from '../../src/transformModules';
 import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts'
