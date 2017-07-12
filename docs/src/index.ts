@@ -11,6 +11,10 @@ let jsEditor: monaco.editor.IStandaloneCodeEditor;
 
 const worker: Worker = new TransformWorker();
 
+const options = {
+  strictNullChecks: true
+};
+
 let result: FileReflection[];
 
 worker.onmessage = function(e) {
@@ -32,12 +36,17 @@ worker.onmessage = function(e) {
   }
 }
 
-function init() {
+function setCompilerOptions() {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    strictNullChecks: true,
+    strictNullChecks: options.strictNullChecks,
     preserveConstEnums: true,
     allowNonTsExtensions: true
   });
+}
+
+function init() {
+  updateStrictNullChecksCheckbox();
+  setCompilerOptions();
 
   tsEditor = monaco.editor.create(document.getElementById('editor-ts'), {
     value: [
@@ -67,9 +76,21 @@ function init() {
     runCode();
   };
 
+  document.getElementById('co-strictNullChecks').onclick = function(event) {
+    const strictNullChecksCheckbox = event.target as HTMLInputElement;
+    options.strictNullChecks = strictNullChecksCheckbox.checked;
+    setCompilerOptions();
+    transform();
+  };
+
   transform();
 
   fadeOut(document.getElementById('loading'));
+}
+
+function updateStrictNullChecksCheckbox() {
+  const strictNullChecksCheckbox = document.getElementById('co-strictNullChecks') as HTMLInputElement;
+  strictNullChecksCheckbox.checked = options.strictNullChecks;
 }
 
 function clearConsole() {
@@ -218,16 +239,6 @@ function runCode() {
   script.src = `${window.location.href}/assets/ts-runtime.lib.js`;
 }
 
-// function getLibs() {
-//   const libFiles = [];
-//
-//   for (let lib in libs) {
-//     libFiles.push({ name: lib, text: libs[lib] });
-//   }
-//
-//   return libFiles;
-// }
-
 function transform(event?: monaco.editor.IModelContentChangedEvent) {
   const modules = [
     {
@@ -247,7 +258,8 @@ function transform(event?: monaco.editor.IModelContentChangedEvent) {
 
   worker.postMessage({
     name: 'transform',
-    data: modules
+    data: modules,
+    options
   });
 }
 

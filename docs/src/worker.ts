@@ -5,7 +5,7 @@ function sendMessage(message: any) {
   self.postMessage(JSON.parse(JSON.stringify(message)), void 0);
 }
 
-function transform(modules: FileReflection[]) {
+function transform(modules: FileReflection[], options: ts.CompilerOptions) {
   const transformed = transformModules(modules, {
     compilerOptions: {
       // noEmit: true,
@@ -13,7 +13,8 @@ function transform(modules: FileReflection[]) {
       noLib: true,
       lib: undefined,
       target: ts.ScriptTarget.ES2015,
-      emitDecoratorMetadata: false
+      emitDecoratorMetadata: false,
+      strictNullChecks: options.strictNullChecks
     }
   });
 
@@ -25,7 +26,7 @@ function transform(modules: FileReflection[]) {
 
 self.addEventListener('message', message => {
   if (message.data.name === 'transform') {
-    transform(message.data.data);
+    transform(message.data.data, message.data.options);
   }
 });
 
