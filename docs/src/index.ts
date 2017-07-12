@@ -3,7 +3,7 @@
 
 import debounce = require('lodash.debounce');
 import { FileReflection } from '../../src/transformModules';
-import libs from './libs';
+import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts'
 import * as TransformWorker from "worker-loader!./worker";
 
 let tsEditor: monaco.editor.IStandaloneCodeEditor;
@@ -33,13 +33,11 @@ worker.onmessage = function(e) {
 }
 
 function init() {
-  interface A<T> {
-    prop: T;
-}
-
-let a: A<string> = {
-    prop: 1 as any
-};
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    strictNullChecks: true,
+    preserveConstEnums: true,
+    allowNonTsExtensions: true
+  });
 
   tsEditor = monaco.editor.create(document.getElementById('editor-ts'), {
     value: [
@@ -220,23 +218,27 @@ function runCode() {
   script.src = `${window.location.href}/assets/ts-runtime.lib.js`;
 }
 
-function getLibs() {
-  const libFiles = [];
-
-  for (let lib in libs) {
-    libFiles.push({ name: lib, text: libs[lib] });
-  }
-
-  return libFiles;
-}
+// function getLibs() {
+//   const libFiles = [];
+//
+//   for (let lib in libs) {
+//     libFiles.push({ name: lib, text: libs[lib] });
+//   }
+//
+//   return libFiles;
+// }
 
 function transform(event?: monaco.editor.IModelContentChangedEvent) {
-  const modules = getLibs();
-
-  modules.push({
-    name: 'src/playground.ts',
-    text: tsEditor.getValue()
-  });
+  const modules = [
+    {
+      name: 'lib.es6.d.ts',
+      text: lib
+    },
+    {
+      name: 'src/playground.ts',
+      text: tsEditor.getValue()
+    }
+  ];
 
   clearConsole();
 

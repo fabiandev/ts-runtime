@@ -1973,6 +1973,10 @@ monaco-editor@^0.9.0:
   version "0.9.0"
   resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.9.0.tgz#c50c53251c47b7ff12e09f0f83cfd32a44dfe6ec"
 
+"monaco-typescript@git+https://git@github.com/Microsoft/monaco-typescript":
+  version "2.2.0"
+  resolved "git+https://git@github.com/Microsoft/monaco-typescript#c9c77f499b932bffefca447e33c3c556d60e40d7"
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"

@@ -65,8 +65,7 @@ body {
   color: rgb(217, 83, 79);
 }
 
-#run-code {
-  cursor: pointer;
+.editor-footer {
   display: inline-block;
   position: absolute;
   z-index: 10;
@@ -75,11 +74,21 @@ body {
   text-align: center;
   right: 35px;
   height: 25px;
-  background-color: rgba(241, 241, 241, 1);
-  color: #333;
-  transition: background-color 0.3s ease;
   line-height: 1.7;
   font-size: 15px;
+}
+
+#options {
+  color: #333;
+  background-color: rgba(255, 255, 255, 1);
+  text-align: left;
+  padding-left: 20px;
+}
+
+#run-code {
+  cursor: pointer;
+  background-color: rgba(241, 241, 241, 1);
+  color: #333;
 }
 
 #loading {

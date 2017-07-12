@@ -51,6 +51,7 @@
     "lodash.debounce": "^4.0.8",
     "module-alias": "^2.0.0",
     "monaco-editor": "^0.9.0",
+    "monaco-typescript": "git+https://git@github.com/Microsoft/monaco-typescript",
     "raw-loader": "^0.5.1",
     "source-map-loader": "^0.2.1",
     "source-map-support": "^0.4.15",
