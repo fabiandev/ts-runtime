@@ -295,69 +295,46 @@ a {
   }
 }
 
-.loading, .loading::before, .loading::after {
+.spinner {
+  width: 40px;
+  height: 40px;
+
   position: absolute;
   top: 50%;
   left: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-left-color: rgba(0, 0, 0, 0.4);
-  -webkit-border-radius: 999px;
-  -moz-border-radius: 999px;
-  border-radius: 999px;
+  margin: -20px 0 0 -20px;
 }
 
-.loading {
-  margin: -25px 0 0 -25px;
-  height: 50px;
-  width: 50px;
-  -webkit-animation: animation-rotate 1000ms linear infinite;
-  -moz-animation: animation-rotate 1000ms linear infinite;
-  -o-animation: animation-rotate 1000ms linear infinite;
-  animation: animation-rotate 1000ms linear infinite;
+.double-bounce1, .double-bounce2 {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #f1f1f1;
+  opacity: 0.6;
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  -webkit-animation: sk-bounce 2.0s infinite ease-in-out;
+  animation: sk-bounce 2.0s infinite ease-in-out;
 }
 
-.loading::before {
-  content: "";
-  margin: -23px 0 0 -23px;
-  height: 44px;
-  width: 44px;
-  -webkit-animation: animation-rotate 1000ms linear infinite;
-  -moz-animation: animation-rotate 1000ms linear infinite;
-  -o-animation: animation-rotate 1000ms linear infinite;
-  animation: animation-rotate 1000ms linear infinite;
+.double-bounce2 {
+  -webkit-animation-delay: -1.0s;
+  animation-delay: -1.0s;
 }
 
-.loading::after {
-  content: "";
-  margin: -29px 0 0 -29px;
-  height: 56px;
-  width: 56px;
-  -webkit-animation: animation-rotate 2000ms linear infinite;
-  -moz-animation: animation-rotate 2000ms linear infinite;
-  -o-animation: animation-rotate 2000ms linear infinite;
-  animation: animation-rotate 2000ms linear infinite;
+@-webkit-keyframes sk-bounce {
+  0%, 100% { -webkit-transform: scale(0.0) }
+  50% { -webkit-transform: scale(1.0) }
 }
 
-@-webkit-keyframes animation-rotate {
-  100% {
-    -webkit-transform: rotate(360deg);
-  }
-}
-
-@-moz-keyframes animation-rotate {
-  100% {
-    -moz-transform: rotate(360deg);
-  }
-}
-
-@-o-keyframes animation-rotate {
-  100% {
-    -o-transform: rotate(360deg);
-  }
-}
-
-@keyframes animation-rotate {
-  100% {
-    transform: rotate(360deg);
+@keyframes sk-bounce {
+  0%, 100% {
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 50% {
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
   }
 }
