@@ -33,22 +33,31 @@ worker.onmessage = function(e) {
 }
 
 function init() {
+  interface A<T> {
+    prop: T;
+}
+
+let a: A<string> = {
+    prop: 1 as any
+};
+
   tsEditor = monaco.editor.create(document.getElementById('editor-ts'), {
     value: [
-      'let foo: string;',
-      'foo = 1 as any;'
+      'interface A<T> {',
+      '    prop: T;',
+      '}',
+      '',
+      'let a: A<string> = {',
+      '    prop: 1 as any',
+      '};',
+      ''
     ].join('\n'),
     language: 'typescript',
     automaticLayout: true
   });
 
   jsEditor = monaco.editor.create(document.getElementById('editor-js'), {
-    value: [
-      'import t from "ts-runtime/lib";',
-      'let _fooType = t.string(), foo;',
-      'foo = _fooType.assert(1);',
-      ''
-    ].join('\n'),
+    value: '',
     language: 'javascript',
     readOnly: true,
     automaticLayout: true
@@ -59,6 +68,8 @@ function init() {
   document.getElementById('run-code').onclick = function() {
     runCode();
   };
+
+  transform();
 
   fadeOut(document.getElementById('loading'));
 }
@@ -219,7 +230,7 @@ function getLibs() {
   return libFiles;
 }
 
-function onCodeChange(event: monaco.editor.IModelContentChangedEvent) {
+function transform(event?: monaco.editor.IModelContentChangedEvent) {
   const modules = getLibs();
 
   modules.push({
@@ -236,6 +247,10 @@ function onCodeChange(event: monaco.editor.IModelContentChangedEvent) {
     name: 'transform',
     data: modules
   });
+}
+
+function onCodeChange(event: monaco.editor.IModelContentChangedEvent) {
+  transform(event);
 }
 
 const win = window as any;
