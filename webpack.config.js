@@ -21,6 +21,14 @@ module.exports = [
     module: {
       rules: [
         {
+          test: /^rimraf$/,
+          use: 'null-loader'
+        },
+        {
+          test: /^pretty-time$/,
+          use: 'null-loader'
+        },
+        {
           test: /\.js$/,
           use: ["source-map-loader"],
           enforce: "pre"
@@ -71,6 +79,7 @@ module.exports = [
       })
     ],
     node: {
+      path: true,
       fs: 'empty',
       module: 'empty'
     }

@@ -1,22 +1,32 @@
 import * as ts from 'typescript';
-import { transformModules, FileReflection } from '../../src/transformModules';
+import { FileReflection } from '../../src/host';
+import { transformReflection } from '../../src/transform';
 
 function sendMessage(message: any) {
   self.postMessage(JSON.parse(JSON.stringify(message)), void 0);
 }
 
-function transform(modules: FileReflection[], options: ts.CompilerOptions) {
-  const transformed = transformModules(modules, {
-    compilerOptions: {
-      // noEmit: true,
-      rootDir: 'src',
-      noLib: true,
-      lib: undefined,
-      target: ts.ScriptTarget.ES2015,
-      emitDecoratorMetadata: false,
-      strictNullChecks: options.strictNullChecks
+function transform(entryFiles: string[], reflections: FileReflection[], options: ts.CompilerOptions) {
+  const compilerOptions = {
+    rootDir: 'src',
+    noLib: false,
+    lib: ['lib.d.ts'],
+    target: ts.ScriptTarget.ES2015,
+    emitDecoratorMetadata: false
+  };
+
+  for (let option in options) {
+    compilerOptions[option] = options[option];
+  }
+
+  const transformed = transformReflection(
+    entryFiles,
+    reflections,
+    {
+      force: true,
+      compilerOptions
     }
-  });
+  );
 
   sendMessage({
     name: 'transformed',
@@ -26,7 +36,7 @@ function transform(modules: FileReflection[], options: ts.CompilerOptions) {
 
 self.addEventListener('message', message => {
   if (message.data.name === 'transform') {
-    transform(message.data.data, message.data.options);
+    transform(message.data.entryFiles, message.data.reflections, message.data.options);
   }
 });
 

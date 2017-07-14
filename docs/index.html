@@ -7,14 +7,14 @@
   <title>ts-runtime Playground</title>
   <link rel="icon" href="assets/favicon.ico">
   <link rel="stylesheet" href="assets/normalize.css">
-  <link rel="stylesheet" href="assets/style.css">
   <script>
-    var versionElement = document.createElement('script');
-    versionElement.src = `version.js?${(new Date()).getTime()}`;
-    document.getElementsByTagName('head')[0].appendChild(versionElement);
+  var style = document.createElement('link');
+  style.rel = 'stylesheet';
+  style.href = 'assets/style.css?' + (new Date()).getTime();
+  document.head.appendChild(style);
   </script>
 </head>
-<body>
+<body class="visible" style="visibility:hidden">
   <div id="loading">
     <span class="loader">
       <span class="loader-inner"></span>
@@ -46,7 +46,7 @@
           <div class="double-bounce2"></div>
         </div>
       </div>
-      <div class="editor-footer" id="run-code">Run in a new window.</div>
+      <div class="editor-footer" id="run-code">Run in new window.</div>
       <div class="editor" id="editor-js"></div>
     </div>
   </div>
@@ -63,11 +63,16 @@
 
   <script src="min/vs/loader.js"></script>
   <script>
+  var versionElement = document.createElement('script');
+
   versionElement.onload = function() {
     var bundleElement = document.createElement('script');
     bundleElement.src = `bundle.js?${window.VERSION.default}`;
     document.getElementsByTagName('body')[0].appendChild(bundleElement);
   };
+
+  versionElement.src = `version.js?${(new Date()).getTime()}`;
+  document.getElementsByTagName('head')[0].appendChild(versionElement);
   </script>
 </body>
 </head>
