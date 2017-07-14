@@ -8,6 +8,7 @@ import * as bus from './bus';
 import { ProgramError } from './errors';
 import { MutationContext } from './context';
 import { getMutators } from './mutators';
+import { Host, FileReflection } from './host';
 import { Options, defaultOptions } from './options';
 import { Scanner, TsrDeclaration } from './scanner';
 
@@ -17,29 +18,55 @@ export function transform(entryFiles: string[], options?: Options): void {
   return transformProgram(entryFiles, options) as void;
 }
 
+export function transformReflection(rootNames: string | string[], reflections: FileReflection[], options?: Options): FileReflection[] {
+  const host = transformProgram(rootNames, options, reflections) as Host;
+  if (!host) return [];
+  return host.getResult();
+}
+
 export function getOptions(options: Options = {}): Options {
   const opts = Object.assign({}, defaultOptions, options);
   opts.compilerOptions = Object.assign({}, defaultOptions.compilerOptions, options && options.compilerOptions || {});
   return opts;
 }
 
-function transformProgram(entryFiles: string[], options?: Options): void {
-  start = elapsed = process.hrtime();
+function transformProgram(rootNames: string | string[], options?: Options, reflections?: FileReflection[]): void | Host {
+  if (!reflections) start = elapsed = process.hrtime();
+  const entryFiles = util
+    .asArray(rootNames)
+    .map(file => path.normalize(file))
+    .map(file => !path.extname(file) ? file + '.ts' : file);
+
   options = getOptions(options);
 
   emit(bus.events.START);
 
-  entryFiles = entryFiles
-    .map(file => path.normalize(file))
-    .map(file => !path.extname(file) ? file + '.ts' : file);
-
-  const commonDir = commondir(entryFiles.map(f => path.dirname(path.resolve(f))));
-
-  setCompilerOptions();
-
-  let tempEntryFiles: string[] = entryFiles.map(f => path.resolve(f));
-  let tempBasePath: string = options.compilerOptions.rootDir;
+  let tempEntryFiles: string[];
+  let commonDir: string;
   let host: ts.CompilerHost;
+
+  if (!reflections) {
+    tempEntryFiles = entryFiles.map(f => path.resolve(f));
+    commonDir = commondir(tempEntryFiles.map(f => path.dirname(f)));
+    setCompilerOptions();
+    host = ts.createCompilerHost(options.compilerOptions, true);
+  } else {
+    tempEntryFiles = entryFiles.map(f => path.join(`${path.resolve(path.dirname(f))}`, path.basename(f)));
+    commonDir = commondir(tempEntryFiles.map(f => path.dirname(f)));
+    reflections = reflections.map(f => {
+      return {
+        name: path.join(`${path.resolve(path.dirname(f.name))}`, path.basename(f.name)),
+        text: f.text
+      }
+    });
+
+    setCompilerOptions();
+    setCompilerOptionsForReflection();
+
+    host = new Host(reflections, options.compilerOptions, true);
+  }
+
+  let tempBasePath: string = options.compilerOptions.rootDir;
   let program: ts.Program;
   let scanner: Scanner;
   let context: MutationContext;
@@ -47,148 +74,51 @@ function transformProgram(entryFiles: string[], options?: Options): void {
 
   return startTransformation();
 
-  function startTransformation(): void {
-    let sourceFiles: ts.SourceFile[];
-
-    deleteTempFiles();
-
-    host = ts.createCompilerHost(options.compilerOptions, true);
+  function startTransformation(): void | Host {
     program = ts.createProgram(tempEntryFiles, options.compilerOptions, host);
 
-    const diagnostics: ts.Diagnostic[] = [];
-
-    diagnostics.push(...program.getOptionsDiagnostics());
-    diagnostics.push(...program.getGlobalDiagnostics());
-
-    for (let sourceFile of program.getSourceFiles().filter(sf => !/\.d\.ts$/.test(sf.fileName))) {
-      diagnostics.push(...program.getSyntacticDiagnostics(sourceFile));
-      diagnostics.push(...program.getSemanticDiagnostics(sourceFile));
-    }
-
-    // Check original file (pre-diagnostics)
-    if (!check(diagnostics, options.log) && !options.force) {
-      if (!options.keepTemp) deleteTempFiles();
+    if (!check(getDiagnostics(), options.log) && !options.force) {
       emit(bus.events.STOP);
       return;
     }
 
-    sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
-
+    const sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
     emit(bus.events.SCAN, getElapsedTime());
-
     scanner = new Scanner(program, options);
-
     emit(bus.events.TRANSFORM, sourceFiles, getElapsedTime());
-
     const result = ts.transform(sourceFiles, [transformer], options.compilerOptions);
-
     emit(bus.events.EMIT, getElapsedTime());
 
-    writeTempFiles(result);
-
-    // do not check post-diagnostics of temp file
-    // check(result.diagnostics, options.log)
-
-    emitDeclarations();
-
-    if (!emitTransformed() && !options.force) {
-      if (!options.keepTemp) deleteTempFiles();
+    if (!emitTransformed(result) && !options.force) {
       emit(bus.events.STOP);
       return;
     }
 
-    emit(bus.events.CLEAN, getElapsedTime());
-
-    if (!options.keepTemp) {
-      deleteTempFiles();
-    }
-
+    emitDeclarations();
     result.dispose();
-
     emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
+
+    return host as Host;
   };
 
-  function getOutDir(): string {
-    if (options.compilerOptions.outFile) {
-      return path.dirname(options.compilerOptions.outFile);
-    }
-
-    if (options.compilerOptions.outDir) {
-      return options.compilerOptions.outDir;
-    }
-
-    return commonDir;
-  }
-
-  function deleteTempFiles(): void {
-    const tempPath = path.join(commonDir, options.tempFolderName);
-    rimraf.sync(tempPath);
-  }
-
-  function createProgramFromTempFiles(): void {
-    tempEntryFiles = tempEntryFiles.map(f => toTempPath(f));
-    tempBasePath = path.join(tempBasePath, options.tempFolderName);
-    options.compilerOptions.rootDir = tempBasePath;
-    host = ts.createCompilerHost(options.compilerOptions);
-    program = ts.createProgram(tempEntryFiles, options.compilerOptions, host, undefined);
-  }
-
-  function writeTempFiles(result: ts.TransformationResult<ts.SourceFile>): void {
-    const printHandlers: ts.PrintHandlers = {
-      // substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
-      //   if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
-      //     const ids = scanner.getIdentifiers(node.getSourceFile());
-      //     while(ids && ids.has(node.name.text)) {
-      //       node.name.text = `_${node.name.text}`;
-      //     }
-      //
-      //     const identifier = ts.createIdentifier(node.name.text);
-      //     return ts.updateVariableDeclaration(node, identifier, node.type, node.initializer);
-      //   }
-      //   return node;
-      // }
-    };
-
-    const printer = ts.createPrinter(undefined, printHandlers);
-
-    for (let transformed of result.transformed) {
-      const filePath = toTempPath(transformed.fileName);
-      const source = printer.printFile(transformed);
-      ts.sys.writeFile(filePath, source);
-    }
-  }
-
-  function emitTransformed(): boolean {
-    createProgramFromTempFiles();
-
+  function emitTransformed(result: ts.TransformationResult<ts.SourceFile>): boolean {
     if (!options.compilerOptions.outFile && !options.compilerOptions.outDir) {
       options.compilerOptions.outDir = commonDir;
     }
 
-    const diagnostics: ts.Diagnostic[] = [];
+    host = getHostFromTransformationResult(result);
+    program = ts.createProgram(tempEntryFiles, options.compilerOptions, host, undefined);
 
-    diagnostics.push(...program.getOptionsDiagnostics());
-    diagnostics.push(...program.getGlobalDiagnostics());
+    const { diagnostics } = program.emit();
 
-    for (let sourceFile of program.getSourceFiles().filter(sf => !/\.d\.ts$/.test(sf.fileName))) {
-      diagnostics.push(...program.getSyntacticDiagnostics(sourceFile));
-      diagnostics.push(...program.getSemanticDiagnostics(sourceFile));
-    }
-
-    // do not check pre-diagnostics of temp file
-    // check(diagnostics, options.log);
-
-    const emitResult = program.emit();
-
-    // check final result (post-diagnostics)
-    return check(emitResult.diagnostics, options.log);
+    return check(diagnostics, options.log);
   }
 
   function emitDeclarations() {
     const filename = `${options.declarationFileName}.js`;
     const outDir = getOutDir();
     const location = path.join(outDir, filename);
-    rimraf.sync(location);
+    if (!reflections) rimraf.sync(location);
 
     const printerOptions: ts.PrinterOptions = {
       removeComments: false
@@ -197,14 +127,13 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
         node.parent = undefined;
-        node.flags = ts.NodeFlags.Synthesized;
+        node.flags |= ts.NodeFlags.Synthesized;
         return node;
       }
     };
 
     const printer = ts.createPrinter(printerOptions, printHandlers);
-
-    let sf = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
+    let sourceFile = ts.createSourceFile(filename, '', options.compilerOptions.target, true, ts.ScriptKind.TS);
 
     const expressions: ts.Expression[] = [];
     let names: string[] = []
@@ -243,17 +172,18 @@ function transformProgram(entryFiles: string[], options?: Options): void {
       return;
     }
 
-    sf = ts.updateSourceFileNode(sf, [
+    sourceFile = ts.updateSourceFileNode(sourceFile, [
       context.factory.importLibStatement(),
       ...expressions.map(exp => {
         return ts.createStatement(exp);
       })
     ]);
 
-    const printed = printer.printFile(sf);
+    const printed = printer.printFile(sourceFile);
     const transpiled = ts.transpile(printed, options.compilerOptions);
+    const writeHost = !reflections ? ts.sys : host as Host;
 
-    ts.sys.writeFile(location, transpiled);
+    writeHost.writeFile(location, transpiled);
   }
 
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
@@ -333,48 +263,92 @@ function transformProgram(entryFiles: string[], options?: Options): void {
     }
   }
 
-  function toTempPath(fileName: string): string {
-    const tempPath = path.dirname(fileName).replace(tempBasePath, '');
-    const location = path.join(path.join(tempBasePath, options.tempFolderName, tempPath), path.basename(fileName));
-    return location;
+  function setCompilerOptionsForReflection() {
+
   }
-}
 
-function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
-  if (diagnostics && diagnostics.length > 0) {
+  function getHostFromTransformationResult(result: ts.TransformationResult<ts.SourceFile>): Host {
+    const previousHost = host;
+    const printer = ts.createPrinter();
+    const files: FileReflection[] = [];
 
-    emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
-
-    if (log) {
-      for (let diag of diagnostics) {
-        console.error(ts.formatDiagnostics([diag], {
-          getCurrentDirectory: () => '',
-          getNewLine: () => '\n',
-          getCanonicalFileName: (f: string) => f
-        }));
-      }
+    for (let transformed of result.transformed) {
+      const name = transformed.fileName;
+      const text = printer.printFile(transformed);
+      files.push({ name, text });
     }
 
-    return false;
+    const newHost = new Host(files, options.compilerOptions);
+
+    newHost.setNewLine(previousHost.getNewLine());
+    newHost.setCurrentDirectory(previousHost.getCurrentDirectory());
+    newHost.setDefaultLibFileName(previousHost.getDefaultLibFileName(options.compilerOptions));
+    newHost.setDefaultLibLocation(previousHost.getDefaultLibLocation());
+    newHost.setUseCaseSensitiveFileNames(previousHost.useCaseSensitiveFileNames());
+    newHost.writeFile = previousHost.writeFile;
+
+    return newHost;
   }
 
-  return true;
-}
+  function getDiagnostics() {
+    const diagnostics: ts.Diagnostic[] = [];
 
-function emit(event: string | symbol, ...args: any[]): boolean {
-  return bus.emit(event, args);
-}
+    diagnostics.push(...program.getOptionsDiagnostics());
+    diagnostics.push(...program.getGlobalDiagnostics());
 
-function getRootNames(rootNames: string | string[]): string[] {
-  if (Array.isArray(rootNames)) {
-    return rootNames;
+    for (let sourceFile of program.getSourceFiles().filter(sf => !/\.d\.ts$/.test(sf.fileName))) {
+      diagnostics.push(...program.getSyntacticDiagnostics(sourceFile));
+      diagnostics.push(...program.getSemanticDiagnostics(sourceFile));
+    }
+
+    return diagnostics;
   }
 
-  return [rootNames];
-}
+  function getOutDir(): string {
+    if (options.compilerOptions.outFile) {
+      return path.dirname(options.compilerOptions.outFile);
+    }
 
-function getElapsedTime(fromBeginning = false): string {
-  const time = process.hrtime(fromBeginning ? start : elapsed);
-  if (!fromBeginning) elapsed = process.hrtime();
-  return format(time, fromBeginning ? 'ms' : void 0);
+    if (options.compilerOptions.outDir) {
+      return options.compilerOptions.outDir;
+    }
+
+    return commonDir;
+  }
+
+  function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
+    if (diagnostics && diagnostics.length > 0) {
+
+      emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
+
+      if (log) {
+        for (let diag of diagnostics) {
+          console.error(ts.formatDiagnostics([diag], {
+            getCurrentDirectory: () => '',
+            getNewLine: () => '\n',
+            getCanonicalFileName: (f: string) => f
+          }).trim());
+        }
+      }
+
+      return false;
+    }
+
+    return true;
+  }
+
+  function emit(event: string | symbol, ...args: any[]): boolean {
+    return bus.emit(event, args);
+  }
+
+  function getElapsedTime(fromBeginning = false): string {
+    if (reflections) {
+      return '';
+    }
+
+    const time = process.hrtime(fromBeginning ? start : elapsed);
+    if (!fromBeginning) elapsed = process.hrtime();
+    return format(time, fromBeginning ? 'ms' : void 0);
+  }
+
 }

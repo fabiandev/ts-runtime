@@ -130,9 +130,9 @@ function setFast() {
   fastMode = true;
 }
 
-function setKeepTemp() {
-  options.keepTemp = true;
-}
+// function setKeepTemp() {
+//   options.keepTemp = true;
+// }
 
 function setLibIdentifier(identifier: string) {
   options.libIdentifier = identifier;
@@ -146,6 +146,10 @@ function setLibNamespace(namespace: string) {
   options.libNamespace = namespace;
 }
 
+function setModuleAlias() {
+  options.moduleAlias = true;
+}
+
 function setDeclarationPrefix(prefix: string) {
   options.declarationPrefix = prefix;
 }
@@ -154,13 +158,9 @@ function setStackTraceOutput(limit: string) {
   options.stackTraceOutput = parseInt(limit);
 }
 
-function setTempFolderName(name: string) {
-  options.tempFolderName = name;
-}
-
-function setModuleAlias() {
-  options.moduleAlias = true;
-}
+// function setTempFolderName(name: string) {
+//   options.tempFolderName = name;
+// }
 
 commander
   .version(pkg.version, '-v, --version')
@@ -173,18 +173,18 @@ commander
   .option('-c, --tsConfig <path>', 'use the compiler options of the given tsconfig.json', useTsConfig)
   .option('-C, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to "{}"', setCompilerOptions)
   .option('-d, --declarationFileName <fileName>', 'set file name for global declarations. defaults to "tsr-declarations"', setDeclarationFileName)
-  .option('-e, --excludeDeclarationFile', 'don not import the ambient declarationsfile. defaults to false', setExcludeDeclarationFile)
+  .option('-e, --excludeDeclarationFile', 'do not import the ambient declarations file. defaults to false', setExcludeDeclarationFile)
   .option('-E, --excludeLib', 'do not automatically import the runtime library. defaults to false', setExcludeLib)
   .option('-f, --force', 'try to finish on TypeScript compiler error. defaults to false', setForce)
   .option('-F, --fast', 'no status for the command line, but faster processing. defaults to false', setFast)
-  .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
+  // .option('-k, --keepTemp', 'keep temporary files. defaults to false', setKeepTemp)
   .option('-l, --libIdentifier <name>', 'lib import name. defaults to "t"', setLibIdentifier)
   .option('-L, --libDeclarations', 'reflect declarations from global libs (e.g. DOM). defaults to false', setLibDeclarations)
   .option('-m, --moduleAlias', 'import package module-alias on top of every file.', setModuleAlias)
   .option('-n, --libNamespace <namespace>', 'prefix for lib and code additions. defaults to ""', setLibNamespace)
   .option('-p, --declarationPrefix <namespace>', 'prefix for added variables. defaults to "_"', setDeclarationPrefix)
   .option('-s, --stackTraceOutput <limit>', 'output a specified number of lines of the stack trace. defaults to 3', setStackTraceOutput)
-  .option('-t, --tempFolderName <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolderName)
+  // .option('-t, --tempFolderName <name>', 'set folder name for temporary files. defaults to ".tsr"', setTempFolderName)
   .on('-h, --help', () => {
     console.log('  Examples:');
     console.log();

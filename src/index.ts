@@ -8,4 +8,3 @@ export * from './mutators';
 export * from './options';
 export * from './scanner';
 export * from './transform';
-export * from './transformModules';
