@@ -61,7 +61,7 @@ t.enum = (...args: any[]) => {
 }
 
 t.enumMember = (arg: any) => {
-  return t.number(arg);
+  return t.literal(arg);
 }
 
 t.enumRef = (...args: any[]) => {
