@@ -19,19 +19,32 @@ function transform(entryFiles: string[], reflections: FileReflection[], options:
     compilerOptions[option] = options[option];
   }
 
-  const transformed = transformReflection(
-    entryFiles,
-    reflections,
-    {
-      force: true,
-      compilerOptions
-    }
-  );
+  let transformed: FileReflection[];
+  let error: any;
+
+  try {
+    transformed = transformReflection(
+      entryFiles,
+      reflections,
+      {
+        force: true,
+        compilerOptions
+      }
+    );
+  } catch (e) {
+    transformed = undefined;
+    error = e;
+  }
 
   sendMessage({
     name: 'transformed',
-    data: transformed
+    data: transformed,
+    error: error
   });
+
+  if (error) {
+    throw error;
+  }
 }
 
 self.addEventListener('message', message => {
