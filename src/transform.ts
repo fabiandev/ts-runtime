@@ -76,8 +76,19 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
   function startTransformation(): void | Host {
     program = ts.createProgram(tempEntryFiles, options.compilerOptions, host);
+    const { diagnostics, optionsDiagnostics, syntacticDiagnostics } = getDiagnostics();
 
-    if (!check(getDiagnostics(), options.log) && !options.force) {
+    if (!check(diagnostics, options.log) && !options.force) {
+      emit(bus.events.STOP);
+      return;
+    }
+
+    if (optionsDiagnostics.length > 0) {
+      emit(bus.events.STOP);
+      return;
+    }
+
+    if (syntacticDiagnostics.length > 0) {
       emit(bus.events.STOP);
       return;
     }
@@ -292,16 +303,33 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
   function getDiagnostics() {
     const diagnostics: ts.Diagnostic[] = [];
+    const optionsDiagnostics: ts.Diagnostic[] = [];
+    const globalDiagnostics: ts.Diagnostic[] = [];
+    const syntacticDiagnostics: ts.Diagnostic[] = [];
+    const semanticDiagnostics: ts.Diagnostic[] = [];
 
-    diagnostics.push(...program.getOptionsDiagnostics());
-    diagnostics.push(...program.getGlobalDiagnostics());
+    optionsDiagnostics.push(...program.getOptionsDiagnostics());
+    globalDiagnostics.push(...program.getGlobalDiagnostics());
 
     for (let sourceFile of program.getSourceFiles().filter(sf => !/\.d\.ts$/.test(sf.fileName))) {
-      diagnostics.push(...program.getSyntacticDiagnostics(sourceFile));
-      diagnostics.push(...program.getSemanticDiagnostics(sourceFile));
+      syntacticDiagnostics.push(...program.getSyntacticDiagnostics(sourceFile));
+      semanticDiagnostics.push(...program.getSemanticDiagnostics(sourceFile));
     }
 
-    return diagnostics;
+    diagnostics.push(
+      ...optionsDiagnostics,
+      ...globalDiagnostics,
+      ...syntacticDiagnostics,
+      ...semanticDiagnostics
+    );
+
+    return {
+      diagnostics,
+      optionsDiagnostics,
+      globalDiagnostics,
+      syntacticDiagnostics,
+      semanticDiagnostics
+    };
   }
 
   function getOutDir(): string {
