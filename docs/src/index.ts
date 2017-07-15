@@ -267,12 +267,12 @@ function runCode() {
   </div>
 </div>`;
 
-    win.document.body.appendChild(consoleWrapper);
-
     win.document.head.appendChild(meta);
     win.document.head.appendChild(icon);
     win.document.head.appendChild(normalizeCss);
     win.document.head.appendChild(style);
+
+    win.document.body.appendChild(consoleWrapper);
 
     const cons = document.createElement('script');
     cons.innerHTML = `
@@ -400,7 +400,7 @@ window.onerror = function(message, url, lineNumber) {
     let contents: string;
 
     let contentsReflection = find(result, (element) => {
-      return element.name === 'src/playground.js';
+      return /src\/playground\.js$/.test(element.name);
     });
 
     if (contentsReflection) {
