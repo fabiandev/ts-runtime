@@ -155,54 +155,63 @@ export class ClassDeclarationMutator extends Mutator {
       return node;
     }
 
+    const isStatic = util.isStatic(node);
+    const className = (this.node as ts.ClassDeclaration).name.text;
+
     // Use decorators for static properties temporarily
-    if (util.isStatic(node)) {
-      const decorators = util.asNewArray(node.decorators);
-
-      if (node.initializer) {
-        const typeReflection = this.factory.typeReflection(node.type);
-
-        let decorator: ts.Decorator;
-
-        if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
-          decorator = ts.createDecorator(this.factory.decorate(
-            ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
-              ts.createBlock([ts.createReturn(typeReflection)], true)
-            )
-          ));
-        } else {
-          decorator = ts.createDecorator(this.factory.decorate(typeReflection));
-        }
-
-        decorators.unshift(decorator);
-      }
-
-      return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
-    }
+    // if (util.isStatic(node)) {
+    //   const decorators = util.asNewArray(node.decorators);
+    //
+    //   if (node.initializer) {
+    //     const typeReflection = this.factory.typeReflection(node.type);
+    //
+    //     let decorator: ts.Decorator;
+    //
+    //     if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
+    //       decorator = ts.createDecorator(this.factory.decorate(
+    //         ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
+    //           ts.createBlock([ts.createReturn(typeReflection)], true)
+    //         )
+    //       ));
+    //     } else {
+    //       decorator = ts.createDecorator(this.factory.decorate(typeReflection));
+    //     }
+    //
+    //     decorators.unshift(decorator);
+    //   }
+    //
+    //   return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
+    // }
 
     let name = node.name.text;
     if (!ts.isComputedPropertyName(node.name)) {
       name = this.context.getPropertyName(this.node as ts.ClassDeclaration, `_${node.name.text}`)
     }
 
+    let initializer: ts.Expression = undefined;
+
     if (node.initializer) {
+      initializer = this.factory.typeReflectionAndAssertion(node.type, node.initializer);
+    }
+
+    if (!isStatic && initializer) {
       this.initializers.push(ts.createStatement(
         ts.createBinary(
-          ts.createPropertyAccess(ts.createThis(), name),
+          ts.createPropertyAccess(isStatic ? ts.createIdentifier(className) : ts.createThis(), name),
           ts.SyntaxKind.FirstAssignment,
-          this.factory.typeReflectionAndAssertion(node.type, node.initializer)
+          initializer
         )
       ));
     }
 
-    const property = this.map(ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.type, undefined), node);
+    const property = this.map(ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.type, isStatic ? initializer : undefined), node);
 
     let setAccessor: ts.SetAccessorDeclaration;
     if (!util.hasModifier(node, ts.SyntaxKind.ReadonlyKeyword)) {
       setAccessor = this.factory.mutateFunctionBody(ts.createSetAccessor(undefined, node.modifiers, node.name, [
         ts.createParameter(undefined, undefined, undefined, node.name.text, undefined, node.type)
       ], ts.createBlock([ts.createStatement(
-        ts.createBinary(ts.createPropertyAccess(ts.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name)
+        ts.createBinary(ts.createPropertyAccess(isStatic ? ts.createIdentifier(className) : ts.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name)
       )], true
       ))) as ts.SetAccessorDeclaration;
     }
@@ -210,7 +219,7 @@ export class ClassDeclarationMutator extends Mutator {
     const getAccessor = ts.createGetAccessor(undefined, node.modifiers, node.name, undefined, node.type, ts.createBlock(
       [ts.createReturn(
         ts.createPropertyAccess(
-          ts.createThis(),
+          isStatic ? ts.createIdentifier(className) : ts.createThis(),
           name
         )
       )], true
