@@ -172,7 +172,13 @@ function logToText(message: any) {
     return JSON.stringify(message);
   }
 
-  return `${message}`;
+  return `${escape(message)}`;
+}
+
+function escape(text: string): string {
+  const div = document.createElement('div');
+  div.innerText = text;
+  return div.innerHTML;
 }
 
 function fadeOut(target: HTMLElement) {
@@ -305,7 +311,13 @@ function __logToText(message) {
     return JSON.stringify(message);
   }
 
-  return message;
+  return __escape(message);
+}
+
+function __escape(text) {
+  const div = document.createElement('div');
+  div.innerText = text;
+  return div.innerHTML;
 }
 
 function __log(data) {
