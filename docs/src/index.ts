@@ -13,6 +13,7 @@
  */
 
 import debounce = require('lodash.debounce');
+import * as ts from 'typescript';
 import { FileReflection } from '../../src/host';
 import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts'
 import * as TransformWorker from "worker-loader!./worker";
@@ -139,7 +140,8 @@ function updateCompilerOptions() {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     strictNullChecks: options.strictNullChecks,
     preserveConstEnums: true,
-    allowNonTsExtensions: true
+    allowNonTsExtensions: true,
+    target: ts.ScriptTarget.ES2015
   });
 }
 
