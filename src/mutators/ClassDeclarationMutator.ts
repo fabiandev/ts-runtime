@@ -155,27 +155,30 @@ export class ClassDeclarationMutator extends Mutator {
       return node;
     }
 
-    // Do not use decorators (for now at least), but define getters and setters for properties.
-    // const decorators = util.asNewArray(node.decorators);
-    //
-    // if (node.initializer) {
-    //   const typeReflection = this.factory.typeReflection(node.type);
-    //
-    //   let decorator: ts.Decorator;
-    //
-    //   if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
-    //     decorator = ts.createDecorator(this.factory.decorate(
-    //       ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
-    //         ts.createBlock([ts.createReturn(typeReflection)], true)
-    //       )
-    //     ));
-    //   } else {
-    //     decorator = ts.createDecorator(this.factory.decorate(typeReflection));
-    //   }
-    //
-    //   decorators.unshift(decorator);
-    // }
-    // ts.createGetAccessor(undefined, node.modifiers, )
+    // Use decorators for static properties temporarily
+    if (util.isStatic(node)) {
+      const decorators = util.asNewArray(node.decorators);
+
+      if (node.initializer) {
+        const typeReflection = this.factory.typeReflection(node.type);
+
+        let decorator: ts.Decorator;
+
+        if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
+          decorator = ts.createDecorator(this.factory.decorate(
+            ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
+              ts.createBlock([ts.createReturn(typeReflection)], true)
+            )
+          ));
+        } else {
+          decorator = ts.createDecorator(this.factory.decorate(typeReflection));
+        }
+
+        decorators.unshift(decorator);
+      }
+
+      return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
+    }
 
     let name = node.name.text;
     if (!ts.isComputedPropertyName(node.name)) {

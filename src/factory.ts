@@ -1124,7 +1124,9 @@ export class Factory {
     return ts.visitEachChild(node, visitor, this.context.transformationContext);
   }
 
-  public mutateFunctionBody(node: FunctionDeclarationLikeNode): FunctionDeclarationLikeNode {
+  public mutateFunctionBody<T extends FunctionDeclarationLikeNode>(n: T): T {
+    let node = n as any;
+
     if (!node.body) {
       return node;
     }
@@ -1205,7 +1207,7 @@ export class Factory {
 
     body = ts.updateBlock(body, bodyStatements);
 
-    let method: FunctionDeclarationLikeNode;
+    let method: any;
 
     switch (node.kind) {
       case ts.SyntaxKind.Constructor:
