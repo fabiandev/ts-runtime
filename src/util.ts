@@ -174,6 +174,17 @@ export function isTypeParameterOfClass(node: ts.TypeReferenceNode): ts.ClassDecl
   return null;
 }
 
+export function isInStaticContext(node: ts.TypeReferenceNode): boolean {
+  let current = node as ts.Node;
+  while (current = current.parent) {
+    if (isStatic(current)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function isSuperStatement(node: ts.Node): boolean {
   return ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) &&
     node.expression.expression.kind === ts.SyntaxKind.SuperKeyword;

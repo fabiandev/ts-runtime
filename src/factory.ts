@@ -289,6 +289,15 @@ export class Factory {
     if (isClassTypeParameter && !this.rule(FactoryRule.NoClassTypeParameterReflection)) {
       result = ts.createPropertyAccess(
         ts.createElementAccess(
+          // Static members cannot reference class type parameters
+          // util.isInStaticContext(node) ?
+          // ts.createElementAccess(
+          //   ts.createIdentifier(parentClass.name.text),
+          //   ts.createPropertyAccess(
+          //     ts.createIdentifier(this.lib),
+          //     ts.createIdentifier(this.context.getLibTypeParameterSymbolName())
+          //   )
+          // ) :
           ts.createThis(),
           ts.createIdentifier(
             this.context.getTypeSymbolDeclarationName(parentClass.name.text)

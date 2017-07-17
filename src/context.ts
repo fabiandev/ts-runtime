@@ -300,6 +300,10 @@ export class MutationContext {
     return this.getIdentifier(`${this.options.declarationPrefix}typeParameters`);
   }
 
+  public getLibTypeParameterSymbolName(): string {
+    return 'TypeParametersSymbol';
+  }
+
   public getMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
     const nodeSymbol = this.scanner.getNodeSymbol(node.name);
     const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
