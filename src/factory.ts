@@ -354,7 +354,16 @@ export class Factory {
   }
 
   public typeQueryReflection(node: ts.TypeQueryNode): ts.CallExpression {
-    return this.libCall('typeOf', ts.createIdentifier(util.getEntityNameText(node.exprName)));
+    const typeInfo = this.scanner.getTypeInfo(node.exprName);
+    let text = util.getEntityNameText(node.exprName);
+    let ref: ts.Identifier | ts.CallExpression = ts.createIdentifier(text);
+
+    if (typeInfo.isTsrDeclaration()) {
+      text = util.getHashedDeclarationName(text, typeInfo.sourceFile.fileName);
+      ref = this.asRef(ts.createLiteral(text));
+    }
+
+    return this.libCall('typeOf', ref);
   }
 
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.CallExpression {
