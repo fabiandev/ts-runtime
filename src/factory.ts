@@ -28,6 +28,7 @@ export class Factory {
   private _namespace: string = '';
   private _lib: string = 't';
   private _load: string = 'ts-runtime/lib';
+  private _warnings: string[] = [];
 
   constructor(private _context: MutationContext, options: Options, library?: string) {
     this._strictNullChecks = !!options.compilerOptions.strictNullChecks;
@@ -71,8 +72,6 @@ export class Factory {
     if (!node) {
       return this.anyTypeReflection();
     }
-
-    let warning: string = '';
 
     switch (node.kind) {
       case ts.SyntaxKind.ParenthesizedType:
@@ -128,27 +127,33 @@ export class Factory {
         // type Readonly<T> = {
         //   readonly [P in keyof T]: T[P];
         // }
-        warning = 'Mapped types are not yet supported.';
-        bus.emit(bus.events.WARN, warning);
-        if (this.context.options.log) console.warn(warning);
+        this.warn('Mapped types are not yet supported.');
         return this.anyTypeReflection();
       case ts.SyntaxKind.IndexedAccessType:
         // function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
         //     return o[name]; // o[name] is of type T[K]
         // }
-        warning = 'Indexed acces types are not yet supported.';
-        bus.emit(bus.events.WARN, warning);
-        if (this.context.options.log) console.warn(warning);
+        this.warn('Indexed acces types are not yet supported.');
         return this.anyTypeReflection();
       case ts.SyntaxKind.TypeOperator:
         // let a: keyof MyClass;
-        warning = 'Type operators are not yet supported.';
-        bus.emit(bus.events.WARN, warning);
-        if (this.context.options.log) console.warn(warning);
+        this.warn('Type operators are not yet supported.');
         return this.anyTypeReflection();
       default:
         throw new ProgramError(`No reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
+  }
+
+  private warn(warning: string): boolean {
+    bus.emit(bus.events.WARN, warning);
+
+    if (this.context.options.log && this._warnings.indexOf(warning) === -1) {
+      this._warnings.push(warning);
+      console.warn(warning);
+      return true;
+    }
+
+    return false;
   }
 
   public typeDeclaration(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, node: ts.TypeNode): ts.VariableDeclaration {
@@ -1458,6 +1463,10 @@ export class Factory {
 
   set namespace(namespace: string) {
     this._namespace = namespace;
+  }
+
+  get warnings(): string[] {
+    return this._warnings;
   }
 
 }
