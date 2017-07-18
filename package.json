@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
-    "build:docs": "node_modules/.bin/rimraf docs/*worker.js* && node_modules/.bin/webpack",
+    "build:docs": "node_modules/.bin/rimraf docs/*worker*.js* && node_modules/.bin/webpack",
     "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'",
     "build:tsr:fast": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --fast --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
@@ -23,7 +23,7 @@
   },
   "tsr": {
     "docs": {
-      "version": "0.1.22-0"
+      "version": "0.1.22-1"
     }
   },
   "dependencies": {
