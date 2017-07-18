@@ -67,10 +67,10 @@ module.exports = [
       new CopyWebpackPlugin([
         {
           from: 'node_modules/monaco-editor/min/vs',
-          to: 'min/vs'
+          to: 'editor/min/vs'
         }, {
           from: 'node_modules/monaco-editor/min-maps/vs',
-          to: 'min-maps/vs'
+          to: 'editor/min-maps/vs'
         }
       ]),
       new UglifyJsPlugin({sourceMap: true}),
