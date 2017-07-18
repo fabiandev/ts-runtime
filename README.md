@@ -614,20 +614,18 @@ transform(entryFiles, { log: false });
     -E, --excludeLib                         do not automatically import the runtime library. defaults to false
     -f, --force                              try to finish on TypeScript compiler error. defaults to false
     -F, --fast                               no fancy status for the command line, but faster processing. defaults to false
-    -k, --keepTemp                           keep temporary files. defaults to false
     -l, --libIdentifier <name>               lib import name. defaults to "t"
     -L, --libDeclarations                    reflect declarations from global libs (e.g. DOM). defaults to false
     -m, --moduleAlias                        import package module-alias on top of every file.
     -n, --libNamespace <namespace>           prefix for lib and code additions. defaults to ""
     -p, --declarationPrefix <namespace>      prefix for added variables. defaults to "_"
     -s, --stackTraceOutput <limit>           output a specified number of lines of the stack trace. defaults to 3
-    -t, --tempFolderName <name>              set folder name for temporary files. defaults to ".tsr"
 
   Examples:
 
     $ tsr entry.ts --force
     $ tsr src/entry1 bin/entry2 lib/entry3
-    $ tsr -c tsconfig.json
+    $ tsr entry.ts -c tsconfig.json
 ```
 
 ## Building
