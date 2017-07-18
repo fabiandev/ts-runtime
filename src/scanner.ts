@@ -4,8 +4,9 @@ import * as path from 'path';
 import { Options } from './options';
 
 export interface TsrDeclaration {
-  symbol: ts.Symbol,
-  name: string
+  symbol: ts.Symbol;
+  name: string;
+  originalName: string;
 }
 
 export class Scanner {
@@ -324,7 +325,7 @@ export class Scanner {
     let index = this.declarations.findIndex(decl => decl.symbol === symbol);
 
     if (index === -1) {
-      this.declarations.unshift({ symbol, name: uid });
+      this.declarations.unshift({ symbol, name: uid, originalName: name });
     }
   }
 

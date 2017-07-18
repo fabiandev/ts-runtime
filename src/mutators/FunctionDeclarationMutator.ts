@@ -6,7 +6,7 @@ export class FunctionDeclarationMutator extends Mutator {
   protected kind = ts.SyntaxKind.FunctionDeclaration;
 
   protected mutate(node: ts.FunctionDeclaration): ts.FunctionDeclaration {
-    return this.factory.mutateFunctionBody(node) as ts.FunctionDeclaration;
+    return this.factory.mutateFunctionBody(node);
   }
 
 }

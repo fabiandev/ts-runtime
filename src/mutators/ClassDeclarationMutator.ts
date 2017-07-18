@@ -230,6 +230,7 @@ export class ClassDeclarationMutator extends Mutator {
     return [property, getAccessor, setAccessor].filter(val => !!val);
   }
 
+  // TODO: assert parameters and return type is isImplementationOfOverload
   private mutateMethodDeclaration(node: MethodLikeProperty): MethodLikeProperty {
     return this.factory.mutateFunctionBody(node) as MethodLikeProperty;
   }

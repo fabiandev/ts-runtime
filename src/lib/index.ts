@@ -1,12 +1,12 @@
 import * as t from 'flow-runtime';
 
-const map: Map<string, any> = new Map();
+// const map: Map<string, any> = new Map();
 
 const voidType = t.void;
-const intersect = t.intersect;
-const declare = t.declare;
-const ref = t.ref;
-const decorate = t.decorate;
+// const intersect = t.intersect;
+// const declare = t.declare;
+// const ref = t.ref;
+// const decorate = t.decorate;
 
 // t.decorate = (type: any, shouldAssert?: boolean) => {
 //   return (input: any, propertyName: any, descriptor: any) => {

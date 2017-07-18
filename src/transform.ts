@@ -171,7 +171,8 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
         expressions.unshift(
           ...context.factory.namedDeclarationsReflections(
             declarations[i].name,
-            declarations[i].symbol.getDeclarations()
+            declarations[i].symbol.getDeclarations(),
+            declarations[i].originalName
           )
         );
       }

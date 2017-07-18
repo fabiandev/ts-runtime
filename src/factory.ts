@@ -590,10 +590,10 @@ export class Factory {
     return result;
   }
 
-  public namedDeclarationsReflections(name: string, declarations: ts.Declaration[]): ts.Expression[] {
+  public namedDeclarationsReflections(name: string, declarations: ts.Declaration[], originalName?: string): ts.Expression[] {
     const expressions: ts.Expression[] = [];
     const firstDeclaration = declarations[0];
-    const expression = this.namedDeclarationReflection(name, firstDeclaration);
+    const expression = this.namedDeclarationReflection(name, firstDeclaration, originalName);
 
     if (expression) {
       expressions.push(expression);
@@ -602,25 +602,27 @@ export class Factory {
     return expressions;
   }
 
-  public namedDeclarationReflection(name: string, declaration: ts.Declaration): ts.Expression {
+  public namedDeclarationReflection(name: string, declaration: ts.Declaration, originalName?: string): ts.Expression {
+    const typeName = originalName || name;
+
     switch (declaration.kind) {
       case ts.SyntaxKind.InterfaceDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.interfaceReflection(declaration as ts.InterfaceDeclaration, name)]);
+        return this.libCall('declare', [ts.createLiteral(name), this.interfaceReflection(declaration as ts.InterfaceDeclaration, typeName)]);
       case ts.SyntaxKind.ClassDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.classReflection(declaration as ts.ClassDeclaration, name)]);
-      case ts.SyntaxKind.TypeLiteral:
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.typeLiteralReflection(declaration as ts.TypeLiteralNode))]);
+        return this.libCall('declare', [ts.createLiteral(name), this.classReflection(declaration as ts.ClassDeclaration, typeName)]);
+      case ts.SyntaxKind.TypeLiteral: // remove?
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.typeLiteralReflection(declaration as ts.TypeLiteralNode))]);
       case ts.SyntaxKind.EnumDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.enumReflection(declaration as ts.EnumDeclaration))]);
-      case ts.SyntaxKind.EnumMember:
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.enumMemberReflection(declaration as ts.EnumMember))]);
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.enumReflection(declaration as ts.EnumDeclaration))]);
+      case ts.SyntaxKind.EnumMember: // remove?
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.enumMemberReflection(declaration as ts.EnumMember))]);
       case ts.SyntaxKind.FunctionDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(name, this.functionReflection(declaration as ts.FunctionDeclaration))]);
+        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.functionReflection(declaration as ts.FunctionDeclaration))]);
       case ts.SyntaxKind.VariableDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.asVar(name, this.variableReflection(declaration as ts.VariableDeclaration))]);
+        return this.libCall('declare', [ts.createLiteral(name), this.asVar(typeName, this.variableReflection(declaration as ts.VariableDeclaration))]);
       case ts.SyntaxKind.TypeAliasDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, name)]);
-      case ts.SyntaxKind.FunctionType:
+        return this.libCall('declare', [ts.createLiteral(name), this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, typeName)]);
+      case ts.SyntaxKind.FunctionType: // remove?
         return this.libCall('declare', [ts.createLiteral(name), this.functionTypeReflection(declaration as ts.FunctionTypeNode)]);
       default:
         throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
@@ -641,7 +643,7 @@ export class Factory {
     return this.typeReflection(node.type);
   }
 
-  public functionReflection(node: FunctionLikeNode): ts.CallExpression {
+  public functionReflection(node: FunctionLikeNode, asCallProperty = false): ts.CallExpression {
     const parameters = node.parameters || [] as ts.ParameterDeclaration[];
 
     let args: ts.Expression[] = parameters
