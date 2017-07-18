@@ -3,11 +3,12 @@ import * as t from 'flow-runtime';
 // const map: Map<string, any> = new Map();
 
 const voidType = t.void;
+const typeOf = t.typeOf;
+
 // const intersect = t.intersect;
 // const declare = t.declare;
 // const ref = t.ref;
 // const decorate = t.decorate;
-
 // t.decorate = (type: any, shouldAssert?: boolean) => {
 //   return (input: any, propertyName: any, descriptor: any) => {
 //     const decorator = decorate.bind(t)(type, shouldAssert)(input, propertyName, descriptor);
@@ -31,7 +32,6 @@ const voidType = t.void;
 //
 //   return ref.bind(t)(type, ...args);
 // }
-
 // t.intersect = (...args: any[]) => {
 //   return intersect.bind(t)(...args).unwrap();
 // }
@@ -66,6 +66,22 @@ t.enumMember = (arg: any) => {
 
 t.enumRef = (...args: any[]) => {
   return t.typeOf(...args);
+}
+
+t.typeOf = (input: any, declaration = false) => {
+  if (declaration && typeof input === 'string') {
+    input = t.get(input);
+
+    if (input) {
+      if (input.typeName === 'ClassDeclaration') {
+        return t.Class(input);
+      }
+
+      return input;
+    }
+  }
+
+  return typeOf.bind(t)(input);
 }
 
 export default t;

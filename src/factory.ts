@@ -356,16 +356,14 @@ export class Factory {
   public typeQueryReflection(node: ts.TypeQueryNode): ts.CallExpression {
     const typeInfo = this.scanner.getTypeInfo(node.exprName);
     let text = util.getEntityNameText(node.exprName);
-    let ref: ts.Identifier | ts.StringLiteral = ts.createIdentifier(text);
-    let call = 'typeOf';
+    let ref: ts.Expression | ts.Expression[] = ts.createIdentifier(text);
 
     if (typeInfo.isTsrDeclaration()) {
       text = util.getHashedDeclarationName(text, typeInfo.sourceFile.fileName);
-      ref = ts.createLiteral(text);
-      call = 'ref';
+      ref = [ts.createLiteral(text), ts.createTrue()];
     }
 
-    return this.libCall(call, ref);
+    return this.libCall('typeOf', ref);
   }
 
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.CallExpression {
