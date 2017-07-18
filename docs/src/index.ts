@@ -1,5 +1,6 @@
 /// <reference path="../../node_modules/monaco-editor/monaco.d.ts" />
 /// <reference path="./loader.d.ts" />
+/// <reference path="./require.d.ts" />
 /// <reference path="./version.d.ts" />
 
 /*
@@ -16,7 +17,7 @@ import debounce = require('lodash.debounce');
 import * as ts from 'typescript';
 import { FileReflection } from '../../src/host';
 import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts'
-import * as TransformWorker from "worker-loader!./worker";
+const TransformWorker = require(`worker-loader?name=worker-${VERSION}.js!./worker`);
 
 let tsEditor: monaco.editor.IStandaloneCodeEditor;
 let jsEditor: monaco.editor.IStandaloneCodeEditor;
@@ -42,7 +43,7 @@ const options = {
 
 function bootstrap() {
   const win = window as any;
-  win.require.config({ paths: { 'vs': 'min/vs' } });
+  win.require.config({ paths: { 'vs': 'editor/min/vs' } });
   win.require(['vs/editor/editor.main'], init);
 }
 
