@@ -190,7 +190,7 @@ commander
     console.log();
     console.log('    $ tsr entry.ts --force');
     console.log('    $ tsr src/entry1 bin/entry2 lib/entry3');
-    console.log('    $ tsr -c tsconfig.json');
+    console.log('    $ tsr entry.ts -c tsconfig.json');
     console.log();
   });
 
