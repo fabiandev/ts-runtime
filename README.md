@@ -449,14 +449,12 @@ have a look at the options.
 
 - Only `as number` syntax for type assertions (no angle-bracket syntax: `<number>`).
 - No reflection of mapped types, indexed access types and type operators yet.
-- No support for string enums.
-- `readonly` is currently only supported for classes.
+- `readonly` is currently only checked for classes.
 - Class visibility modifiers are not asserted.
 - Class type parameters are only checked when extending, at this time.
-- No declaration merging.
-- Method overloading is only supported within the same declaration.
+- Types with self references and generics are not asserted correctly.
 - No class expressions (`const A = class { }`), only class declarations (`class A { }`) can be used.
-- `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s as expression with an `Identifier` as name.
+- `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s as expression with an `Identifier` as name, recursively.
 - No JSX support.
 
 ## Options
