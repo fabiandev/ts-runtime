@@ -14,24 +14,29 @@ import { Scanner, TsrDeclaration } from './scanner';
 
 let start: [number, number], elapsed: [number, number];
 
-export function transform(entryFiles: string[], options?: Options): void {
-  return transformProgram(entryFiles, options) as void;
+export function transform(rootNames: string[], options?: Options): FileReflection[] {
+  return result(transformProgram(rootNames, options));
 }
 
 export function transformReflection(rootNames: string | string[], reflections: FileReflection[], options?: Options): FileReflection[] {
-  const host = transformProgram(rootNames, options, reflections) as Host;
-  if (!host) return [];
-  return host.getResult();
+  return result(transformProgram(rootNames, options, reflections));
 }
 
 export function getOptions(options: Options = {}): Options {
   const opts = Object.assign({}, defaultOptions, options);
-  opts.compilerOptions = Object.assign({}, defaultOptions.compilerOptions, options && options.compilerOptions || {});
+  const compilerOptions = Object.assign(ts.getDefaultCompilerOptions(), defaultOptions.compilerOptions, options && options.compilerOptions || {});
+  opts.compilerOptions = compilerOptions;
   return opts;
 }
 
-function transformProgram(rootNames: string | string[], options?: Options, reflections?: FileReflection[]): void | Host {
+function result(host: Host | void): FileReflection[] {
+  if (!host) return [];
+  return host.getResult();
+}
+
+function transformProgram(rootNames: string | string[], options?: Options, reflections?: FileReflection[]): Host | void {
   if (!reflections) start = elapsed = process.hrtime();
+
   const entryFiles = util
     .asArray(rootNames)
     .map(file => path.normalize(file))
@@ -74,7 +79,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
   return startTransformation();
 
-  function startTransformation(): void | Host {
+  function startTransformation(): Host | void {
     program = ts.createProgram(tempEntryFiles, options.compilerOptions, host);
     const { diagnostics, optionsDiagnostics, syntacticDiagnostics } = getDiagnostics();
 
@@ -270,6 +275,13 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     if (!options.compilerOptions.preserveConstEnums) {
       const warning = 'Compiler option "preserveConstEnums" was enabled.';
       options.compilerOptions.preserveConstEnums = true;
+      emit(bus.events.WARN, warning);
+      if (options.log) console.warn(warning);
+    }
+
+    if (!options.compilerOptions.experimentalDecorators) {
+      const warning = 'Compiler option "experimentalDecorators" was enabled.';
+      options.compilerOptions.experimentalDecorators = true;
       emit(bus.events.WARN, warning);
       if (options.log) console.warn(warning);
     }
