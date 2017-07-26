@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 
 export interface Options {
+  [index: string]: any;
   libDeclarations?: boolean;
   noAnnotate?: boolean;
   compilerOptions?: ts.CompilerOptions;
@@ -22,18 +23,7 @@ export interface Options {
 
 export const defaultOptions: Options = {
   noAnnotate: false,
-  compilerOptions: {
-    moduleResolution: ts.ModuleResolutionKind.NodeJs,
-    module: ts.ModuleKind.ES2015,
-    target: ts.ScriptTarget.ES2015,
-    lib: ["lib.es2015.d.ts"],
-    strictNullChecks: true,
-    experimentalDecorators: true,
-    emitDecoratorMetadata: true,
-    sourceMap: false,
-    removeComments: true,
-    preserveConstEnums: true,
-  },
+  compilerOptions: {},
   libDeclarations: false,
   declarationFileName: 'tsr-declarations',
   force: false,
