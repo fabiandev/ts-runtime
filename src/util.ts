@@ -217,6 +217,14 @@ export function getHashedDeclarationName(name: string, fileName: string) {
 }
 
 export function getIdentifierOfEntityName(node: ts.EntityName): ts.Identifier {
+  if (ts.isIdentifier(node)) {
+    return node;
+  }
+
+  return node.right;
+}
+
+export function getBaseIdentifierOfEntityName(node: ts.EntityName): ts.Identifier {
   while (ts.isQualifiedName(node)) {
     node = node.left;
   }

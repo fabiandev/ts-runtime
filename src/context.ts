@@ -77,7 +77,7 @@ export class MutationContext {
   }
 
   public isDeclared(node: ts.EntityName): boolean {
-    node = util.getIdentifierOfEntityName(node);
+    node = util.getBaseIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
     const fileName = typeInfo.fileName;
@@ -93,7 +93,7 @@ export class MutationContext {
   }
 
   public wasDeclared(node: ts.EntityName): boolean {
-    node = util.getIdentifierOfEntityName(node);
+    node = util.getBaseIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
     const fileName = typeInfo.fileName;
@@ -147,10 +147,13 @@ export class MutationContext {
     while (next.parent) {
       next = next.parent;
 
+      if (ts.isHeritageClause(node)) {
+        return false;
+      }
+
       if (ts.isClassDeclaration(next) || ts.isInterfaceDeclaration(next) || ts.isTypeAliasDeclaration(next)) {
         const symbol = this.scanner.getNodeSymbol(next.name);
-
-        if (typeInfo.symbol === symbol) {
+        if (typeInfo.symbol === symbol && next.name.text === util.getIdentifierOfEntityName(node.typeName).text) {
           return true;
         }
       }
