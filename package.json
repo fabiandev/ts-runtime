@@ -48,8 +48,7 @@
     "pretty-time": "^0.2.0",
     "regenerator-runtime": "^0.10.5",
     "rimraf": "^2.6.1",
-    "typescript": "^2.4.1",
-    "webpack": "^2.2.0"
+    "typescript": "^2.4.1"
   },
   "devDependencies": {
     "@types/chalk": "^0.4.31",
@@ -81,6 +80,7 @@
     "source-map-support": "^0.4.15",
     "ts-loader": "^2.2.2",
     "ts-node": "^3.3.0",
+    "webpack": "^2.2.0",
     "worker-loader": "^0.8.1"
   }
 }
