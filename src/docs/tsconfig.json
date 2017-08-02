@@ -1,0 +1,24 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "rootDir": "../",
+    "declaration": false,
+    "module": "commonjs",
+    "target": "ES5",
+    "moduleResolution": "node",
+    "declaration": false,
+    "sourceMap": true,
+    "lib": [
+      "ES2015",
+      "DOM",
+      "ScriptHost",
+      "WebWorker"
+    ]
+  },
+  "include": [
+    "**/*"
+  ]
+}

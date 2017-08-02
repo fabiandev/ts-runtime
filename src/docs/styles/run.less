@@ -1,0 +1,39 @@
+#run-window {
+  #loading-window {
+    position: absolute;
+    z-index: 500;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-left: -15px;
+      margin-top: -15px;
+
+      .double-bounce1,
+      .double-bounce2 {
+        background-color: #e4e2e2;
+      }
+    }
+  }
+
+  #console {
+    height: 100%;
+
+    [class*=col-]:last-of-type {
+      height: 85%;
+    }
+
+    .console {
+      min-height: 300px;
+      max-height: none;
+      height: 100%;
+    }
+  }
+}
