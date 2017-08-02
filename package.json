@@ -13,18 +13,31 @@
     "node": ">=6"
   },
   "scripts": {
+    "test": "NODE_ENV=test ./node_modules/mocha/bin/_mocha",
+    "cover": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=text npm test",
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
-    "build:docs": "node_modules/.bin/rimraf docs/*worker*.js* && node_modules/.bin/webpack",
-    "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'",
-    "build:tsr:fast": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --fast --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
+    "build:docs": "node_modules/.bin/gulp build",
+    "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"
   },
-  "tsr": {
-    "docs": {
-      "version": "0.1.23-0"
-    }
+  "nyc": {
+    "extensions": [
+      ".ts"
+    ],
+    "include": [
+      "src/*.ts",
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "sourceMap": true,
+    "instrument": true
   },
   "dependencies": {
     "chalk": "^2.0.1",
@@ -35,30 +48,39 @@
     "pretty-time": "^0.2.0",
     "regenerator-runtime": "^0.10.5",
     "rimraf": "^2.6.1",
-    "typescript": "^2.4.1"
+    "typescript": "^2.4.1",
+    "webpack": "^2.2.0"
   },
   "devDependencies": {
     "@types/chalk": "^0.4.31",
     "@types/commander": "^2.3.31",
+    "@types/expect.js": "^0.3.29",
     "@types/lodash.debounce": "^4.0.2",
-    "@types/node": "^8.0.10",
+    "@types/mocha": "^2.2.41",
+    "@types/node": "^8.0.16",
     "@types/rimraf": "^0.0.28",
-    "babel-core": "^6.25.0",
-    "babel-loader": "^7.1.1",
-    "babel-preset-es2015": "^6.24.1",
-    "copy-webpack-plugin": "^4.0.1",
     "css-loader": "^0.28.4",
+    "del": "^3.0.0",
+    "expect.js": "^0.3.1",
+    "gulp": "gulpjs/gulp#4.0",
+    "gulp-clean-css": "^3.7.0",
+    "gulp-less": "^3.3.2",
+    "gulp-preprocess": "^2.0.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.6.0",
     "lodash.debounce": "^4.0.8",
+    "mocha": "^3.4.2",
     "module-alias": "^2.0.0",
     "monaco-editor": "^0.9.0",
     "monaco-typescript": "git+https://git@github.com/Microsoft/monaco-typescript",
+    "normalize.css": "^7.0.0",
     "null-loader": "^0.1.1",
+    "nyc": "^11.0.3",
     "raw-loader": "^0.5.1",
     "source-map-loader": "^0.2.1",
     "source-map-support": "^0.4.15",
     "ts-loader": "^2.2.2",
-    "uglifyjs-webpack-plugin": "^0.4.6",
-    "webpack": "^2.2.0",
+    "ts-node": "^3.3.0",
     "worker-loader": "^0.8.1"
   }
 }
