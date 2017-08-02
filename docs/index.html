@@ -3,18 +3,12 @@
 
 <head>
   <meta charset="utf8">
-
   <title>ts-runtime Playground</title>
   <link rel="icon" href="assets/favicon.ico">
-  <link rel="stylesheet" href="assets/normalize.css">
-  <script>
-  var style = document.createElement('link');
-  style.rel = 'stylesheet';
-  style.href = 'assets/style.css?' + (new Date()).getTime();
-  document.head.appendChild(style);
-  </script>
+  <link rel="stylesheet" href="style.css?0.1.24">
 </head>
-<body class="visible" style="visibility:hidden">
+
+<body>
   <div id="loading">
     <span class="loader">
       <span class="loader-inner"></span>
@@ -23,7 +17,59 @@
   <div id="header" class="grid grid-pad">
     <div class="col-1-2">
       <div id="title">
-        Playground for TypeScript runtime type checks.
+        TypeScript Runtime Type Checks Playground
+        <span id="options-toggle" class="icon-cog"></span>
+        <div id="options">
+          <h6>Transformer Options:</h6>
+          <div class="option">
+            <input class="tsrOption" type="checkbox" name="noAnnotate" value="true">
+            noAnnotate
+          </div>
+          <div class="option">
+            declarationPrefix
+            <input class="tsrOption" type="text" name="declarationPrefix" value="_">
+          </div>
+          <div class="option">
+            <input class="tsrOption" type="checkbox" name="force" value="true">
+            force
+          </div>
+
+          <h6>Compiler Options:</h6>
+          <div class="option">
+            target
+            <select name="target" class="compilerOption">
+              <option value="1">ES5</option>
+              <option value="2">ES2015</option>
+              <option value="3">ES2016</option>
+              <option value="4">ES2017</option>
+              <option value="5">ESNext</option>
+            </select>
+          </div>
+          <div class="option">
+            <input class="compilerOption" type="checkbox" name="noImplicitAny" value="true">
+            noImplicitAny
+          </div>
+          <div class="option">
+            <input class="compilerOption" type="checkbox" name="strictNullChecks" value="true">
+            strictNullChecks
+          </div>
+          <div class="option">
+            <input class="compilerOption" type="checkbox" name="noImplicitReturns" value="true">
+            noImplicitReturns
+          </div>
+          <div class="option">
+            <input class="compilerOption" type="checkbox" name="noImplicitThis" value="true">
+            noImplicitThis
+          </div>
+          <div class="option">
+            <input class="compilerOption" type="checkbox" name="removeComments" value="true">
+            removeComments
+          </div>
+          <div class="option">
+            <input class="compilerOption" type="checkbox" name="experimentalDecorators" value="true">
+            experimentalDecorators
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-1-2">
@@ -35,13 +81,10 @@
     </div>
   </div>
   <div id="playground" class="grid grid-pad">
-    <div class="col-1-2">
-      <div class="editor-footer" id="options">
-        <input type="checkbox" id="co-strictNullChecks" name="strictNullChecks" value="true"> strictNullChecks
-      </div>
+    <div class="col-1-2 editor-container">
       <div class="editor" id="editor-ts"></div>
     </div>
-    <div class="col-1-2">
+    <div class="col-1-2 editor-container">
       <div id="processing">
         <div class="spinner">
           <div class="double-bounce1"></div>
@@ -63,20 +106,8 @@
     </div>
   </div>
 
-  <script src="editor/min/vs/loader.js"></script>
-  <script>
-  var versionElement = document.createElement('script');
-
-  versionElement.onload = function() {
-    var bundleElement = document.createElement('script');
-    bundleElement.src = `bundle.js?${window.VERSION.default}`;
-    document.getElementsByTagName('body')[0].appendChild(bundleElement);
-  };
-
-  versionElement.src = `version.js?${(new Date()).getTime()}`;
-  document.getElementsByTagName('head')[0].appendChild(versionElement);
-  </script>
+  <script src="https://unpkg.com/monaco-editor@^0.9.0/min/vs/loader.js?0.1.24"></script>
+  <script src="app.js?0.1.24"></script>
 </body>
-</head>
 
 </html>
