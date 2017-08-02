@@ -16,9 +16,7 @@
     "src/**/*"
   ],
   "exclude": [
-    "dist-tsr",
-    "dist",
-    "node_modules",
+    "src/docs",
     "src/play"
   ]
 }
