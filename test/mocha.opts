@@ -1,0 +1,9 @@
+--compilers ts-node/register
+--require source-map-support/register
+--require ./test/setup.ts
+--ui bdd
+--timeout 2000
+--slow 1000
+--inline-diffs
+--recursive
+./test/**/*.test.ts
