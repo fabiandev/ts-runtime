@@ -1,0 +1,14 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "lib": ["es2015"],
+    "moduleResolution": "node",
+    "target": "es5",
+    "noImplicitAny": true,
+    "preserveConstEnums": true,
+    "removeComments": false
+  },
+  "include": [
+    "**/*"
+  ]
+}
