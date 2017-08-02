@@ -96,6 +96,7 @@ export class Factory {
         return this.nullTypeReflection();
       case ts.SyntaxKind.UndefinedKeyword:
         return this.undefinedTypeReflection();
+      case ts.SyntaxKind.ThisKeyword:
       case ts.SyntaxKind.ThisType:
         return this.thisTypeReflection();
       case ts.SyntaxKind.LiteralType:
@@ -156,7 +157,7 @@ export class Factory {
     return false;
   }
 
-  public typeDeclaration(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, node: ts.TypeNode): ts.VariableDeclaration {
+  public typeDeclaration(name: string | ts.Identifier/* | ts.ObjectBindingPattern | ts.ArrayBindingPattern*/, node: ts.TypeNode): ts.VariableDeclaration {
     return ts.createVariableDeclaration(name, undefined, this.typeReflection(node));
   }
 

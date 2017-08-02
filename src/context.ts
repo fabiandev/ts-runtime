@@ -20,7 +20,7 @@ export class MutationContext {
   private _entryFiles: string[];
   private _commonDir: string;
 
-  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, context: ts.TransformationContext, entryFiles: string[], commonDir: string) {
+  constructor(sourceFile: ts.SourceFile, options: Options, program: ts.Program, host: ts.CompilerHost, scanner: Scanner, entryFiles: string[], commonDir: string, context?: ts.TransformationContext) {
     this._skipNodes = [];
     this._sourceFile = sourceFile;
     this._options = options;

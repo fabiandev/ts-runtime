@@ -46,18 +46,18 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
   emit(bus.events.START);
 
-  let tempEntryFiles: string[];
+  let resolvedEntryFiles: string[];
   let commonDir: string;
   let host: ts.CompilerHost;
 
   if (!reflections) {
-    tempEntryFiles = entryFiles.map(f => path.resolve(f));
-    commonDir = commondir(tempEntryFiles.map(f => path.dirname(f)));
+    resolvedEntryFiles = entryFiles.map(f => path.resolve(f));
+    commonDir = commondir(resolvedEntryFiles.map(f => path.dirname(f)));
     setCompilerOptions();
     host = ts.createCompilerHost(options.compilerOptions, true);
   } else {
-    tempEntryFiles = entryFiles.map(f => path.join(`${path.resolve(path.dirname(f))}`, path.basename(f)));
-    commonDir = commondir(tempEntryFiles.map(f => path.dirname(f)));
+    resolvedEntryFiles = entryFiles.map(f => path.join(`${path.resolve(path.dirname(f))}`, path.basename(f)));
+    commonDir = commondir(resolvedEntryFiles.map(f => path.dirname(f)));
     reflections = reflections.map(f => {
       return {
         name: path.join(`${path.resolve(path.dirname(f.name))}`, path.basename(f.name)),
@@ -80,7 +80,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
   return startTransformation();
 
   function startTransformation(): Host | void {
-    program = ts.createProgram(tempEntryFiles, options.compilerOptions, host);
+    program = ts.createProgram(resolvedEntryFiles, options.compilerOptions, host);
     const { diagnostics, optionsDiagnostics, syntacticDiagnostics } = getDiagnostics();
 
     if (!check(diagnostics, options.log) && !options.force) {
@@ -123,7 +123,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     }
 
     host = getHostFromTransformationResult(result);
-    program = ts.createProgram(tempEntryFiles, options.compilerOptions, host, undefined);
+    program = ts.createProgram(resolvedEntryFiles, options.compilerOptions, host, undefined);
 
     const { diagnostics } = program.emit();
 
@@ -206,7 +206,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
     if (ts.isSourceFile(node) && currentSourceFile !== node) {
       currentSourceFile = node;
-      context = new MutationContext(node, options, program, host, scanner, transformationContext, tempEntryFiles, commonDir);
+      context = new MutationContext(node, options, program, host, scanner, resolvedEntryFiles, commonDir, transformationContext);
     }
   }
 
