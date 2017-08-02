@@ -113,6 +113,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     emitDeclarations();
     result.dispose();
     emit(bus.events.END, getElapsedTime(), getElapsedTime(true));
+    emit(bus.events.STOP, true);
 
     return host as Host;
   };
