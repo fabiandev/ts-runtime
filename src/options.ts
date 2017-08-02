@@ -23,7 +23,10 @@ export interface Options {
 
 export const defaultOptions: Options = {
   noAnnotate: false,
-  compilerOptions: {},
+  compilerOptions: {
+    preserveConstEnums: true,
+    experimentalDecorators: true
+  },
   libDeclarations: false,
   declarationFileName: 'tsr-declarations',
   force: false,
