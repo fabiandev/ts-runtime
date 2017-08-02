@@ -344,8 +344,8 @@ function getTsrCode(): string {
 
   const libIdentifier = getLibIdentifier(getJsCode());
 
-  let libDeclaration = 'var ___t = ___t ? ___t : window.t.default;';
-  libDeclaration += '\nvar ${libIdentifier} = ___t;';
+  let libDeclaration = `var ___t = ___t ? ___t : window.t.default;`;
+  libDeclaration += `\nvar ${libIdentifier} = ___t;`;
 
   tsrCode = libDeclaration + '\n' + tsrCode;
 
