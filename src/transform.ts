@@ -128,7 +128,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
     const { diagnostics } = program.emit();
 
-    return check(diagnostics, options.log, false);
+    return check(diagnostics, options.log);
   }
 
   function emitDeclarations() {
