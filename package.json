@@ -15,7 +15,7 @@
   "scripts": {
     "test": "NODE_ENV=test ./node_modules/mocha/bin/_mocha",
     "cover": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=text npm test",
-    "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es6 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
+    "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:docs": "node_modules/.bin/gulp build",
     "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
