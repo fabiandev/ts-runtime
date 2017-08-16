@@ -128,7 +128,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
     const { diagnostics } = program.emit();
 
-    return check(diagnostics, options.log);
+    return check(diagnostics, options.log, false);
   }
 
   function emitDeclarations() {
@@ -358,10 +358,12 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     return commonDir;
   }
 
-  function check(diagnostics: ts.Diagnostic[], log: boolean): boolean {
+  function check(diagnostics: ts.Diagnostic[], log = false, report = true): boolean {
     if (diagnostics && diagnostics.length > 0) {
 
-      emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
+      if (report) {
+        emit(bus.events.DIAGNOSTICS, diagnostics, diagnostics.length);
+      }
 
       if (log) {
         for (let diag of diagnostics) {
