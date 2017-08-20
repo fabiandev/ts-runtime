@@ -368,7 +368,7 @@ export class Factory {
   }
 
   public typeLiteralReflection(node: ts.TypeLiteralNode): ts.CallExpression {
-    return this.asObject(this.elementsReflection(util.asArray(node.members)))
+    return this.asObject(this.elementsReflection(util.arrayFromNodeArray(node.members)))
   }
 
   public expressionWithTypeArgumentsReflection(node: ts.ExpressionWithTypeArguments): ts.CallExpression {
@@ -419,7 +419,7 @@ export class Factory {
     }
 
     args.push(id);
-    args.push(...(node.typeArguments || [] as ts.TypeNode[]).map(a => this.typeReflection(a)));
+    args.push(...util.arrayFromNodeArray(node.typeArguments).map(a => this.typeReflection(a)));
 
     return this.libCall(keyword, args);
   }
@@ -640,7 +640,7 @@ export class Factory {
   }
 
   public enumReflection(node: ts.EnumDeclaration): ts.CallExpression {
-    return this.libCall('enum', (node.members || [] as ts.EnumMember[]).map(member => {
+    return this.libCall('enum', util.arrayFromNodeArray(node.members).map(member => {
       return this.enumMemberReflection(member);
     }));
   }
@@ -654,7 +654,7 @@ export class Factory {
   }
 
   public functionReflection(node: FunctionLikeNode, asCallProperty = false): ts.CallExpression {
-    const parameters = node.parameters || [] as ts.ParameterDeclaration[];
+    const parameters = util.arrayFromNodeArray(node.parameters);
 
     let args: ts.Expression[] = parameters
       .filter(param => ts.isIdentifier(param.name))
@@ -878,7 +878,7 @@ export class Factory {
 
       let minParameters = Array.from(signatures as Set<Signature>)
         .map(node => {
-          return util.asArray(node.parameters)
+          return util.arrayFromNodeArray(node.parameters)
             .filter(param => !param.questionToken && !param.dotDotDotToken);
         })
         .map(params => {
@@ -1220,7 +1220,7 @@ export class Factory {
       this.assertReturnStatements(node.body as ts.Block, node.type).statements
     );
 
-    let bodyStatements: ts.Statement[] = (body && body.statements) || [];
+    let bodyStatements: ts.Statement[] = (body && util.arrayFromNodeArray(body.statements)) || [];
 
     bodyStatements.unshift(...bodyAssertions);
     bodyStatements.unshift(...bodyDeclarations);

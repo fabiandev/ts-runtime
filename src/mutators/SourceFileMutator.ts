@@ -8,7 +8,7 @@ export class SourceFileMutator extends Mutator {
   protected kind = ts.SyntaxKind.SourceFile;
 
   protected mutate(node: ts.SourceFile): ts.SourceFile {
-    const statements = util.asNewArray(node.statements);
+    const statements = util.arrayFromNodeArray(node.statements);
     const declarations: ts.Statement[] = [];
 
     if (this.options.moduleAlias) {

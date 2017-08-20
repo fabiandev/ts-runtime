@@ -54,7 +54,7 @@ export class ClassDeclarationMutator extends Mutator {
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
     const classReflection = this.factory.classReflection(node);
-    const decorators = util.asNewArray(node.decorators);
+    const decorators = util.arrayFromNodeArray(node.decorators);
     const decorator = ts.createDecorator(this.factory.annotate(classReflection));
 
     decorators.unshift(decorator);
@@ -68,7 +68,7 @@ export class ClassDeclarationMutator extends Mutator {
     }
 
     const constructor = this.getConstructor(members);
-    let statements = util.asNewArray(constructor.body.statements);
+    let statements = util.arrayFromNodeArray(constructor.body.statements);
 
     for (let initializer of this.initializers) {
       statements = util.insertAfterSuper(statements, initializer);
@@ -85,7 +85,7 @@ export class ClassDeclarationMutator extends Mutator {
     }
 
     let constructor = this.getConstructor(members);
-    let statements = util.asNewArray(constructor.body.statements);
+    let statements = util.arrayFromNodeArray(constructor.body.statements);
 
     for (let impl of implementsClause.types || []) {
       const assertion = ts.createStatement(
@@ -113,7 +113,7 @@ export class ClassDeclarationMutator extends Mutator {
     }
 
     let constructor = this.getConstructor(members);
-    let statements: ts.Statement[] = util.asNewArray(constructor.body.statements);
+    let statements: ts.Statement[] = util.arrayFromNodeArray(constructor.body.statements);
 
     let typeParametersStatement: ts.Statement;
     let thisStatement: ts.Statement;
@@ -122,14 +122,14 @@ export class ClassDeclarationMutator extends Mutator {
     const insert: ts.Statement[] = [];
 
     if (hasTypeParameters) {
-      typeParametersStatement = this.factory.typeParametersLiteralDeclaration(node.typeParameters);
+      typeParametersStatement = this.factory.typeParametersLiteralDeclaration(util.arrayFromNodeArray(node.typeParameters));
       thisStatement = this.factory.classTypeParameterSymbolConstructorDeclaration(node.name);
       insert.push(typeParametersStatement);
     }
 
     if (extendsClauseHasTypeArguments) {
       bindStatement = this.factory.typeParameterBindingDeclaration(
-        extendsClause.types[0].typeArguments
+        util.arrayFromNodeArray(extendsClause.types[0].typeArguments)
       );
     }
 
@@ -204,7 +204,9 @@ export class ClassDeclarationMutator extends Mutator {
       ));
     }
 
-    const property = this.map(ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.type, isStatic ? initializer : undefined), node);
+    const property = this.map(
+      ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.questionToken, node.type, isStatic ? initializer : undefined),
+      node);
 
     let setAccessor: ts.SetAccessorDeclaration;
     if (!util.hasModifier(node, ts.SyntaxKind.ReadonlyKeyword)) {
@@ -225,7 +227,7 @@ export class ClassDeclarationMutator extends Mutator {
       )], true
     ));
 
-    node.name.text = name;
+    node.name = ts.createIdentifier(name);
 
     return [property, getAccessor, setAccessor].filter(val => !!val);
   }

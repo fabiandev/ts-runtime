@@ -312,7 +312,7 @@ export class MutationContext {
     const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
 
     if (!nodeSymbol) {
-      return util.asArray(node.members as (ts.TypeElement | ts.ClassElement)[]);
+      return util.arrayFromNodeArray(node.members as ts.NodeArray<ts.TypeElement | ts.ClassElement>);
     }
 
     const members: ts.Symbol[] = [];
@@ -346,7 +346,7 @@ export class MutationContext {
     }
 
     if (!type) {
-      return node.members;
+      return util.arrayFromNodeArray(node.members as ts.NodeArray<ts.TypeElement | ts.ClassElement>);
     }
 
     (type.getProperties() || []).forEach(sym => {

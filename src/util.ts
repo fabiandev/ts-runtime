@@ -22,6 +22,10 @@ export function asNewArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value.length > 0 ? [...value] : [] : !value ? [] : [value];
 }
 
+export function arrayFromNodeArray<T extends ts.Node>(value: ts.NodeArray<T>) {
+  return !value ? [] : [...value];
+}
+
 export function hasTypeParameters(node: ts.Node): boolean {
   return Array.isArray((node as any).typeParameters) && (node as any).typeParameters.length > 0;
 }
@@ -163,7 +167,7 @@ export function isTypeParameterOfClass(node: ts.TypeReferenceNode): ts.ClassDecl
   let current = node as ts.Node;
   while (current = current.parent) {
     if (ts.isClassDeclaration(current)) {
-      if (isTypeParameterOf(node, current.typeParameters || [])) {
+      if (isTypeParameterOf(node, arrayFromNodeArray(current.typeParameters))) {
         return current;
       }
 
