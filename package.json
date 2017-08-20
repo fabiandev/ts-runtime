@@ -13,8 +13,8 @@
     "node": ">=6"
   },
   "scripts": {
-    "test": "NODE_ENV=test ./node_modules/mocha/bin/_mocha",
-    "cover": "NODE_ENV=test ./node_modules/.bin/nyc npm test",
+    "test": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/mocha/bin/_mocha",
+    "cover": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/.bin/nyc npm test",
     "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:docs": "node_modules/.bin/gulp build",
