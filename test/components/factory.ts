@@ -237,51 +237,98 @@ export default () => {
     });
 
     describe('#typeAssertion', () => {
+      it('should assert compatibility of an Identifier and a value', () => {
+        const identifier = ts.createIdentifier('foo');
+        const expression = ts.createLiteral('foo');
+        const result = factory.typeAssertion(identifier, expression);
+        expect(result).ok();
+      });
 
+      it('should assert compatibility of an Identifier, passed as string, and a value', () => {
+        const identifier = 'foo';
+        const expression = ts.createLiteral('foo');
+        const result = factory.typeAssertion(identifier, expression);
+        expect(result).ok();
+      });
     });
 
     describe('#TypeReflectionAndAssertion', () => {
-
+      it('should reflect and assert a TypeNode and assert a value', () => {
+        const typeNode = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        const expression = ts.createLiteral('foo');
+        const result = factory.typeReflectionAndAssertion(typeNode, expression);
+        expect(result).ok();
+      });
     });
 
     describe('#anyTypeReflection', () => {
-
+      it('should return a reflection for type any', () => {
+        const result = factory.anyTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#numberTypeReflection', () => {
-
+      it('should return a reflection for type number', () => {
+        const result = factory.numberTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#booleanTypeReflection', () => {
-
+      it('should return a reflection for type boolean', () => {
+        const result = factory.booleanTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#stringTypeReflection', () => {
-
+      it('should return a reflection for type string', () => {
+        const result = factory.stringTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#symbolTypeReflection', () => {
-
+      it('should return a reflection for type symbol', () => {
+        const result = factory.symbolTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#objectTypeReflection', () => {
-
+      it('should return a reflection for type object', () => {
+        const result = factory.objectTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#voidTypeReflection', () => {
-
+      it('should return a reflection for type void', () => {
+        const result = factory.voidTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#nullTypeReflection', () => {
-
+      it('should return a reflection for type null', () => {
+        const result = factory.nullTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#undefinedTypeReflection', () => {
-
+      it('should return a reflection for type undefined', () => {
+        const result = factory.undefinedTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#thisReflection', () => {
-
+      it('should return a reflection for type this', () => {
+        const result = factory.thisTypeReflection();
+        expect(result).ok();
+      });
     });
 
     describe('#literalTypeReflection', () => {
