@@ -1,0 +1,12 @@
+language: node_js
+node_js:
+- "6"
+- "7"
+cache:
+  yarn: true
+install:
+  - yarn
+script:
+  - yarn cover
+after_success:
+  - yarn coveralls
