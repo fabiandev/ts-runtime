@@ -280,10 +280,10 @@ export class MutationContext {
     return this.getTypeDeclarationName('return');
   }
 
-  public getInlineTypeName(node: string | ts.Identifier): string {
-    const name = typeof node === 'string' ? node : node.text;
-    return this.getIdentifier(`${this.options.declarationPrefix}${name}TypeInline`);
-  }
+  // public getInlineTypeName(node: string | ts.Identifier): string {
+  //   const name = typeof node === 'string' ? node : node.text;
+  //   return this.getIdentifier(`${this.options.declarationPrefix}${name}TypeInline`);
+  // }
 
   public getLibDeclarationName(): string {
     return this.getIdentifier(`${this.options.libNamespace}${this.options.libIdentifier}`);
@@ -303,9 +303,9 @@ export class MutationContext {
     return this.getIdentifier(`${this.options.declarationPrefix}typeParameters`);
   }
 
-  public getLibTypeParameterSymbolName(): string {
-    return 'TypeParametersSymbol';
-  }
+  // public getLibTypeParameterSymbolName(): string {
+  //   return 'TypeParametersSymbol';
+  // }
 
   public getMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
     const nodeSymbol = this.scanner.getNodeSymbol(node.name);
@@ -334,31 +334,31 @@ export class MutationContext {
     return Array.from(merged);
   }
 
-  public getAllMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
-    const nodeSymbol = this.scanner.getNodeSymbol(node.name);
-    const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
-    let type: ts.Type;
-
-    if (!nodeSymbol) {
-      type = this.checker.getTypeAtLocation(node);
-    } else {
-      type = this.checker.getDeclaredTypeOfSymbol(nodeSymbol);
-    }
-
-    if (!type) {
-      return util.arrayFromNodeArray(node.members as ts.NodeArray<ts.TypeElement | ts.ClassElement>);
-    }
-
-    (type.getProperties() || []).forEach(sym => {
-      for (let typeElement of (sym.getDeclarations() || [])) {
-        if (ts.isTypeElement(typeElement) || ts.isClassElement(typeElement)) {
-          merged.add(typeElement);
-        }
-      }
-    });
-
-    return Array.from(merged);
-  }
+  // public getAllMembers(node: ts.ClassDeclaration | ts.InterfaceDeclaration): (ts.TypeElement | ts.ClassElement)[] {
+  //   const nodeSymbol = this.scanner.getNodeSymbol(node.name);
+  //   const merged: Set<ts.TypeElement | ts.ClassElement> = new Set();
+  //   let type: ts.Type;
+  //
+  //   if (!nodeSymbol) {
+  //     type = this.checker.getTypeAtLocation(node);
+  //   } else {
+  //     type = this.checker.getDeclaredTypeOfSymbol(nodeSymbol);
+  //   }
+  //
+  //   if (!type) {
+  //     return util.arrayFromNodeArray(node.members as ts.NodeArray<ts.TypeElement | ts.ClassElement>);
+  //   }
+  //
+  //   (type.getProperties() || []).forEach(sym => {
+  //     for (let typeElement of (sym.getDeclarations() || [])) {
+  //       if (ts.isTypeElement(typeElement) || ts.isClassElement(typeElement)) {
+  //         merged.add(typeElement);
+  //       }
+  //     }
+  //   });
+  //
+  //   return Array.from(merged);
+  // }
 
   public setMerged(symbol: ts.Symbol) {
     return this._merged.add(symbol);
@@ -368,13 +368,13 @@ export class MutationContext {
     return this._merged.has(symbol);
   }
 
-  public setTransformationContext(transformationContext: ts.TransformationContext): void {
-    this.transformationContext = transformationContext;
-  }
+  // public setTransformationContext(transformationContext: ts.TransformationContext): void {
+  //   this.transformationContext = transformationContext;
+  // }
 
-  public setSourceFile(sourceFile: ts.SourceFile): void {
-    this.sourceFile = sourceFile;
-  }
+  // public setSourceFile(sourceFile: ts.SourceFile): void {
+  //   this.sourceFile = sourceFile;
+  // }
 
   get sourceFile(): ts.SourceFile {
     return this._sourceFile;
