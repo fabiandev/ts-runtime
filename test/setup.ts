@@ -1,4 +1,4 @@
-/// <reference path="./types.d.ts" />
+/// <reference path="./types/index.d.ts" />
 
 import expect = require('expect.js');
 import * as assert from 'assert';
