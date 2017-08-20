@@ -4,7 +4,7 @@ import transform from './transform';
 import util from './util';
 
 describe('Components', () => {
-  // factory();
+  factory();
   // scanner();
   // transform();
   // util();
