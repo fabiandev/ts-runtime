@@ -76,7 +76,7 @@ export function options(): Options {
       strictNullChecks: true,
       target: ts.ScriptTarget.ES2015,
       module: ts.ModuleKind.ES2015,
-      importHelpers: false
+      noEmitHelpers: true
     }
   };
 }
