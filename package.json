@@ -14,30 +14,14 @@
   },
   "scripts": {
     "test": "NODE_ENV=test ./node_modules/mocha/bin/_mocha",
-    "cover": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=text npm test",
+    "cover": "NODE_ENV=test ./node_modules/.bin/nyc npm test",
+    "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:docs": "node_modules/.bin/gulp build",
     "build:tsr": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"
-  },
-  "nyc": {
-    "extensions": [
-      ".ts"
-    ],
-    "include": [
-      "src/*.ts",
-      "src/**/*.ts"
-    ],
-    "exclude": [
-      "**/*.d.ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ],
-    "sourceMap": true,
-    "instrument": true
   },
   "dependencies": {
     "chalk": "^2.0.1",
@@ -58,6 +42,7 @@
     "@types/mocha": "^2.2.41",
     "@types/node": "^8.0.16",
     "@types/rimraf": "^0.0.28",
+    "coveralls": "^2.13.1",
     "css-loader": "^0.28.4",
     "del": "^3.0.0",
     "expect.js": "^0.3.1",
