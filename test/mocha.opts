@@ -2,7 +2,7 @@
 --require source-map-support/register
 --require ./test/setup.ts
 --ui bdd
---timeout 2000
+--timeout 3000
 --slow 1000
 --inline-diffs
 --recursive
