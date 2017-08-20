@@ -1,5 +1,3 @@
-/// <reference path="./typings/index.d.ts" />
-
 import * as ts from 'typescript';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
