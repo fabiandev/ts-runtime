@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/fabiandev/ts-runtime.svg?branch=master)](https://travis-ci.org/fabiandev/ts-runtime)
+[![Coverage Status](https://coveralls.io/repos/github/fabiandev/ts-runtime/badge.svg?branch=master)](https://coveralls.io/github/fabiandev/ts-runtime?branch=master)
+
 # ts-runtime
 
 A package for generating runtime type checks from TypeScript type annotations for JavaScript, using the TypeScript compiler API.  
