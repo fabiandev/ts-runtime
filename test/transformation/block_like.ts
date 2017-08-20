@@ -118,7 +118,26 @@ export default () => {
     });
 
     it('should transform DefaultClause', () => {
+      const input = `
+      switch(true) {
+        default:
+        function foo() { }
+        break;
+      }`;
 
+      const expected = `
+      import t from "ts-runtime/lib";
+
+      switch (true) {
+        default:
+        function foo() { }
+        t.annotate(foo, t.function(t.return(t.any())));
+        break;
+      }`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
     });
   });
 }
