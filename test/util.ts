@@ -106,6 +106,7 @@ export function normalize(input: string): string {
     .replace(/\[\s+/g, '[')
     .replace(/\s+]/g, ']')
     .replace(/\}\s+([A-Za-z])/g, '\n}\n$1')
+    .replace(/([a-zA-Z]+)\.(\d+)/, '$1.__UID__')
     .split(';')
     .join(';\n')
     .trim()

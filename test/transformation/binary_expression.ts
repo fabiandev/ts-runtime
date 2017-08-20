@@ -1,5 +1,23 @@
 export default () => {
   describe('Binary Expression', () => {
+    it('should not assert non-assignment operators', () => {
+      const input = `
+      let a: boolean = true;
+      let b: boolean = false;
+      a && b;
+      `;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+      let _aType = t.boolean(), a = _aType.assert(true);
+      let _bType = t.boolean(), b = _bType.assert(false);
+      a && b;`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
+
     it('should assert assignments', () => {
       const input = `
       let foo: string;
