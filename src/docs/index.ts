@@ -145,7 +145,7 @@ function initOptions() {
         if ((inputs[i] as HTMLInputElement).type === 'checkbox') {
           (inputs[i] as HTMLInputElement).checked = !!defaultOptions.compilerOptions[inputs[i].name];
         } else if ((inputs[i] as HTMLInputElement).type === 'text') {
-        (inputs[i] as HTMLInputElement).value = `${defaultOptions.compilerOptions[inputs[i].name]}`;
+          (inputs[i] as HTMLInputElement).value = `${defaultOptions.compilerOptions[inputs[i].name]}`;
         }
 
       } else if (inputs[i] instanceof HTMLSelectElement) {
@@ -227,18 +227,26 @@ function onCodeChange(event?: monaco.editor.IModelContentChangedEvent): void {
 function onMessage(e: MessageEvent) {
   if (e.data.name === 'transformed') {
     const transformed: FileReflection[] = e.data.data;
+    const error: Error = e.data.error;
 
+    hideErrorIndicator();
     hideProcessingIndicator();
 
-    if (transformed && transformed.length !== 0) {
+    if (transformed && transformed.length !== 0 && transformed[0] && typeof transformed[0].text === 'string') {
       result = transformed;
       jsEditor.getModel().setValue(transformed[0].text);
+    } else {
+      showErrorIndicator();
     }
   }
 
   if (e.data.name === 'log') {
+    if (e.data.type === 'error') {
+      showErrorIndicator();
+    }
+
     const message: any = e.data.data.message;
-    const optionalParams: any[] = e.data.data.optionalParams;
+    const optionalParams: any[] = e.data.data.optionalParams || [];
     (console as any)[e.data.type](message, ...optionalParams);
     updateConsole(e.data.type, message, ...optionalParams);
   }
@@ -436,6 +444,14 @@ function showProcessingIndicator(): void {
 
 function hideProcessingIndicator(): void {
   _processing.style.display = 'none';
+}
+
+function showErrorIndicator(): void {
+  _editorTs.style.border = '1px solid rgba(205, 92, 92, 0.4)';
+}
+
+function hideErrorIndicator(): void {
+  _editorTs.style.border = null;
 }
 
 function fadeOut(target: HTMLElement, interval = 5, reduce = 0.01): void {

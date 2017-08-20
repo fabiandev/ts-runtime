@@ -81,3 +81,7 @@ console.error = function error(message: any, ...optionalParams: any[]) {
     }
   });
 };
+
+self.onerror = function onerror(this: WorkerGlobalScope, ev: ErrorEvent) {
+  console.error(ev.toString().replace(/^(Uncaught )/, ''));
+}
