@@ -23,7 +23,7 @@ export type ElementLikeNode = ts.TypeElement | ts.ClassElement;
 
 export class Factory {
 
-  private _state: Map<FactoryState, number> = new Map();
+  private _state: Map<FactoryState, number> = new Map([[FactoryState.None, 1]]);
   private _strictNullChecks: boolean;
   private _namespace: string = '';
   private _lib: string = 't';
@@ -56,6 +56,10 @@ export class Factory {
 
       this.addState(state);
 
+      if (this._state.size > 1) {
+        this.removeState(FactoryState.None);
+      }
+
       let result = destination.bind(receiver)(...args);
 
       if (this.match(FactoryRule.Nullable, state)) {
@@ -63,6 +67,10 @@ export class Factory {
       }
 
       this.removeState(state);
+
+      if (this._state.size === 0) {
+        this.addState(FactoryState.None);
+      }
 
       return result;
     };
@@ -218,9 +226,8 @@ export class Factory {
         return this.stringLiteralTypeReflection(node.literal as ts.StringLiteral);
       case ts.SyntaxKind.NumericLiteral:
         return this.numericLiteralTypeReflection(node.literal as ts.NumericLiteral);
-      case ts.SyntaxKind.ComputedPropertyName:
       default:
-        throw new Error(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
+        throw new ProgramError(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
     }
   }
 
@@ -803,7 +810,7 @@ export class Factory {
       case ts.SyntaxKind.Parameter:
         return null;
       default:
-        throw new Error(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
+        throw new ProgramError(`No type element reflection for syntax kind '${ts.SyntaxKind[node.kind]}' found.`);
     }
   }
 
@@ -1285,7 +1292,7 @@ export class Factory {
       case ts.SyntaxKind.ComputedPropertyName:
         return node.expression;
       default:
-        throw new Error(`Property name for syntax kind '${ts.SyntaxKind[(node as any).kind]}' could not be generated.`);
+        throw new ProgramError(`Property name for syntax kind '${ts.SyntaxKind[(node as any).kind]}' could not be generated.`);
     }
   }
 
@@ -1299,7 +1306,7 @@ export class Factory {
       case ts.SyntaxKind.ObjectBindingPattern:
       case ts.SyntaxKind.ArrayBindingPattern:
       default:
-        throw new Error(`Declaration name for syntax kind '${ts.SyntaxKind[node.kind]}' could not be generated.`);
+        throw new ProgramError(`Declaration name for syntax kind '${ts.SyntaxKind[node.kind]}' could not be generated.`);
     }
   }
 
