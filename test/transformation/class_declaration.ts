@@ -251,12 +251,12 @@ export default () => {
 
       let Foo = class Foo {
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
         set prop(prop) {
           let _propType = t.string();
           t.param("prop", _propType).assert(prop);
-          this._prop = prop;
+          this._prop__prop = prop;
         }
       };
       Foo = __decorate([
@@ -279,15 +279,15 @@ export default () => {
 
       let Foo = class Foo {
         constructor() {
-          this._prop = t.string().assert('bar');
+          this._prop__prop = t.string().assert('bar');
         }
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
         set prop(prop) {
           let _propType = t.string();
           t.param("prop", _propType).assert(prop);
-          this._prop = prop;
+          this._prop__prop = prop;
         }
       };
       Foo = __decorate([
@@ -311,15 +311,15 @@ export default () => {
 
       let Foo = class Foo {
         constructor() {
-          this._prop = t.string().assert('bar');
+          this._prop__prop = t.string().assert('bar');
         }
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
         set prop(prop) {
           let _propType = t.string();
           t.param("prop", _propType).assert(prop);
-          this._prop = prop;
+          this._prop__prop = prop;
         }
       };
       Foo = __decorate([
@@ -342,7 +342,7 @@ export default () => {
 
       let Foo = class Foo {
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
       };
       Foo = __decorate([
@@ -365,10 +365,10 @@ export default () => {
 
       let Foo = class Foo {
         constructor() {
-          this._prop = t.string().assert('bar');
+          this._prop__prop = t.string().assert('bar');
         }
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
       };
       Foo = __decorate([
@@ -392,10 +392,10 @@ export default () => {
 
       let Foo = class Foo {
         constructor() {
-          this._prop = t.string().assert('bar');
+          this._prop__prop = t.string().assert('bar');
         }
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
       };
       Foo = __decorate([
@@ -418,12 +418,12 @@ export default () => {
 
       let Foo = Foo_1 = class Foo {
         static get prop() {
-          return Foo_1._prop;
+          return Foo_1._prop__prop;
         }
         static set prop(prop) {
           let _propType = t.string();
           t.param("prop", _propType).assert(prop);
-          Foo_1._prop = prop;
+          Foo_1._prop__prop = prop;
         }
       };
       Foo = Foo_1 = __decorate([
@@ -447,15 +447,15 @@ export default () => {
 
       let Foo = Foo_1 = class Foo {
         static get prop() {
-          return Foo_1._prop;
+          return Foo_1._prop__prop;
         }
         static set prop(prop) {
           let _propType = t.string();
           t.param("prop", _propType).assert(prop);
-          Foo_1._prop = prop;
+          Foo_1._prop__prop = prop;
         }
       };
-      Foo._prop = t.string().assert('bar');
+      Foo._prop__prop = t.string().assert('bar');
       Foo = Foo_1 = __decorate([
         t.annotate(t.class("Foo", t.staticProperty("prop", t.string())))
       ], Foo);
@@ -477,7 +477,7 @@ export default () => {
 
       let Foo = Foo_1 = class Foo {
         static get prop() {
-          return Foo_1._prop;
+          return Foo_1._prop__prop;
         }
       };
       Foo = Foo_1 = __decorate([
@@ -501,10 +501,10 @@ export default () => {
 
       let Foo = Foo_1 = class Foo {
         static get prop() {
-          return Foo_1._prop;
+          return Foo_1._prop__prop;
         }
       };
-      Foo._prop = t.string().assert('bar');
+      Foo._prop__prop = t.string().assert('bar');
       Foo = Foo_1 = __decorate([
         t.annotate(t.class("Foo", t.staticProperty("prop", t.string())))
       ], Foo);
@@ -772,12 +772,12 @@ export default () => {
           this[_FooTypeParametersSymbol] = _typeParameters;
         }
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
         set prop(prop) {
           let _propType = this[_FooTypeParametersSymbol].T;
           t.param("prop", _propType).assert(prop);
-          this._prop = prop;
+          this._prop__prop = prop;
         }
         method(param) {
           let _paramType = this[_FooTypeParametersSymbol].T;
@@ -821,12 +821,12 @@ export default () => {
           this[_FooTypeParametersSymbol] = _typeParameters;
         }
         get prop() {
-          return this._prop;
+          return this._prop__prop;
         }
         set prop(prop) {
           let _propType = this[_FooTypeParametersSymbol].T;
           t.param("prop", _propType).assert(prop);
-          this._prop = prop;
+          this._prop__prop = prop;
         }
         method(param) {
           let _paramType = this[_FooTypeParametersSymbol].T;
@@ -878,7 +878,6 @@ export default () => {
           t.bindTypeParameters(this, t.string());
         }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
       Foo = __decorate([
         t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string()))))
       ], Foo);`;
@@ -924,7 +923,6 @@ export default () => {
           t.bindTypeParameters(this, t.string());
         }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
       Foo = __decorate([
         t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string())), t.property("constructor", t.function(t.return(t.any())))))
       ], Foo);`;
