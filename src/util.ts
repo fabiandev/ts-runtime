@@ -68,12 +68,15 @@ export function hasFlag(node: ts.Node | ts.Symbol, flag: ts.NodeFlags | ts.Symbo
   return !!(node.flags & flag);
 }
 
-export function setParent(node: ts.Node): void {
-  if (!node) return;
+export function setParent(node: ts.Node): ts.Node {
+  if (!node) return node;
+
   ts.forEachChild(node, n => {
     n.parent = node;
     setParent(n);
   });
+
+  return node;
 }
 
 export function isAnyKeyword(node: ts.Node): boolean {
@@ -84,6 +87,8 @@ export function isAnyKeyword(node: ts.Node): boolean {
   if (node.kind === ts.SyntaxKind.AnyKeyword) {
     return true;
   }
+
+  return false;
 }
 
 export function isSynthesized(node: ts.Node): boolean {
@@ -202,7 +207,7 @@ export function isBindingName(node: ts.Node): node is ts.Identifier | ts.Binding
   return ts.isIdentifier(node) || this.isBindingPattern(node);
 }
 
-export function isLiteral(node: ts.Node): node is ts.LiteralTypeNode | ts.NumericLiteral | ts.StringLiteral | ts.KeywordTypeNode {
+export function isLiteral(node: ts.Node): node is ts.LiteralTypeNode | ts.NumericLiteral | ts.BooleanLiteral | ts.StringLiteral {
   return LITERAL_KINDS.indexOf(node.kind) !== -1;
 }
 
@@ -264,15 +269,17 @@ export function getPropertyAccessExpressionTextOrFail(node: ts.PropertyAccessExp
   let text = '';
 
   while (ts.isPropertyAccessExpression(node)) {
-    text += node.name;
+    text += `.${node.name.text}`;
     node = node.expression as ts.PropertyAccessExpression;
   }
 
-  if (text.length > 0) {
-    return text;
+  if ((node as ts.Node).kind !== ts.SyntaxKind.Identifier) {
+    throw new ProgramError('Can\'t get text of property access expression that contains other expressions than property access expression.');
   }
 
-  throw new ProgramError('Can\'t get text of property access expression that contains other expressions than property access expression.');
+  text = `${(node as ts.Identifier).text}${text}`;
+
+  return text;
 }
 
 export function getIdentifierOfPropertyAccessExpressionOrFail(node: ts.PropertyAccessExpression): ts.Identifier {
