@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as ts from 'typescript';
 import * as commondir from 'commondir';
+import { getOptions } from '../src/transform';
 import { ProgramError } from '../src/errors';
 import { Scanner } from '../src/scanner';
 import { Options } from '../src/options';
@@ -83,7 +84,7 @@ export function lib(): string {
 }
 
 export function options(): Options {
-  return {
+  return getOptions({
     force: true,
     compilerOptions: {
       skipLibCheck: true,
@@ -92,7 +93,7 @@ export function options(): Options {
       module: ts.ModuleKind.ES2015,
       noEmitHelpers: true
     }
-  };
+  });
 }
 
 export function reflect(input: string, name?: string): [string, FileReflection[], Options] {
