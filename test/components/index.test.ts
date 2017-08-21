@@ -5,9 +5,9 @@ import transform from './transform';
 import util from './util';
 
 describe('Components', () => {
-  // context();
+  context();
   factory();
-  // scanner();
+  scanner();
   // transform();
-  // util();
+  util();
 });
