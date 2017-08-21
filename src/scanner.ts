@@ -141,6 +141,9 @@ export class Scanner {
     return symbol;
   }
 
+  /**
+   * Take a look at src/transform.ts to see, how to obtain all ambient and external declarations recursively
+   */
   public getDeclarations(): TsrDeclaration[] {
     return this.declarations;
   }
