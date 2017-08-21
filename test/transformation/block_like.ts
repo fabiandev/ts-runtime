@@ -31,6 +31,23 @@ export default () => {
       util.compare(expected, result);
     });
 
+    it('should annotate const enum declarations', () => {
+      const input = `const enum Foo { }`;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+
+      var Foo;
+      (function (Foo) {
+      })(Foo || (Foo = {}));
+      t.annotate(Foo, t.enum());
+      `;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
+
     it('should define type parameters symbol for class declarations with type parameters', () => {
       const input = `class A<T> { }`;
 

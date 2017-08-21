@@ -139,5 +139,35 @@ export default () => {
 
       util.compare(expected, result);
     });
+
+    it('should reflect type queries', () => {
+      const input = `
+      let foo = "foo";
+      let bar: typeof foo;`;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+      let foo = "foo";
+      let _barType = t.typeOf(foo), bar;`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
+
+    it('should reflect and assert type queries', () => {
+      const input = `
+      let foo = "foo";
+      let bar: typeof foo = "bar";`;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+      let foo = "foo";
+      let _barType = t.typeOf(foo), bar = _barType.assert("bar");`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
   });
 }

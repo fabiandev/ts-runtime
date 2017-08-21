@@ -46,5 +46,35 @@ export default () => {
 
       util.compare(expected, result);
     });
+
+    it('should support optional parameters', () => {
+      const input = `type Foo = {
+        prop?: string;
+      };`;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+
+      const Foo = t.type("Foo", t.object(t.property("prop", t.string(), true)));`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
+
+    it('should support indexers', () => {
+      const input = `type Foo = {
+        [index: string]: any;
+      };`;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+
+      const Foo = t.type("Foo", t.object(t.indexer("index", t.string(), t.any())));`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
   });
 }
