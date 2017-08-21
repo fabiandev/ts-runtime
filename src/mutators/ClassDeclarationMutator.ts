@@ -137,7 +137,9 @@ export class ClassDeclarationMutator extends Mutator {
     util.insertAfterSuper(statements, insert);
     this.updateConstructor(members, constructor, statements);
 
-    members.unshift(this.factory.classTypeParameterSymbolPropertyDeclaration(node.name));
+    if (hasTypeParameters) {
+      members.unshift(this.factory.classTypeParameterSymbolPropertyDeclaration(node.name));
+    }
 
     return members;
   }
