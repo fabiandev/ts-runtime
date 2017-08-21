@@ -194,6 +194,11 @@ export class MutationContext {
 
   public hasSelfReference(node: ts.Node): boolean {
     const symbol = this.scanner.getNodeSymbol((node as any).name  || (node as any).typeName || node);
+
+    if (!symbol) {
+      return false;
+    }
+
     const declarations = symbol.getDeclarations();
 
     if (!declarations) {
