@@ -1,6 +1,7 @@
 // import * as path from 'path';
 import * as ts from 'typescript';
 import * as util from './util';
+import { ProgramError } from './errors';
 import { Factory } from './factory';
 import { Options, defaultOptions } from './options';
 import { Scanner } from './scanner';
@@ -73,7 +74,7 @@ export class MutationContext {
   }
 
   public isImplementationOfOverload(node: ts.Node): node is ts.FunctionLikeDeclaration {
-    return ts.isFunctionLike(node) && this.checker.isImplementationOfOverload(node);
+    return !!(ts.isFunctionLike(node) && this.checker.isImplementationOfOverload(node));
   }
 
   public isDeclared(node: ts.EntityName): boolean {
@@ -162,8 +163,8 @@ export class MutationContext {
     return false;
   }
 
-  // public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false): boolean {
-  //   if (this.options.assertSafe) {
+  // public isSafeAssignment(node: ts.Node, other: ts.Node, strict = false, force = false): boolean {
+  //   if (this.options.assertSafe && !force) {
   //     return false;
   //   }
   //
@@ -233,13 +234,13 @@ export class MutationContext {
   }
 
   public hasProperty(node: ts.ClassDeclaration, name: string): boolean {
-    const typeInfo = this.scanner.getTypeInfo(node);
+    const nodeType = this.scanner.getType(node);
 
-    if (!typeInfo || !typeInfo.type) {
+    if (!nodeType) {
       return false;
     }
 
-    for (let prop of typeInfo.type.getProperties()) {
+    for (let prop of nodeType.getProperties()) {
       if (prop.name === name) {
         return true;
       }
@@ -248,19 +249,28 @@ export class MutationContext {
     return false;
   }
 
+  // TODO: property names may not be unique
   public getPropertyName(node: ts.ClassDeclaration, name: string): string {
-    const typeInfo = this.scanner.getTypeInfo(node);
+    const nodeType = this.scanner.getType(node);
+    const originalName = name;
 
-    if (!typeInfo || !typeInfo.type) {
+    if (!nodeType) {
       return name;
     }
 
-    const ids = typeInfo.type.getProperties().map(prop => {
+    const ids = nodeType.getProperties().map(prop => {
       return prop.name;
-    })
+    });
 
     while (ids && ids.indexOf(name) !== -1) {
       name = `_${name}`;
+    }
+
+    // TODO: use a map to ensure unique name
+    name = `${name}_${originalName}`;
+
+    if (ids && ids.indexOf(name) !== -1) {
+      return this.getPropertyName(node, name);
     }
 
     return name;
@@ -386,8 +396,8 @@ export class MutationContext {
   }
 
   set sourceFile(sourceFile: ts.SourceFile) {
-    if (ts.isSourceFile(sourceFile)) {
-      throw new Error(`Attemt to set invalid node as SourceFile on MutationContext. Got ${ts.SyntaxKind[sourceFile.kind]}.`);
+    if (!ts.isSourceFile(sourceFile)) {
+      throw new ProgramError(`Attemt to set invalid node as SourceFile on MutationContext.`);
     }
 
     this._sourceFile = sourceFile;
