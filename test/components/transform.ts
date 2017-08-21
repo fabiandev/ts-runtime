@@ -1,7 +1,9 @@
 export default () => {
   describe('Transform', () => {
-    // it('should be tested', () => {
-    //   expect().fail();
-    // });
+    it('should transform a file reflection', () => {
+      const input = `let foo: string = 'bar'`;
+      const result = util.transform(input);
+      expect(result).ok();
+    });
   });
 };
