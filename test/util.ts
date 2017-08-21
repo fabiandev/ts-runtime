@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as ts from 'typescript';
 import * as commondir from 'commondir';
+import { ProgramError } from '../src/errors';
 import { Scanner } from '../src/scanner';
 import { Options } from '../src/options';
 import { MutationContext } from '../src/context';
@@ -57,6 +58,19 @@ export function contains(expected: string, result: string): Expect.Assertion {
 
 export function compare(expected: string, result: string): Expect.Assertion {
   return expect(normalize(expected)).to.eql(normalize(result));
+}
+
+export function expectProgramError(fn: () => any): void {
+  return expect(fn).to.throwException(e => {
+    expect(e).to.be.a(Error);
+    expect(e.name).to.equal(ProgramError.id);
+  });
+}
+
+export function expectError(fn: () => any): void {
+  return expect(fn).to.throwException(e => {
+    expect(e).to.be.a(Error);
+  });
 }
 
 export function lib(): string {
