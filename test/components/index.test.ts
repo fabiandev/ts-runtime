@@ -8,6 +8,6 @@ describe('Components', () => {
   context();
   factory();
   scanner();
-  // transform();
+  transform();
   util();
 });
