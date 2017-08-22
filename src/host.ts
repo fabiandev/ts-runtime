@@ -17,23 +17,26 @@ export class Host implements ts.CompilerHost {
   private caseSensitiveFileNames = false;
   private newLine = '\n';
 
-  constructor(files: FileReflection[], options: ts.CompilerOptions, setParentNodes = true) {
+  constructor(files: FileReflection[], private compilerOptions: ts.CompilerOptions, setParentNodes = true) {
     for (let file of files) {
       this.fileMap.set(
         file.name,
         ts.createSourceFile(
-          file.name, file.text, options.target, setParentNodes
+          file.name, file.text, compilerOptions.target, setParentNodes
         )
       );
     }
   }
 
-  public getResult(): FileReflection[] {
+  public getResult(relative = true): FileReflection[] {
     const result: FileReflection[] = [];
     const path = getPathModule();
+    const cwd = process.cwd();
 
     this.outputs.forEach((text, name) => {
-      name = name.split(`${process.cwd()}${path.sep}`).join('');
+      const sepRegExp = new RegExp(`^\\${path.sep}+`);
+      name = name.split(`${cwd}${path.sep}`).join('');
+      name = name.replace(sepRegExp, '');
       result.push({ name, text });
     });
 
@@ -104,6 +107,7 @@ export class Host implements ts.CompilerHost {
   }
 
   public writeFile(fileName: string, data: string, writeByteOrderMark?: boolean, onError?: (message: string) => void, sourceFiles?: ts.SourceFile[]): void {
+    console.log('write', fileName);
     this.outputs.set(fileName, data);
   }
 

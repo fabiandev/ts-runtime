@@ -316,7 +316,10 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     newHost.setDefaultLibFileName(previousHost.getDefaultLibFileName(options.compilerOptions));
     newHost.setDefaultLibLocation(previousHost.getDefaultLibLocation());
     newHost.setUseCaseSensitiveFileNames(previousHost.useCaseSensitiveFileNames());
-    newHost.writeFile = previousHost.writeFile;
+    newHost.writeFile = function writeFile(fileName: string, data: string, writeByteOrderMark?: boolean, onError?: (message: string) => void, sourceFiles?: ts.SourceFile[]) {
+      this.outputs.set(fileName, data);
+      previousHost.writeFile(fileName, data, writeByteOrderMark, onError, sourceFiles);
+    }
 
     return newHost;
   }
