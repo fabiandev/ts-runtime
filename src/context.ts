@@ -77,10 +77,14 @@ export class MutationContext {
   }
 
   public isDeclared(node: ts.EntityName): boolean {
+    if (!node.getSourceFile()) {
+      return false;
+    }
+
+    const fileName = node.getSourceFile().fileName;
     node = util.getBaseIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
-    const fileName = typeInfo.sourceFiles[0].fileName;
 
     const declarations = typeInfo.declarations
       .filter(d => fileName === d.getSourceFile().fileName) || [];
@@ -93,10 +97,14 @@ export class MutationContext {
   }
 
   public wasDeclared(node: ts.EntityName): boolean {
+    if (!node.getSourceFile()) {
+      return false;
+    }
+
+    const fileName = node.getSourceFile().fileName;
     node = util.getBaseIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
-    const fileName = typeInfo.sourceFiles[0].fileName;
 
     const declarations = typeInfo.declarations
       .filter(d => fileName === d.getSourceFile().fileName);

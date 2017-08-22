@@ -186,17 +186,17 @@ export default () => {
         });
       });
 
-      describe('#sourceFile', () => {
-        it('should retrieve the source file', () => {
-          const result = info.sourceFile;
-          expect(ts.isSourceFile(result)).to.be(true);
+      describe('#sourceFiles', () => {
+        it('should retrieve the source files of its declarations', () => {
+          const result = info.sourceFiles;
+          expect(result).to.be.an('array');
         });
       });
 
       describe('#fileName', () => {
         it('should retrieve the source file name', () => {
-          const result = info.fileName;
-          expect(result).to.be.a('string');
+          const result = info.fileNames;
+          expect(result).to.be.an('array');
         });
       });
 
@@ -204,13 +204,6 @@ export default () => {
         it('should retrieve all declarations', () => {
           const result = info.declarations;
           expect(result).to.be.an('array');
-        });
-      });
-
-      describe('#firstDeclaration', () => {
-        it('should retrieve the first declaration', () => {
-          const result = info.firstDeclaration;
-          expect(result).ok();
         });
       });
 

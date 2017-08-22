@@ -464,7 +464,14 @@ export class TypeInfo {
   // }
 
   get sourceFiles(): ts.SourceFile[] {
-    return this.declarations.map(declaration => declaration.getSourceFile());
+    const sfs = this.declarations.map(declaration => declaration.getSourceFile());
+    const esf = this.enclosing && this.enclosing.getSourceFile();
+
+    if (sfs.indexOf(esf) === -1) {
+      sfs.push(esf);
+    }
+
+    return sfs.filter(sf => !!(sf && ts.isSourceFile(sf)));
   }
 
   // get fileName(): string {
@@ -580,7 +587,7 @@ export class TypeInfo {
   get isInDeclarationFile(): boolean {
     if (this._isInDeclarationFile === undefined) {
       const results = this.sourceFiles.map(sf => sf.isDeclarationFile);
-      this._isInDeclarationFile = results.indexOf(true) !== -1 || this.enclosing.getSourceFile().isDeclarationFile;
+      this._isInDeclarationFile = results.indexOf(true) !== -1;
     }
 
     return this._isInDeclarationFile;
@@ -589,7 +596,7 @@ export class TypeInfo {
   get isExternal(): boolean {
     if (this.hasDeclarations() && this._isExternal === undefined) {
       const results = this.sourceFiles.map(sf => this.scanner.pathIsExternal(sf.fileName));
-      this._isExternal = results.indexOf(true) !== -1 || this.scanner.pathIsExternal(this.enclosing.getSourceFile().fileName);
+      this._isExternal = results.indexOf(true) !== -1;
     }
 
     return this._isExternal;
