@@ -7,7 +7,7 @@ const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
 const webpack = require('webpack');
 
-const config = require('./docs.config');
+const config = require('./config');
 
 function assets() {
   return gulp.src([`${config.paths.src}/assets/**/*`])
@@ -24,7 +24,8 @@ function clean(done) {
   del([
     `${config.paths.dest}/**/*`,
     `!${config.paths.dest}/README.md`
-  ]).then(() => done());
+  ], { force: true })
+  .then(paths => done());
 }
 
 function html() {

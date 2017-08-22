@@ -1,13 +1,14 @@
 const path = require('path');
 const webpack = require('webpack');
-const pkg = require('./package.json');
+const pkg = require('../../../package.json');
 const config = {};
 
 config.version = pkg.version;
 
 config.paths = {
-  src: 'src/docs',
-  dest: 'docs'
+  src: '../',
+  dest: '../../../docs',
+  root: '../../../',
 };
 
 config.monaco = {
@@ -42,7 +43,7 @@ config.replace = {
 
 config.webpack = [{
   entry: {
-    bundle: path.join(__dirname, `${config.paths.src}/index.ts`)
+    bundle: path.normalize(path.join(__dirname, config.paths.src, 'index.ts'))
   },
   output: {
     filename: config.bundleName,
@@ -93,10 +94,10 @@ config.webpack = [{
     }, {}))
   ]
 }, {
-  entry: path.join(__dirname, 'src/lib/index.ts'),
+  entry: path.normalize(path.join(__dirname, config.paths.root, 'src/lib/index.ts')),
   output: {
     filename: 'ts-runtime.lib.js',
-    path: path.join(__dirname, 'docs'),
+    path: path.normalize(path.join(__dirname, config.paths.root, 'docs')),
     library: 't',
     libraryTarget: 'window'
   },
