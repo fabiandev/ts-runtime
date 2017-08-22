@@ -12,4 +12,5 @@ pids
 coverage
 dist
 dist-tsr
+lkg
 src/play

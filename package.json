@@ -18,7 +18,7 @@
     "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:docs": "node_modules/.bin/gulp --gulpfile src/docs/build/gulpfile.js build",
-    "build:lkg": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --moduleAlias --compilerOptions '{\"outDir\": \"dist-tsr\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
+    "build:lkg": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias --compilerOptions '{\"outDir\": \"lkg\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"
