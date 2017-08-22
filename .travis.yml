@@ -8,6 +8,9 @@ cache:
 install:
   - yarn
 script:
+  - yarn build
+  - yarn build:lkg
   - yarn cover
+  - node lkg/bin/index
 after_success:
   - yarn coveralls
