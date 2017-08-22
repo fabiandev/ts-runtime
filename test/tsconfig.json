@@ -6,7 +6,8 @@
     "target": "es5",
     "noImplicitAny": true,
     "preserveConstEnums": true,
-    "removeComments": false
+    "removeComments": false,
+    "sourceMap": true
   },
   "include": [
     "**/*"
