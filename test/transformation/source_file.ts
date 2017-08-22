@@ -47,18 +47,17 @@ export default () => {
       util.compare(expected, result);
     });
 
-    // TODO: check why this works in the playground but fails here
-    // it('should not reflect built ins by default', () => {
-    //   const input = `let foo: Set<any>;`;
-    //
-    //   const expected = `
-    //   import t from "ts-runtime/lib";
-    //   let _fooType = t.ref(Set, t.any()), foo;`;
-    //
-    //   const result = util.transform(input);
-    //
-    //   util.compare(expected, result);
-    // });
+    it('should not reflect built ins by default', () => {
+      const input = `let foo: Set<any>;`;
+
+      const expected = `
+      import t from "ts-runtime/lib";
+      let _fooType = t.ref(Set, t.any()), foo;`;
+
+      const result = util.transform(input);
+
+      util.compare(expected, result);
+    });
 
     it('should reflect ambient and external types in a separate file and import it', () => {
       const input = `
