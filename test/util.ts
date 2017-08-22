@@ -1,7 +1,7 @@
+import * as path from 'path';
 import * as fs from 'fs';
 import * as ts from 'typescript';
 import * as commondir from 'commondir';
-import { getPathModule } from '../src/transform';
 import { getOptions } from '../src/transform';
 import { ProgramError } from '../src/errors';
 import { Scanner } from '../src/scanner';
@@ -24,12 +24,10 @@ export function scanner(program: ts.Program, opts = options()): Scanner {
 }
 
 export function resolveEntryFiles(entryFiles: string[]): string[] {
-  const path = getPathModule();
   return entryFiles.map(f => path.join(`${path.resolve(path.dirname(f))}`, path.basename(f)));;
 }
 
 export function commonDir(entryFiles: string[]): string {
-  const path = getPathModule();
   return commondir(resolveEntryFiles(entryFiles).map(f => path.dirname(f)));
 }
 

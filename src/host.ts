@@ -1,5 +1,5 @@
+import * as path from 'path';
 import * as ts from 'typescript';
-import { getPathModule } from './transform';
 
 export interface FileReflection {
   name: string;
@@ -30,7 +30,6 @@ export class Host implements ts.CompilerHost {
 
   public getResult(): FileReflection[] {
     const result: FileReflection[] = [];
-    const path = getPathModule();
     const cwd = process.cwd();
 
     this.outputs.forEach((text, name) => {
@@ -68,17 +67,14 @@ export class Host implements ts.CompilerHost {
   }
 
   public getDefaultLibFileName(options: ts.CompilerOptions): string {
-    const path = getPathModule();
     return path.join(path.resolve(path.dirname(this.defaultLibFileName)), path.basename(this.defaultLibFileName));
   }
 
   public getDefaultLibLocation(): string {
-    const path = getPathModule();
     return path.resolve(this.defaultLibLocation);
   }
 
   public getCurrentDirectory(): string {
-    const path = getPathModule();
     return path.resolve(this.currentDirectory);
   }
 

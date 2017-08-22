@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as format from 'pretty-time';
 import * as rimraf from 'rimraf';
 import * as commondir from 'commondir';
@@ -10,8 +11,6 @@ import { getMutators } from './mutators';
 import { Host, FileReflection } from './host';
 import { Options, defaultOptions } from './options';
 import { Scanner, TsrDeclaration } from './scanner';
-let pathReflection = require('path-browserify');
-let path = require('path');
 
 let start: [number, number], elapsed: [number, number];
 
@@ -20,12 +19,7 @@ export function transform(rootNames: string[], options?: Options): FileReflectio
 }
 
 export function transformReflection(rootNames: string | string[], reflections: FileReflection[], options?: Options): FileReflection[] {
-  path = pathReflection;
   return result(transformProgram(rootNames, options, reflections));
-}
-
-export function getPathModule(): any {
-  return path;
 }
 
 export function getOptions(options: Options = {}): Options {
