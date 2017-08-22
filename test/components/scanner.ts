@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { Scanner } from '../../src/scanner';
+import { Scanner, TypeInfo } from '../../src/scanner';
 import { MutationContext } from '../../src/context';
 
 export default () => {
@@ -23,8 +23,8 @@ export default () => {
     });
 
     describe('#scan', () => {
-      it('should already be tested by other components', () => {
-        // Tested in every application pass
+      it('should scan all source files', () => {
+        scanner.scan();
       });
     });
 
@@ -152,92 +152,164 @@ export default () => {
     });
 
     describe('Type Info', () => {
-      describe('#isTsrDeclaration', () => {
+      let info: TypeInfo;
 
+      beforeEach(() => {
+        info = scanner.getTypeInfo(id);
+      });
+
+      describe('#isTsrDeclaration', () => {
+        it('should check if it is a TSR declaration', () => {
+          const result = info.isTsrDeclaration();
+          expect(result).to.be(false);
+        });
       });
 
       describe('#hasDeclarations', () => {
-
+        it('should check if it has declarations', () => {
+          const result = info.hasDeclarations();
+          expect(result).to.be(true);
+        });
       });
 
       describe('#symbol', () => {
-
+        it('should retrieve the symbol', () => {
+          const result = info.symbol;
+          expect(result).ok();
+        });
       });
 
       describe('#enclosing', () => {
-
+        it('should retrieve the enclosing node', () => {
+          const result = info.enclosing;
+          expect(result).ok();
+        });
       });
 
       describe('#sourceFile', () => {
-
+        it('should retrieve the source file', () => {
+          const result = info.sourceFile;
+          expect(ts.isSourceFile(result)).to.be(true);
+        });
       });
 
       describe('#fileName', () => {
-
+        it('should retrieve the source file name', () => {
+          const result = info.fileName;
+          expect(result).to.be.a('string');
+        });
       });
 
       describe('#declarations', () => {
-
+        it('should retrieve all declarations', () => {
+          const result = info.declarations;
+          expect(result).to.be.an('array');
+        });
       });
 
       describe('#firstDeclaration', () => {
-
+        it('should retrieve the first declaration', () => {
+          const result = info.firstDeclaration;
+          expect(result).ok();
+        });
       });
 
       describe('#type', () => {
-
+        it('should retrieve the type', () => {
+          const result = info.type;
+          expect(result).ok();
+        });
       });
 
       describe('#typeText', () => {
-
+        it('should retrieve the type text', () => {
+          const result = info.typeText;
+          expect(result).to.be.a('string');
+        });
       });
 
       describe('#typeNode', () => {
-
+        it('should retrieve the type node', () => {
+          const result = info.typeNode;
+          expect(result).ok();
+        });
       });
 
       describe('#baseType', () => {
-
+        it('should retrieve the base tyoe', () => {
+          const result = info.baseType;
+          expect(result).to.be(undefined);
+        });
       });
 
       describe('#baseTypeNode', () => {
-
+        it('should retrieve the base type node', () => {
+          const result = info.baseTypeNode;
+          expect(result).to.be(undefined);
+        });
       });
 
       describe('#baseTypeText', () => {
-
+        it('should retrieve the base type text', () => {
+          const result = info.baseTypeText;
+          expect(result).to.be(undefined);
+        });
       });
 
       describe('#isSynthesized', () => {
-
+        it('should check if it is synthesized', () => {
+          const result = info.isSynthesized;
+          expect(result).to.be(true);
+        });
       });
 
       describe('#isReference', () => {
-
+        it('should check if it is a reference', () => {
+          const result = info.isReference;
+          expect(result).to.be(false);
+        });
       });
 
       describe('#isLiteral', () => {
-
+        it('should check if it is a literal', () => {
+          const result = info.isLiteral;
+          expect(result).to.be(false);
+        });
       });
 
       describe('#isAmbient', () => {
-
+        it('should check if it is ambient', () => {
+          const result = info.isAmbient;
+          expect(result).to.be(false);
+        });
       });
 
       describe('#isDeclaration', () => {
-
+        it('should check if it is an ambient declaration', () => {
+          const result = info.isDeclaration;
+          expect(result).to.be(false);
+        });
       });
 
       describe('#isInDeclarationFile', () => {
-
+        it('should check if it is in a declaration file', () => {
+          const result = info.isInDeclarationFile;
+          expect(result).to.be(false);
+        });
       });
 
       describe('#isExternal', () => {
-
+        it('should check if it is external', () => {
+          const result = info.isExternal;
+          expect(result).to.be(false);
+        });
       });
 
       describe('#isExternalModule', () => {
-
+        it('should check if it is an external module', () => {
+          const result = info.isExternalModule;
+          expect(result).to.be(false);
+        });
       });
     });
   });
