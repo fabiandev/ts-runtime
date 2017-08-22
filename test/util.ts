@@ -1,7 +1,7 @@
-import * as path from 'path';
 import * as fs from 'fs';
 import * as ts from 'typescript';
 import * as commondir from 'commondir';
+import { getPathModule } from '../src/transform';
 import { getOptions } from '../src/transform';
 import { ProgramError } from '../src/errors';
 import { Scanner } from '../src/scanner';
@@ -12,7 +12,7 @@ import { Host, FileReflection } from '../src/host';
 let es6Lib: string;
 
 export function program(host: Host, compilerOptions = options().compilerOptions): ts.Program {
-  return ts.createProgram(['module.ts'], compilerOptions, host);
+  return ts.createProgram(['src/module.ts'], compilerOptions, host);
 }
 
 export function host(input: string, compilerOptions = options().compilerOptions): Host {
@@ -24,14 +24,16 @@ export function scanner(program: ts.Program, opts = options()): Scanner {
 }
 
 export function resolveEntryFiles(entryFiles: string[]): string[] {
+  const path = getPathModule();
   return entryFiles.map(f => path.join(`${path.resolve(path.dirname(f))}`, path.basename(f)));;
 }
 
 export function commonDir(entryFiles: string[]): string {
+  const path = getPathModule();
   return commondir(resolveEntryFiles(entryFiles).map(f => path.dirname(f)));
 }
 
-export function context(program: ts.Program, host: Host, opts = options(), entryFiles = ['module.ts']): MutationContext {
+export function context(program: ts.Program, host: Host, opts = options(), entryFiles = ['src/module.ts']): MutationContext {
   const resolvedEntryFiles = resolveEntryFiles(entryFiles);
 
   return new MutationContext(
@@ -49,7 +51,7 @@ export function transform(input: string, options?: Options): string {
   const reflection = util.reflect(input);
   const rootName = reflection[0];
   const fileReflections = reflection[1];
-  const opts = Object.assign(reflection[2], options || {});
+  const opts = mergeOptions(reflection[2], options || {});
   return tsr.transformReflection(rootName, fileReflections, opts)[0].text;
 }
 
@@ -99,7 +101,7 @@ export function options(): Options {
 export function reflect(input: string, name?: string): [string, FileReflection[], Options] {
   const fileReflections = [
     {
-      name: name || 'module.ts',
+      name: name || 'src/module.ts',
       text: input
     }, {
       name: 'lib.d.ts',
@@ -107,7 +109,7 @@ export function reflect(input: string, name?: string): [string, FileReflection[]
     }
   ];
 
-  return [name || 'module.ts', fileReflections, options()];
+  return [name || 'src/module.ts', fileReflections, options()];
 }
 
 export function normalize(input: string): string {
@@ -126,4 +128,11 @@ export function normalize(input: string): string {
     .join(';\n')
     .trim()
     ;
+}
+
+export function mergeOptions(options: Options, other: Options): Options {
+  const opts = Object.assign({}, options, other);
+  const compilerOptions = Object.assign(ts.getDefaultCompilerOptions(), options.compilerOptions, other && other.compilerOptions || {});
+  opts.compilerOptions = compilerOptions;
+  return opts;
 }
