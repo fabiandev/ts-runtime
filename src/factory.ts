@@ -327,7 +327,7 @@ export class Factory {
     }
 
     if (asLiteral && !isSelfReference) {
-      let sf = typeInfo.sourceFile.fileName;
+      let sf = typeInfo.sourceFiles[0].fileName;
       let hash = util.getHash(sf);
       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
       name = name || typeNameText;
@@ -367,7 +367,7 @@ export class Factory {
     let ref: ts.Expression | ts.Expression[] = ts.createIdentifier(text);
 
     if (typeInfo.isTsrDeclaration()) {
-      text = util.getHashedDeclarationName(text, typeInfo.sourceFile.fileName);
+      text = util.getHashedDeclarationName(text, typeInfo.sourceFiles[0].fileName);
       ref = [ts.createLiteral(text), ts.createTrue()];
     }
 

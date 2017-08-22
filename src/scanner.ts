@@ -52,6 +52,7 @@ export class Scanner {
     ts.SyntaxKind.PropertySignature,
     ts.SyntaxKind.PropertyDeclaration,
     ts.SyntaxKind.ConstructSignature,
+    ts.SyntaxKind.TypeAliasDeclaration,
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
@@ -59,8 +60,7 @@ export class Scanner {
   ts.SymbolFlags.EnumMember | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Function |
     /* ts.SymbolFlags.TypeLiteral | */ ts.SymbolFlags.Variable;
 
-  private DisallowedDeclaratins = ts.SymbolFlags.Module | ts.SymbolFlags.TypeParameter |
-  ts.SymbolFlags.TypeLiteral;
+  private DisallowedDeclaratins = /*ts.SymbolFlags.TypeParameter | ts.SymbolFlags.TypeLiteral | ts.SymbolFlags.Module*/ ts.SymbolFlags.None;
 
   constructor(program: ts.Program, options: Options) {
     this._options = options;
@@ -225,13 +225,14 @@ export class Scanner {
     // );
     //
 
-    let nodeSymbol = this.checker.getSymbolAtLocation(node);
+    let nodeSymbol = this.checker.getSymbolAtLocation((node as any).name || node);
 
     if (nodeSymbol) {
       this.symbols.set(node, nodeSymbol);
     }
 
     if (!this.shouldScan(node)) {
+      ts.forEachChild(node, n => this.scanNode(n));
       return;
     }
 
@@ -239,7 +240,7 @@ export class Scanner {
     const typeInfo = new TypeInfo(this, node);
 
     if (typeInfo.isTsrDeclaration()) {
-      this.addDeclaration(typeInfo.symbol, typeInfo.fileName);
+      this.addDeclaration(typeInfo.symbol, typeInfo.fileNames[0]);
     }
 
     if (node !== typeInfo.typeNode) {
@@ -248,6 +249,45 @@ export class Scanner {
     }
 
     this.properties.set(node, typeInfo);
+
+    // if (nodeSymbol && nodeSymbol.name === 'FunctionTypeNode') {
+    //   console.log()
+    //   console.log("FunctionTypeNode")
+    //   console.log(ts.SymbolFlags[nodeSymbol.flags])
+    //   console.log(typeInfo.isTsrDeclaration())
+    //   console.log()
+    //
+    //   console.log('isExternal', typeInfo.isExternal);
+    //   console.log('isExternalModule', typeInfo.isExternalModule);
+    //   console.log('TSR_DECLARATION', (typeInfo as any).TSR_DECLARATION)
+    //   console.log('isAllowedDeclarationSymbol', this.isAllowedDeclarationSymbol(nodeSymbol))
+    //   console.log('isPartOfTypeNode', util.isPartOfTypeNode(node))
+    //   console.log('isInDeclarationFile', typeInfo.isInDeclarationFile);
+    //   console.log(typeInfo.fileNames)
+    //
+    //   console.log();
+    // }
+
+    // TODO: check why the symbol points to FunctionDeclarationLikeNode in factory.ts
+    //if (nodeSymbol && nodeSymbol.name === 'FunctionLikeDeclaration') {
+      // console.log()
+      // console.log("FunctionLikeDeclaration")
+      // console.log(ts.SymbolFlags[nodeSymbol.flags])
+      // console.log(typeInfo.isTsrDeclaration())
+      // console.log()
+      // typeInfo.declarations.map(decl => decl.getText())
+      // console.log()
+      //
+      // console.log('isExternal', typeInfo.isExternal);
+      // console.log('isExternalModule', typeInfo.isExternalModule);
+      // console.log('TSR_DECLARATION', (typeInfo as any).TSR_DECLARATION)
+      // console.log('isAllowedDeclarationSymbol', this.isAllowedDeclarationSymbol(nodeSymbol))
+      // console.log('isPartOfTypeNode', util.isPartOfTypeNode(node))
+      // console.log('isInDeclarationFile', typeInfo.isInDeclarationFile);
+      // console.log(typeInfo.fileNames)
+      //
+      // console.log();
+    //}
 
     return node;
   }
@@ -262,9 +302,6 @@ export class Scanner {
     // }
 
     if (this.scanNodes.indexOf(node.kind) === -1) {
-      ts.forEachChild(node, n => {
-        this.scanNode(n);
-      });
       return false;
     }
 
@@ -355,7 +392,6 @@ export class TypeInfo {
   private _TSR_DECLARATION: boolean;
   private _isTsrDeclaration: boolean;
   private _enclosing?: ts.Node;
-  private _sourceFile?: ts.SourceFile;
   private _fileName?: string;
   private _declarations: ts.Declaration[];
   private _type: ts.Type;
@@ -388,7 +424,7 @@ export class TypeInfo {
 
       this._isTsrDeclaration = this.TSR_DECLARATION &&
         this.scanner.isAllowedDeclarationSymbol(this.symbol)
-        && (util.isPartOfTypeNode(this.enclosing) || (this.enclosing.getSourceFile().isDeclarationFile));
+        && (util.isPartOfTypeNode(this.enclosing) || (this.isInDeclarationFile));
     }
 
     return this._isTsrDeclaration;
@@ -423,12 +459,20 @@ export class TypeInfo {
     return this._enclosing;
   }
 
-  get sourceFile(): ts.SourceFile {
-    return (this.firstDeclaration && this.firstDeclaration.getSourceFile()) || (this.enclosing && this.enclosing.getSourceFile());
+  // get sourceFile(): ts.SourceFile {
+  //   return (this.firstDeclaration && this.firstDeclaration.getSourceFile()) || (this.enclosing && this.enclosing.getSourceFile());
+  // }
+
+  get sourceFiles(): ts.SourceFile[] {
+    return this.declarations.map(declaration => declaration.getSourceFile());
   }
 
-  get fileName(): string {
-    return this.sourceFile && this.sourceFile.fileName;
+  // get fileName(): string {
+  //   return this.sourceFile && this.sourceFile.fileName;
+  // }
+
+  get fileNames(): string[] {
+    return this.sourceFiles.map(sf => sf.fileName);
   }
 
   get declarations(): ts.Declaration[] {
@@ -439,9 +483,9 @@ export class TypeInfo {
     return this.symbol.getDeclarations();
   }
 
-  get firstDeclaration(): ts.Declaration {
-    return this.declarations[0];
-  }
+  // get firstDeclaration(): ts.Declaration {
+  //   return this.declarations[0];
+  // }
 
   get type(): ts.Type {
     if (!this._type) {
@@ -517,7 +561,8 @@ export class TypeInfo {
 
   get isAmbient(): boolean {
     if (this.hasDeclarations() && this._isAmbient === undefined) {
-      this._isAmbient = util.isAmbient(this.firstDeclaration);
+      const results = this.declarations.map(declaration => util.isAmbient(declaration));
+      this._isAmbient = results.indexOf(true) !== -1;
     }
 
     return this._isAmbient;
@@ -525,7 +570,8 @@ export class TypeInfo {
 
   get isDeclaration(): boolean {
     if (this.hasDeclarations() && this._isDeclaration === undefined) {
-      this._isDeclaration = util.isAmbientDeclaration(this.firstDeclaration);
+      const results = this.declarations.map(declaration => util.isAmbientDeclaration(declaration));
+      this._isDeclaration = results.indexOf(true) !== -1;
     }
 
     return this._isDeclaration;
@@ -533,7 +579,8 @@ export class TypeInfo {
 
   get isInDeclarationFile(): boolean {
     if (this._isInDeclarationFile === undefined) {
-      this._isInDeclarationFile = this.sourceFile && this.sourceFile.isDeclarationFile;
+      const results = this.sourceFiles.map(sf => sf.isDeclarationFile);
+      this._isInDeclarationFile = results.indexOf(true) !== -1 || this.enclosing.getSourceFile().isDeclarationFile;
     }
 
     return this._isInDeclarationFile;
@@ -541,7 +588,8 @@ export class TypeInfo {
 
   get isExternal(): boolean {
     if (this.hasDeclarations() && this._isExternal === undefined) {
-      this._isExternal = this.scanner.pathIsExternal(this.fileName);
+      const results = this.sourceFiles.map(sf => this.scanner.pathIsExternal(sf.fileName));
+      this._isExternal = results.indexOf(true) !== -1 || this.scanner.pathIsExternal(this.enclosing.getSourceFile().fileName);
     }
 
     return this._isExternal;
@@ -549,7 +597,8 @@ export class TypeInfo {
 
   get isExternalModule(): boolean {
     if (this.hasDeclarations() && this._isExternalModule === undefined) {
-      this._isExternalModule = ts.isExternalModule(this.sourceFile);
+      const results = this.sourceFiles.map(sf => ts.isExternalModule(sf));
+      this._isExternalModule = results.indexOf(true) !== -1;
     }
 
     return this._isExternalModule;

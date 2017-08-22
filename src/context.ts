@@ -80,7 +80,7 @@ export class MutationContext {
     node = util.getBaseIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
-    const fileName = typeInfo.fileName;
+    const fileName = typeInfo.sourceFiles[0].fileName;
 
     const declarations = typeInfo.declarations
       .filter(d => fileName === d.getSourceFile().fileName) || [];
@@ -96,7 +96,7 @@ export class MutationContext {
     node = util.getBaseIdentifierOfEntityName(node);
 
     const typeInfo = this.scanner.getTypeInfo(node);
-    const fileName = typeInfo.fileName;
+    const fileName = typeInfo.sourceFiles[0].fileName;
 
     const declarations = typeInfo.declarations
       .filter(d => fileName === d.getSourceFile().fileName);
