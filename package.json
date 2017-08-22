@@ -29,6 +29,7 @@
     "commondir": "^1.0.1",
     "flow-runtime": "^0.13.0",
     "ora": "^1.2.0",
+    "path-browserify": "^0.0.0",
     "pretty-time": "^0.2.0",
     "regenerator-runtime": "^0.10.5",
     "rimraf": "^2.6.1",
