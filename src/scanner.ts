@@ -262,6 +262,9 @@ export class Scanner {
     // }
 
     if (this.scanNodes.indexOf(node.kind) === -1) {
+      ts.forEachChild(node, n => {
+        this.scanNode(n);
+      });
       return false;
     }
 
