@@ -28,7 +28,7 @@ export class Host implements ts.CompilerHost {
     }
   }
 
-  public getResult(relative = true): FileReflection[] {
+  public getResult(): FileReflection[] {
     const result: FileReflection[] = [];
     const path = getPathModule();
     const cwd = process.cwd();
