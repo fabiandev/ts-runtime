@@ -107,7 +107,6 @@ export class Host implements ts.CompilerHost {
   }
 
   public writeFile(fileName: string, data: string, writeByteOrderMark?: boolean, onError?: (message: string) => void, sourceFiles?: ts.SourceFile[]): void {
-    console.log('write', fileName);
     this.outputs.set(fileName, data);
   }
 
