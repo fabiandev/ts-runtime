@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 import * as util from './util';
-import * as path from 'path';
+import { getPathModule } from './transform';
 import { Options } from './options';
 
 export interface TsrDeclaration {
@@ -161,6 +161,7 @@ export class Scanner {
   }
 
   public pathIsExternal(fileName: string): boolean {
+    const path = getPathModule();
     const r = this.program.getCompilerOptions().rootDir;
     const rootDir = !r ? '' : r + path.sep;
     return !fileName.startsWith(rootDir);

@@ -1,4 +1,3 @@
-// import * as path from 'path';
 import * as ts from 'typescript';
 import * as util from './util';
 import { ProgramError } from './errors';

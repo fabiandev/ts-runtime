@@ -1,6 +1,6 @@
-import * as path from 'path';
 import * as ts from 'typescript';
 import * as util from '../util';
+import { getPathModule } from '../transform';
 import { Mutator } from './Mutator';
 
 export class SourceFileMutator extends Mutator {
@@ -8,6 +8,7 @@ export class SourceFileMutator extends Mutator {
   protected kind = ts.SyntaxKind.SourceFile;
 
   protected mutate(node: ts.SourceFile): ts.SourceFile {
+    const path = getPathModule();
     const statements = util.arrayFromNodeArray(node.statements);
     const declarations: ts.Statement[] = [];
 
