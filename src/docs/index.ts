@@ -21,6 +21,7 @@ let runWindow: Window;
 const _editorJs = document.getElementById('editor-js');
 const _editorTs = document.getElementById('editor-ts');
 const _runCode = document.getElementById('run-code');
+const _runText = document.getElementById('run-text')
 const _loading = document.getElementById('loading');
 const _processing = document.getElementById('processing');
 const _optionsToggle = document.getElementById('options-toggle');
@@ -28,7 +29,7 @@ const _options = document.getElementById('options');
 const _consoleContent = document.getElementById('console-content');
 
 let defaultOptions: Options;
-(window as any).tsr = {};
+(window as any).tsp = {};
 
 function setDefaultOptions(): void {
   defaultOptions = {
@@ -119,15 +120,16 @@ function ready(): void {
   _optionsToggle.onclick = toggleOptions;
   _runCode.onclick = runCode;
   initOptions();
+  window.onkeydown = keyBindings;
   onCodeChange();
   fadeOut(_loading);
 }
 
 function expose() {
-  (window as any).tsr.options = defaultOptions;
-  (window as any).tsr.compile = onCodeChange;
-  (window as any).tsr.run = runCode;
-  (window as any).tsr.sync = () => {
+  (window as any).tsp.options = defaultOptions;
+  (window as any).tsp.compile = onCodeChange;
+  (window as any).tsp.run = () => runCode();
+  (window as any).tsp.sync = () => {
     initOptions();
     updateCompilerOptions();
   };
@@ -140,7 +142,7 @@ function initOptions() {
     NodeListOf<HTMLInputElement | HTMLSelectElement>;
 
   for (let i = 0; i < inputs.length; i++) {
-    if ((window as any).tsr.options.compilerOptions.hasOwnProperty(inputs[i].name)) {
+    if ((window as any).tsp.options.compilerOptions.hasOwnProperty(inputs[i].name)) {
       if (inputs[i] instanceof HTMLInputElement) {
         if ((inputs[i] as HTMLInputElement).type === 'checkbox') {
           (inputs[i] as HTMLInputElement).checked = !!defaultOptions.compilerOptions[inputs[i].name];
@@ -162,7 +164,7 @@ function initOptions() {
     NodeListOf<HTMLInputElement | HTMLSelectElement>;
 
   for (let i = 0; i < inputs.length; i++) {
-    if ((window as any).tsr.options.hasOwnProperty(inputs[i].name)) {
+    if ((window as any).tsp.options.hasOwnProperty(inputs[i].name)) {
       if (inputs[i] instanceof HTMLInputElement) {
         if ((inputs[i] as HTMLInputElement).type === 'checkbox') {
           (inputs[i] as HTMLInputElement).checked = !!defaultOptions[inputs[i].name];
@@ -179,7 +181,7 @@ function initOptions() {
 }
 
 function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): any {
-  let value = (window as any).tsr.options[this.name];
+  let value = (window as any).tsp.options[this.name];
 
   if (this instanceof HTMLInputElement) {
     if ((this as HTMLInputElement).type === 'checkbox') {
@@ -193,14 +195,14 @@ function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): 
     value = this.value;
   }
 
-  (window as any).tsr.options[this.name] = value;
+  (window as any).tsp.options[this.name] = value;
 
   updateCompilerOptions();
   onCodeChange();
 }
 
 function onCompilerOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): any {
-  let value = (window as any).tsr.options.compilerOptions[this.name];
+  let value = (window as any).tsp.options.compilerOptions[this.name];
 
   if (this instanceof HTMLInputElement) {
     if ((this as HTMLInputElement).type === 'checkbox') {
@@ -214,7 +216,7 @@ function onCompilerOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: 
     value = this.value;
   }
 
-  (window as any).tsr.options.compilerOptions[this.name] = value;
+  (window as any).tsp.options.compilerOptions[this.name] = value;
 
   updateCompilerOptions();
   onCodeChange();
@@ -222,6 +224,16 @@ function onCompilerOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: 
 
 function onCodeChange(event?: monaco.editor.IModelContentChangedEvent): void {
   transform(event);
+}
+
+function keyBindings(this: Window, ev: KeyboardEvent) {
+  if (ev.ctrlKey && ev.which === 82 /* r */) {
+    runCode();
+  }
+
+  if ((ev.ctrlKey || ev.metaKey) && ev.which === 83 /* s */) {
+    ev.preventDefault();
+  }
 }
 
 function onMessage(e: MessageEvent) {
@@ -279,15 +291,30 @@ function runCode(): void {
   let win: Window;
 
   if (!runWindow || runWindow.closed) {
+    windowOpened();
     win = window.open('', '', 'width=800,height=600');
     runWindow = win;
   } else {
     win = runWindow;
+    windowRefreshed();
   }
 
   win.document.open()
   win.document.write(getWindowCode());
   win.document.close();
+  win.onunload = windowUnloaded;
+}
+
+function windowOpened() {
+  _runText.innerText = 'Run in window';
+}
+
+function windowRefreshed() {
+  _runText.innerText = 'Run in window';
+}
+
+function windowUnloaded() {
+  _runText.innerText = 'Run in new window';
 }
 
 function updateJsEditor(text: string): void {
@@ -302,11 +329,11 @@ function updateCompilerOptions(): void {
 }
 
 function getOptions(): Options {
-  return JSON.parse(JSON.stringify((window as any).tsr.options));
+  return JSON.parse(JSON.stringify((window as any).tsp.options));
 }
 
 function getCompilerOptions(): Options {
-  return JSON.parse(JSON.stringify((window as any).tsr.options.compilerOptions));
+  return JSON.parse(JSON.stringify((window as any).tsp.options.compilerOptions));
 }
 
 function getWindowCode(): string {

@@ -15,7 +15,10 @@ function assets() {
 }
 
 function copy() {
-  return gulp.src([`${config.paths.src}/proxy.js`])
+  return gulp.src([
+    `${config.paths.src}/proxy.js`,
+    `${config.paths.src}/run.js`
+  ])
     .pipe(preprocess({ context: config.replace }))
     .pipe(gulp.dest(config.paths.dest));
 }
