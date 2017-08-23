@@ -17,6 +17,7 @@
     "cover": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/.bin/nyc npm test",
     "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
+    "build:lib": "node_modules/.bin/webpack --config src/lib/build/webpack.config.js",
     "build:docs": "node_modules/.bin/gulp --gulpfile src/docs/build/gulpfile.js build",
     "build:lkg": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias --compilerOptions '{\"outDir\": \"lkg\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
@@ -65,7 +66,7 @@
     "source-map-support": "^0.4.15",
     "ts-loader": "^2.2.2",
     "ts-node": "^3.3.0",
-    "webpack": "^2.2.0",
+    "webpack": "^3.5.5",
     "worker-loader": "^0.8.1"
   }
 }
