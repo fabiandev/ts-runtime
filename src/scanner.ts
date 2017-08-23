@@ -249,45 +249,6 @@ export class Scanner {
 
     this.properties.set(node, typeInfo);
 
-    // if (nodeSymbol && nodeSymbol.name === 'FunctionTypeNode') {
-    //   console.log()
-    //   console.log("FunctionTypeNode")
-    //   console.log(ts.SymbolFlags[nodeSymbol.flags])
-    //   console.log(typeInfo.isTsrDeclaration())
-    //   console.log()
-    //
-    //   console.log('isExternal', typeInfo.isExternal);
-    //   console.log('isExternalModule', typeInfo.isExternalModule);
-    //   console.log('TSR_DECLARATION', (typeInfo as any).TSR_DECLARATION)
-    //   console.log('isAllowedDeclarationSymbol', this.isAllowedDeclarationSymbol(nodeSymbol))
-    //   console.log('isPartOfTypeNode', util.isPartOfTypeNode(node))
-    //   console.log('isInDeclarationFile', typeInfo.isInDeclarationFile);
-    //   console.log(typeInfo.fileNames)
-    //
-    //   console.log();
-    // }
-
-    // TODO: check why the symbol points to FunctionDeclarationLikeNode in factory.ts
-    //if (nodeSymbol && nodeSymbol.name === 'FunctionLikeDeclaration') {
-      // console.log()
-      // console.log("FunctionLikeDeclaration")
-      // console.log(ts.SymbolFlags[nodeSymbol.flags])
-      // console.log(typeInfo.isTsrDeclaration())
-      // console.log()
-      // typeInfo.declarations.map(decl => decl.getText())
-      // console.log()
-      //
-      // console.log('isExternal', typeInfo.isExternal);
-      // console.log('isExternalModule', typeInfo.isExternalModule);
-      // console.log('TSR_DECLARATION', (typeInfo as any).TSR_DECLARATION)
-      // console.log('isAllowedDeclarationSymbol', this.isAllowedDeclarationSymbol(nodeSymbol))
-      // console.log('isPartOfTypeNode', util.isPartOfTypeNode(node))
-      // console.log('isInDeclarationFile', typeInfo.isInDeclarationFile);
-      // console.log(typeInfo.fileNames)
-      //
-      // console.log();
-    //}
-
     return node;
   }
 
