@@ -1,10 +1,12 @@
 const gulp = require('gulp');
+const babel = require('gulp-babel');
 const css = require('gulp-clean-css');
 const del = require('del');
 const less = require('gulp-less');
 const preprocess = require('gulp-preprocess');
 const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
+const uglify = require('gulp-uglify');
 const webpack = require('webpack');
 
 const config = require('./config');
@@ -19,6 +21,15 @@ function copy() {
     `${config.paths.src}/proxy.js`,
     `${config.paths.src}/run.js`
   ])
+    .pipe(sourcemaps.init())
+    .pipe(preprocess({ context: config.replace }))
+    .pipe(babel({ presets: [['env', {
+        uglify: true,
+        forceAllTransforms: true
+      }]]
+    }))
+    .pipe(uglify({ mangle: false }))
+    .pipe(sourcemaps.write('.'))
     .pipe(preprocess({ context: config.replace }))
     .pipe(gulp.dest(config.paths.dest));
 }

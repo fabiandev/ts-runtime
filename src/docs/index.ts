@@ -71,12 +71,14 @@ function init(): void {
 
   tsEditor = monaco.editor.create(_editorTs, {
     value: [
-      'interface A<T> {',
+      `console.info('ts-runtime v${VERSION}');`,
+      '',
+      'interface Foo<T> {',
       '    prop: T;',
       '}',
       '',
-      'let a: A<string> = {',
-      '    prop: 1 as any',
+      'let a: Foo<number> = {',
+      '    prop: \'bar\' as any',
       '};',
       ''
     ].join('\n'),
@@ -98,7 +100,7 @@ function init(): void {
     minimap: {
       enabled: false
     },
-    contextmenu: false,
+    // contextmenu: false,
     quickSuggestions: false,
     parameterHints: false,
     autoClosingBrackets: false,
@@ -106,10 +108,10 @@ function init(): void {
     snippetSuggestions: 'none',
     wordBasedSuggestions: false,
     selectionClipboard: false,
-    find: {
-      seedSearchStringFromSelection: false,
-      autoFindInSelection: false
-    }
+    // find: {
+    //   seedSearchStringFromSelection: false,
+    //   autoFindInSelection: false
+    // }
   });
 
   ready();
