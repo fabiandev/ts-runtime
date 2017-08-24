@@ -139,7 +139,7 @@ function expose() {
   };
 
   (window as any).tsp.setCompilerOption = (name: string, value: any) => {
-    (window as any).tsp.compilerOptions[name] = value;
+    (window as any).tsp.options.compilerOptions[name] = value;
     initOptions();
     updateCompilerOptions();
     onCodeChange();
