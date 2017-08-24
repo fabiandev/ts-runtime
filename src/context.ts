@@ -138,6 +138,16 @@ export class MutationContext {
       return true;
     }
 
+    const enclsoingSymbol = this.scanner.getNodeSymbol(typeInfo.enclosing);
+
+    if (typeInfo.enclosing && this.scanner.getNodeSymbol(typeInfo.enclosing)) {
+      if (enclsoingSymbol.valueDeclaration && util.canHaveType(enclsoingSymbol.valueDeclaration)) {
+        if (enclsoingSymbol.valueDeclaration.type === undefined || util.isAnyKeyword(enclsoingSymbol.valueDeclaration.type)) {
+          return true;
+        }
+      }
+    }
+
     if (typeInfo.symbol && typeInfo.symbol.valueDeclaration && util.canHaveType(typeInfo.symbol.valueDeclaration)) {
       if (typeInfo.symbol.valueDeclaration.type === undefined || util.isAnyKeyword(typeInfo.symbol.valueDeclaration.type)) {
         return true;
