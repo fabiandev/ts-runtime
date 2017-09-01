@@ -310,10 +310,15 @@ function runCode(): void {
     windowRefreshed();
   }
 
-  win.document.open()
-  win.document.write(getWindowCode());
-  win.document.close();
-  win.onunload = windowUnloaded;
+  win.onunload = null;
+  win.location.href = 'about:blank'
+
+  setTimeout(() => {
+    win.document.open()
+    win.document.write(getWindowCode());
+    win.document.close();
+    win.onunload = windowUnloaded;
+  }, 50);
 }
 
 function windowOpened() {
