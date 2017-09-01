@@ -1,6 +1,6 @@
 {
   "name": "ts-runtime",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "description": "Runtime type checks for TypeScript",
   "main": "index.js",
   "bin": {
@@ -19,7 +19,7 @@
     "build": "npm run build:tsr && npm run build:lib",
     "build:tsr": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:lib": "node_modules/.bin/webpack --config src/lib/build/webpack.config.js",
-    "build:docs": "node_modules/.bin/gulp --gulpfile src/docs/build/gulpfile.js build",
+    "build:playground": "node_modules/.bin/gulp --gulpfile src/playground/build/gulpfile.js build",
     "build:lkg": "ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias --compilerOptions '{\"outDir\": \"lkg\", \"strictNullChecks\": false, \"moduleResolution\": \"Node\", \"module\": \"commonjs\", \"target\": \"ES2015\", \"lib\": [\"ESNext\"]}'"
   },
   "_moduleAliases": {
