@@ -15,6 +15,7 @@
   "scripts": {
     "test": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/mocha/bin/_mocha",
     "cover": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/.bin/nyc npm test",
+    "ci": "npm run build && npm run build:lkg && npm run cover && node lkg/bin/index",
     "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "npm run build:tsr && npm run build:lib",
     "build:tsr": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
