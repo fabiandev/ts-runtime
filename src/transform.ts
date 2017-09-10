@@ -274,14 +274,14 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     }
 
     if (!options.compilerOptions.preserveConstEnums) {
-      const warning = 'Compiler option "preserveConstEnums" was enabled.';
+      const warning = 'Compiler option \'preserveConstEnums\' was enabled.';
       options.compilerOptions.preserveConstEnums = true;
       emit(bus.events.WARN, warning);
       if (options.log) console.warn(warning);
     }
 
     if (!options.compilerOptions.experimentalDecorators) {
-      const warning = 'Compiler option "experimentalDecorators" was enabled.';
+      const warning = 'Compiler option \'experimentalDecorators\' was enabled.';
       options.compilerOptions.experimentalDecorators = true;
       emit(bus.events.WARN, warning);
       if (options.log) console.warn(warning);
