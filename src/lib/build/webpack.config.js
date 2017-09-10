@@ -9,7 +9,7 @@ config.paths = {
 };
 
 config.typescript = {
-  configFileName: './tsconfig.json'
+  configFile: './tsconfig.json'
 };
 
 config.webpack = [

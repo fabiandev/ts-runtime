@@ -28,7 +28,7 @@ config.monaco = {
 config.bundleName = 'app.js';
 
 config.typescript = {
-  configFileName: 'src/playground/tsconfig.json'
+  configFile: 'src/playground/tsconfig.json'
 };
 
 config.replace = {
