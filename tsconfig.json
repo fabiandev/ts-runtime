@@ -16,7 +16,7 @@
     "src/**/*"
   ],
   "exclude": [
-    "src/docs",
+    "src/playground",
     "src/play"
   ]
 }
