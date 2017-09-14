@@ -4,14 +4,29 @@ import { Options } from '../options';
 import { FileReflection } from '../host';
 import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts.js';
 import TransformWorker = require('worker-loader!./worker');
-import runWindowHtml = require('./run.html');
+import runWindowHtmlConsole = require('./run-console.html');
+import runWindowHtmlPlain = require('./run-plain.html');
+
+interface PlaygroundOptions {
+  tsrOptions: Options;
+  compilerOptions: monaco.languages.typescript.CompilerOptions;
+  windowOptions: WindowOptions;
+}
+
+interface WindowOptions {
+  console?: boolean
+}
+
+interface HashValue {
+  editor?: string;
+  options?: PlaygroundOptions;
+}
 
 const worker: Worker = new TransformWorker();
 worker.onmessage = onMessage;
 
-const runWindowCode = runWindowHtml
-  .replace(new RegExp(/__BASE__/), window.location.href.replace(/\/?$/, '/'))
-  .replace(new RegExp(/__VERSION__/g), VERSION);
+const runWindowCodeConsole = prepareWindowCode(runWindowHtmlConsole);
+const runWindowCodePlain = prepareWindowCode(runWindowHtmlPlain);
 
 let tsEditor: monaco.editor.IStandaloneCodeEditor;
 let jsEditor: monaco.editor.IStandaloneCodeEditor;
@@ -25,17 +40,24 @@ const _runText = document.getElementById('run-text')
 const _loading = document.getElementById('loading');
 const _processing = document.getElementById('processing');
 const _optionsToggle = document.getElementById('options-toggle');
-const _options = document.getElementById('options');
 const _consoleContent = document.getElementById('console-content');
+const _options = document.getElementById('options');
+const _optionsList = (Array.prototype.slice.call(_options.getElementsByClassName('option'))).map(v => {
+  return v.firstElementChild as HTMLInputElement | HTMLSelectElement;
+});
 
 let defaultOptions: Options;
-(window as any).tsp = {};
+(window as any).tsp = {
+  options: {}
+};
 
 function setDefaultOptions(): void {
   defaultOptions = {
-    force: true,
-    noAnnotate: false,
-    declarationPrefix: '_',
+    tsrOptions: {
+      force: true,
+      noAnnotate: false,
+      declarationPrefix: '_',
+    },
     compilerOptions: {
       noImplicitAny: false,
       strictNullChecks: true,
@@ -47,11 +69,16 @@ function setDefaultOptions(): void {
       allowNonTsExtensions: true,
       module: monaco.languages.typescript.ModuleKind.ES2015,
       target: monaco.languages.typescript.ScriptTarget.ES2015
+    },
+    windowOptions: {
+      console: true
     }
   };
 }
 
 function bootstrap(): void {
+  (document.getElementById('base') as HTMLBaseElement).href = getBaseHref();
+
   const win = window as any;
   win.require.config({ paths: { vs: MONACO_LOCATION } });
 
@@ -65,23 +92,33 @@ function bootstrap(): void {
 }
 
 function init(): void {
+  const hashValue = getHash();
+
   setDefaultOptions();
   expose();
+
+
+  const defaultValue = hashValue && !!hashValue.editor ? hashValue.editor : [
+    `console.info('ts-runtime v${VERSION}');`,
+    '',
+    'interface Foo<T> {',
+    '    prop: T;',
+    '}',
+    '',
+    'let a: Foo<number> = {',
+    '    prop: \'bar\' as any',
+    '};',
+    ''
+  ].join('\n');
+
+  if (hashValue && hashValue.options) {
+    setOptions(hashValue.options);
+  }
+
   updateCompilerOptions();
 
   tsEditor = monaco.editor.create(_editorTs, {
-    value: [
-      `console.info('ts-runtime v${VERSION}');`,
-      '',
-      'interface Foo<T> {',
-      '    prop: T;',
-      '}',
-      '',
-      'let a: Foo<number> = {',
-      '    prop: \'bar\' as any',
-      '};',
-      ''
-    ].join('\n'),
+    value: defaultValue,
     language: 'typescript',
     automaticLayout: true,
     minimap: {
@@ -147,52 +184,32 @@ function expose() {
 }
 
 function initOptions() {
-  let inputs = document
-    .getElementById('options')
-    .getElementsByClassName('compilerOption') as
-    NodeListOf<HTMLInputElement | HTMLSelectElement>;
+  const inputs = _optionsList;
 
   for (let i = 0; i < inputs.length; i++) {
-    if ((window as any).tsp.options.compilerOptions.hasOwnProperty(inputs[i].name)) {
-      if (inputs[i] instanceof HTMLInputElement) {
-        if ((inputs[i] as HTMLInputElement).type === 'checkbox') {
-          (inputs[i] as HTMLInputElement).checked = !!defaultOptions.compilerOptions[inputs[i].name];
-        } else if ((inputs[i] as HTMLInputElement).type === 'text') {
-          (inputs[i] as HTMLInputElement).value = `${defaultOptions.compilerOptions[inputs[i].name]}`;
-        }
+    let input = inputs[i];
+    let option = input.classList.item(0);
 
-      } else if (inputs[i] instanceof HTMLSelectElement) {
-        (inputs[i] as HTMLSelectElement).value = `${defaultOptions.compilerOptions[inputs[i].name]}`;
+    if (options()[option].hasOwnProperty(input.name)) {
+      if (input instanceof HTMLInputElement) {
+        if ((input as HTMLInputElement).type === 'checkbox') {
+          (input as HTMLInputElement).checked = !!defaultOptions[option][input.name];
+        } else if ((inputs[i] as HTMLInputElement).type === 'text') {
+          (input as HTMLInputElement).value = `${defaultOptions[option][input.name]}`;
+        }
+      } else if (input instanceof HTMLSelectElement) {
+        (input as HTMLSelectElement).value = `${defaultOptions[option][input.name]}`;
       }
     }
 
-    inputs[i].onchange = onCompilerOptionChange;
-  }
-
-  inputs = document
-    .getElementById('options')
-    .getElementsByClassName('tsrOption') as
-    NodeListOf<HTMLInputElement | HTMLSelectElement>;
-
-  for (let i = 0; i < inputs.length; i++) {
-    if ((window as any).tsp.options.hasOwnProperty(inputs[i].name)) {
-      if (inputs[i] instanceof HTMLInputElement) {
-        if ((inputs[i] as HTMLInputElement).type === 'checkbox') {
-          (inputs[i] as HTMLInputElement).checked = !!defaultOptions[inputs[i].name];
-        } else if ((inputs[i] as HTMLInputElement).type === 'text') {
-          (inputs[i] as HTMLInputElement).value = defaultOptions[inputs[i].name];
-        }
-      } else if (inputs[i] instanceof HTMLSelectElement) {
-        (inputs[i] as HTMLSelectElement).value = `${defaultOptions[inputs[i].name]}`;
-      }
-    }
-
-    inputs[i].onchange = onOptionChange;
+    input.onchange = onOptionChange;
   }
 }
 
 function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): any {
-  let value = (window as any).tsp.options[this.name];
+  let option = this.classList.item(0);
+
+  let value = options()[option][this.name];
 
   if (this instanceof HTMLInputElement) {
     if ((this as HTMLInputElement).type === 'checkbox') {
@@ -206,34 +223,18 @@ function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): 
     value = this.value;
   }
 
-  (window as any).tsp.options[this.name] = value;
+  options()[option][this.name] = value;
 
   updateCompilerOptions();
   onCodeChange();
-}
-
-function onCompilerOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): any {
-  let value = (window as any).tsp.options.compilerOptions[this.name];
-
-  if (this instanceof HTMLInputElement) {
-    if ((this as HTMLInputElement).type === 'checkbox') {
-      value = !!(this as HTMLInputElement).checked;
-    } else if ((this as HTMLInputElement).type === 'text') {
-      value = (this as HTMLInputElement).value;
-    }
-  } else if (this instanceof HTMLSelectElement) {
-    value = (this as HTMLSelectElement).value;
-  } else {
-    value = this.value;
-  }
-
-  (window as any).tsp.options.compilerOptions[this.name] = value;
-
-  updateCompilerOptions();
-  onCodeChange();
+  updateHash();
 }
 
 function onCodeChange(event?: monaco.editor.IModelContentChangedEvent): void {
+  if (event !== void 0) {
+    updateHash();
+  }
+
   transform(event);
 }
 
@@ -290,11 +291,15 @@ function transform(event?: monaco.editor.IModelContentChangedEvent): void {
   clearConsole();
   showProcessingIndicator();
 
+  const playgroundOptions = getOptions();
+  const opts = playgroundOptions.tsrOptions;
+  opts.compilerOptions = playgroundOptions.compilerOptions;
+
   worker.postMessage({
     name: 'transform',
     entryFiles: ['src/playground'],
     reflections: modules,
-    options: getOptions()
+    options: opts
   });
 }
 
@@ -333,6 +338,21 @@ function windowUnloaded() {
   _runText.innerText = 'Run in new window';
 }
 
+function updateHash(): void {
+  const value = {
+    editor: tsEditor.getValue(),
+    options: getOptions()
+  };
+
+  window.location.hash = btoa(encodeURIComponent(JSON.stringify(value)));
+}
+
+function getHash(): HashValue {
+  const hash = window.location.hash.substr(1);
+  if (!hash) return {};
+  return JSON.parse(decodeURIComponent(atob(hash)));
+}
+
 function updateJsEditor(text: string): void {
   jsEditor.getModel().setValue(text);
 }
@@ -344,16 +364,44 @@ function updateCompilerOptions(): void {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
 }
 
-function getOptions(): Options {
-  return JSON.parse(JSON.stringify((window as any).tsp.options));
+function setOptions(opts: object, base = (window as any).tsp.options) {
+  for (let k in opts) {
+    if (opts[k] !== null && typeof opts[k] === 'object') {
+      setOptions(opts[k], base[k]);
+    } else {
+      base[k] = opts[k];
+    }
+  }
+}
+
+function options(): PlaygroundOptions {
+  return (window as any).tsp.options;
+}
+
+function getOptions(): PlaygroundOptions {
+  return JSON.parse(JSON.stringify(options()));
 }
 
 function getCompilerOptions(): Options {
-  return JSON.parse(JSON.stringify((window as any).tsp.options.compilerOptions));
+  return JSON.parse(JSON.stringify(options().compilerOptions));
 }
 
-function getWindowCode(): string {
-  return runWindowCode
+function getBaseHref(): string {
+  return window.location.href.split('#')[0].replace(/\/?$/, '/');
+}
+
+function prepareWindowCode(html: string): string {
+  return html
+    .replace(new RegExp(/__BASE__/), getBaseHref())
+    .replace(new RegExp(/__VERSION__/g), '/* @echo VERSION */');
+}
+
+function getWindowCode(html?: string): string {
+  html = html !== void 0
+   ? html : options().windowOptions.console
+   ? runWindowCodeConsole : runWindowCodePlain;
+
+  return html
     .replace(/__CODE__/, sanitizeRunCode(getJsCode()))
     .replace(/__CODE_TSR__/, sanitizeRunCode(getTsrCode()));
 }
