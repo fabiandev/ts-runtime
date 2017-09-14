@@ -8,6 +8,7 @@ import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
 
 interface PlaygroundOptions {
+  [index: string]: any;
   tsrOptions: Options;
   compilerOptions: monaco.languages.typescript.CompilerOptions;
   windowOptions: WindowOptions;
@@ -42,7 +43,7 @@ const _processing = document.getElementById('processing');
 const _optionsToggle = document.getElementById('options-toggle');
 const _consoleContent = document.getElementById('console-content');
 const _options = document.getElementById('options');
-const _optionsList = (Array.prototype.slice.call(_options.getElementsByClassName('option'))).map(v => {
+const _optionsList = (Array.prototype.slice.call(_options.getElementsByClassName('option'))).map((v: Element) => {
   return v.firstElementChild as HTMLInputElement | HTMLSelectElement;
 });
 
@@ -364,7 +365,7 @@ function updateCompilerOptions(): void {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
 }
 
-function setOptions(opts: object, base = (window as any).tsp.options) {
+function setOptions(opts: { [index: string]: any }, base = (window as any).tsp.options) {
   for (let k in opts) {
     if (opts[k] !== null && typeof opts[k] === 'object') {
       setOptions(opts[k], base[k]);
