@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "outDir": "lkg",
+    "strictNullChecks": false,
+    "moduleResolution": "Node",
+    "module": "commonjs",
+    "target": "ES2015",
+    "lib": ["ESNext"]
+  }
+}
