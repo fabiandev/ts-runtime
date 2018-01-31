@@ -523,20 +523,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T")
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T")
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T");
-          return [];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T");
+              return [];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -554,20 +556,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T")
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T")
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T");
-          return [t.property("constructor", t.function(t.return(t.any())))];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T");
+              return [t.property("constructor", t.function(t.return(t.any())))];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -582,20 +586,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T", t.boolean())
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T", t.boolean())
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T", t.boolean());
-          return [];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T", t.boolean());
+              return [];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -613,20 +619,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T", t.boolean())
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T", t.boolean())
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T", t.boolean());
-          return [t.property("constructor", t.function(t.return(t.any())))];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T", t.boolean());
+              return [t.property("constructor", t.function(t.return(t.any())))];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -641,20 +649,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T", void 0, t.boolean(true))
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T", void 0, t.boolean(true))
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T", void 0, t.boolean(true));
-          return [];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T", void 0, t.boolean(true));
+              return [];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -672,20 +682,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T", void 0, t.boolean(true))
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T", void 0, t.boolean(true))
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T", void 0, t.boolean(true));
-          return [t.property("constructor", t.function(t.return(t.any())))];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T", void 0, t.boolean(true));
+              return [t.property("constructor", t.function(t.return(t.any())))];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -700,20 +712,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T", t.boolean(), t.boolean(true))
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T", t.boolean(), t.boolean(true))
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T", t.boolean(), t.boolean(true));
-          return [];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T", t.boolean(), t.boolean(true));
+              return [];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -731,20 +745,22 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T", t.boolean(), t.boolean(true))
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T", t.boolean(), t.boolean(true))
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T", t.boolean(), t.boolean(true));
-          return [t.property("constructor", t.function(t.return(t.any())))];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T", t.boolean(), t.boolean(true));
+              return [t.property("constructor", t.function(t.return(t.any())))];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -765,34 +781,36 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T")
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
-        get prop() {
-          return this._prop__prop;
-        }
-        set prop(prop) {
-          let _propType = this[_FooTypeParametersSymbol].T;
-          t.param("prop", _propType).assert(prop);
-          this._prop__prop = prop;
-        }
-        method(param) {
-          let _paramType = this[_FooTypeParametersSymbol].T;
-          const _returnType = t.return(this[_FooTypeParametersSymbol].T);
-          t.param("param", _paramType).assert(param);
-          return _returnType.assert(param);
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T")
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
+          get prop() {
+              return this._prop__prop;
+          }
+          set prop(prop) {
+              let _propType = this[_FooTypeParametersSymbol].T;
+              t.param("prop", _propType).assert(prop);
+              this._prop__prop = prop;
+          }
+          method(param) {
+              let _paramType = this[_FooTypeParametersSymbol].T;
+              const _returnType = t.return(this[_FooTypeParametersSymbol].T);
+              t.param("param", _paramType).assert(param);
+              return _returnType.assert(param);
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T");
-          return [t.property("prop", T), t.property("method", t.function(t.param("param", T), t.return(T)))];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T");
+              return [t.property("prop", T), t.property("method", t.function(t.param("param", T), t.return(T)))];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -814,34 +832,36 @@ export default () => {
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
       let Foo = class Foo {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T")
-          };
-          this[_FooTypeParametersSymbol] = _typeParameters;
-        }
-        get prop() {
-          return this._prop__prop;
-        }
-        set prop(prop) {
-          let _propType = this[_FooTypeParametersSymbol].T;
-          t.param("prop", _propType).assert(prop);
-          this._prop__prop = prop;
-        }
-        method(param) {
-          let _paramType = this[_FooTypeParametersSymbol].T;
-          const _returnType = t.return(this[_FooTypeParametersSymbol].T);
-          t.param("param", _paramType).assert(param);
-          return _returnType.assert(param);
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T")
+              };
+              this[_FooTypeParametersSymbol] = _typeParameters;
+          }
+          get prop() {
+              return this._prop__prop;
+          }
+          set prop(prop) {
+              let _propType = this[_FooTypeParametersSymbol].T;
+              t.param("prop", _propType).assert(prop);
+              this._prop__prop = prop;
+          }
+          method(param) {
+              let _paramType = this[_FooTypeParametersSymbol].T;
+              const _returnType = t.return(this[_FooTypeParametersSymbol].T);
+              t.param("param", _paramType).assert(param);
+              return _returnType.assert(param);
+          }
       };
-      Foo[t.TypeParametersSymbol] = _FooTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Foo[_a] = _FooTypeParametersSymbol;
       Foo = __decorate([
-        t.annotate(t.class("Foo", Foo => {
-          const T = Foo.typeParameter("T");
-          return [t.property("constructor", t.function(t.return(t.any()))), t.property("prop", T), t.property("method", t.function(t.param("param", T), t.return(T)))];
-        }))
-      ], Foo);`;
+          t.annotate(t.class("Foo", Foo => {
+              const T = Foo.typeParameter("T");
+              return [t.property("constructor", t.function(t.return(t.any()))), t.property("prop", T), t.property("method", t.function(t.param("param", T), t.return(T)))];
+          }))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -858,29 +878,31 @@ export default () => {
 
       const _BarTypeParametersSymbol = Symbol("BarTypeParameters");
       let Bar = class Bar {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T")
-          };
-          this[_BarTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T")
+              };
+              this[_BarTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Bar[t.TypeParametersSymbol] = _BarTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Bar[_a] = _BarTypeParametersSymbol;
       Bar = __decorate([
-        t.annotate(t.class("Bar", Bar => {
-          const T = Bar.typeParameter("T");
-          return [];
-        }))
+          t.annotate(t.class("Bar", Bar => {
+              const T = Bar.typeParameter("T");
+              return [];
+          }))
       ], Bar);
       let Foo = class Foo extends Bar {
-        constructor(...args) {
-          super(...args);
-          t.bindTypeParameters(this, t.string());
-        }
+          constructor(...args) {
+              super(...args);
+              t.bindTypeParameters(this, t.string());
+          }
       };
       Foo = __decorate([
-        t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string()))))
-      ], Foo);`;
+          t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string()))))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
@@ -903,29 +925,31 @@ export default () => {
 
       const _BarTypeParametersSymbol = Symbol("BarTypeParameters");
       let Bar = class Bar {
-        constructor() {
-          const _typeParameters = {
-            T: t.typeParameter("T")
-          };
-          this[_BarTypeParametersSymbol] = _typeParameters;
-        }
+          constructor() {
+              const _typeParameters = {
+                  T: t.typeParameter("T")
+              };
+              this[_BarTypeParametersSymbol] = _typeParameters;
+          }
       };
-      Bar[t.TypeParametersSymbol] = _BarTypeParametersSymbol;
+      _a = t.TypeParametersSymbol;
+      Bar[_a] = _BarTypeParametersSymbol;
       Bar = __decorate([
-        t.annotate(t.class("Bar", Bar => {
-          const T = Bar.typeParameter("T");
-          return [t.property("constructor", t.function(t.return(t.any())))];
-        }))
+          t.annotate(t.class("Bar", Bar => {
+              const T = Bar.typeParameter("T");
+              return [t.property("constructor", t.function(t.return(t.any())))];
+          }))
       ], Bar);
       let Foo = class Foo extends Bar {
-        constructor() {
-          super();
-          t.bindTypeParameters(this, t.string());
-        }
+          constructor() {
+              super();
+              t.bindTypeParameters(this, t.string());
+          }
       };
       Foo = __decorate([
-        t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string())), t.property("constructor", t.function(t.return(t.any())))))
-      ], Foo);`;
+          t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string())), t.property("constructor", t.function(t.return(t.any())))))
+      ], Foo);
+      var _a;`;
 
       const result = util.transform(input);
 
