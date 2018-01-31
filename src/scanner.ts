@@ -191,7 +191,7 @@ export class Scanner {
       return (node as any).type as ts.TypeNode;
     }
 
-    return this.checker.typeToTypeNode(type, enclosing || node);
+    return this.checker.typeToTypeNode(type, enclosing);
   }
 
   public getBaseType(type: ts.Type): ts.Type {
