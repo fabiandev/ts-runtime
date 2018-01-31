@@ -361,7 +361,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     return commonDir;
   }
 
-  function check(diagnostics: ts.Diagnostic[], log = false, report = true): boolean {
+  function check(diagnostics: ts.Diagnostic[] | ReadonlyArray<ts.Diagnostic>, log = false, report = true): boolean {
     if (diagnostics && diagnostics.length > 0) {
 
       if (report) {
