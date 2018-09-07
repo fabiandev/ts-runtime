@@ -9,13 +9,11 @@
     "module": "commonjs",
     "target": "ES5",
     "moduleResolution": "node",
-    "declaration": false,
-    "sourceMap": true,
     "lib": [
-      "ES2015",
-      "DOM",
-      "ScriptHost",
-      "WebWorker"
+      "es2015",
+      "dom",
+      "scripthost",
+      "webworker"
     ]
   },
   "include": [

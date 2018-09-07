@@ -5,6 +5,6 @@
     "moduleResolution": "Node",
     "module": "commonjs",
     "target": "ES2015",
-    "lib": ["ESNext"]
+    "lib": ["esnext"]
   }
 }
