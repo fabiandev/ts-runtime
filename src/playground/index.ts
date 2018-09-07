@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
 import { FileReflection } from '../host';
-import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts.js';
+import { lib_es2015_dts as lib } from 'monaco-typescript/src/lib/lib';
 import TransformWorker = require('worker-loader!./worker');
 import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
@@ -221,6 +221,7 @@ function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): 
   } else if (this instanceof HTMLSelectElement) {
     value = (this as HTMLSelectElement).value;
   } else {
+    // @ts-ignore
     value = this.value;
   }
 
