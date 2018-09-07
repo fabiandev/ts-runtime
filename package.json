@@ -35,7 +35,7 @@
     "pretty-time": "^0.2.0",
     "regenerator-runtime": "^0.11.1",
     "rimraf": "^2.6.1",
-    "typescript": "^2.4.1"
+    "typescript": "^3.0.3"
   },
   "devDependencies": {
     "@types/expect.js": "^0.3.29",
