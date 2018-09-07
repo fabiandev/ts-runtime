@@ -9,7 +9,7 @@ import { Options } from '../src/options';
 import { MutationContext } from '../src/context';
 import { Host, FileReflection } from '../src/host';
 
-let es6Lib: string;
+const DEFAULT_LIBS = libs(['es2015']);
 
 export function program(host: Host, compilerOptions = options().compilerOptions): ts.Program {
   return ts.createProgram(['src/module.ts'], compilerOptions, host);
@@ -74,13 +74,33 @@ export function expectError(fn: () => any): void {
   });
 }
 
-export function lib(): string {
-  if (es6Lib) return es6Lib;
+export function libs(libs?: string[], defaultLib?: string): {name: string, text: string}[] {
+  if (!libs) {
+    return DEFAULT_LIBS;
+  }
 
-  return fs.readFileSync(
-    require.resolve('typescript/lib/lib.es6.d.ts'),
-    { encoding: 'utf8' }
-  );
+  const rootNames = libs.map(lib => require.resolve(`typescript/lib/lib.${lib}.d.ts`));
+
+  const options = ts.getDefaultCompilerOptions();
+  const host = ts.createCompilerHost(options, true);
+  const program = ts.createProgram(rootNames, options, host);
+
+  const reflections = program.getSourceFiles().map(sf => ({
+    name: libs.length === 1 || sf.fileName === defaultLib ? 'lib.d.ts' : sf.fileName,
+    text: sf.getFullText()
+  }));
+
+  if (defaultLib || libs.length === 0) {
+      reflections.push({
+        name: 'lib.d.ts',
+        text: [
+          `/// <reference no-default-lib="true"/>`,
+          `/// <reference lib="${libs.length === 0 ? libs[0] : defaultLib}" />`
+        ].join(ts.sys.newLine)
+      });
+  }
+
+  return reflections;
 }
 
 export function options(): Options {
@@ -101,10 +121,8 @@ export function reflect(input: string, name?: string): [string, FileReflection[]
     {
       name: name || 'src/module.ts',
       text: input
-    }, {
-      name: 'lib.d.ts',
-      text: lib()
-    }
+    },
+    ...libs()
   ];
 
   return [name || 'src/module.ts', fileReflections, options()];
