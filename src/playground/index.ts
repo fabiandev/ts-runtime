@@ -2,10 +2,12 @@ import * as ts from 'typescript';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
 import { FileReflection } from '../host';
-import { lib_es2015_dts as lib } from 'monaco-typescript/src/lib/lib';
+import { lib_es2015_dts, lib_dom_dts  } from 'monaco-typescript/src/lib/lib';
 import TransformWorker = require('worker-loader!./worker');
 import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
+
+const lib = lib_es2015_dts + "" + lib_dom_dts;
 
 interface PlaygroundOptions {
   [index: string]: any;
