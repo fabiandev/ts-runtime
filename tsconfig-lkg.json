@@ -2,9 +2,13 @@
   "compilerOptions": {
     "outDir": "lkg",
     "strictNullChecks": false,
-    "moduleResolution": "Node",
+    "moduleResolution": "node",
     "module": "commonjs",
-    "target": "ES2015",
-    "lib": ["esnext"]
+    "target": "es6",
+    "lib": ["es6"],
+    "typeRoots": [
+      "node_modules/@types",
+      "src/types"
+    ]
   }
 }
