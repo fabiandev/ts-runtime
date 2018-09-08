@@ -18,6 +18,7 @@
     "ci": "npm run build && node lkg/bin/index && npm run build:lkg && node lkg/bin/index && npm run cover",
     "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "npm run build:tsr && npm run build:lib",
+    "build:dist": "npm run build:tsr && npm run:build:lib && npm run build:playground",
     "build:tsr": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:lib": "node_modules/.bin/webpack --config src/lib/build/webpack.config.js",
     "build:playground": "node_modules/.bin/gulp --gulpfile src/playground/build/gulpfile.js build",
