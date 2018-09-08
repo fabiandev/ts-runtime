@@ -1,8 +1,8 @@
 language: node_js
 node_js:
 - "6"
-- "7"
 - "8"
+- "10"
 cache:
   yarn: true
 install:
@@ -14,3 +14,4 @@ script:
   - node lkg/bin/index
 after_success:
   - yarn coveralls
+  
