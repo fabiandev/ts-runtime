@@ -101,6 +101,13 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
       return;
     }
 
+    if (options.compilerOptions.declaration) {
+      options.compilerOptions.emitDeclarationOnly = true;
+      program.emit();
+      options.compilerOptions.declaration = false;
+      options.compilerOptions.emitDeclarationOnly = false;
+    }
+
     const sourceFiles = program.getSourceFiles().filter(sf => !sf.isDeclarationFile);
     emit(bus.events.SCAN, getElapsedTime());
     scanner = new Scanner(program, options);
@@ -277,8 +284,15 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     }
 
     if (options.compilerOptions.noEmitOnError) {
-      const warning = 'Compiler option \'noEmitOnError\' is the default behavior of ts-runtime.';
+      const warning = 'Compiler option \'noEmitOnError\' is the default behavior.';
       options.compilerOptions.noEmitOnError = false;
+      emit(bus.events.WARN, warning);
+      if (options.log) console.warn(warning);
+    }
+
+    if (!options.compilerOptions.preserveConstEnums) {
+      const warning = 'Compiler option \'emitDeclarationOnly\' is not supported.';
+      options.compilerOptions.preserveConstEnums = true;
       emit(bus.events.WARN, warning);
       if (options.log) console.warn(warning);
     }
