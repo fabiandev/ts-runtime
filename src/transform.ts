@@ -5,7 +5,6 @@ import * as commondir from 'commondir';
 import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
-import { ProgramError } from './errors';
 import { MutationContext } from './context';
 import { getMutators } from './mutators';
 import { Host, FileReflection } from './host';
@@ -83,7 +82,11 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     program = ts.createProgram(resolvedEntryFiles, options.compilerOptions, host);
     const { diagnostics, optionsDiagnostics, syntacticDiagnostics } = getDiagnostics();
 
-    if (!check(diagnostics, options.log) && !options.force) {
+    if (options.compilerOptions.noEmitOnError === false) {
+      options.force = true;
+    }
+
+    if (!check(diagnostics, options.log) && (!options.force)) {
       emit(bus.events.STOP);
       return;
     }
@@ -124,7 +127,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     }
 
     host = getHostFromTransformationResult(result);
-    program = ts.createProgram(resolvedEntryFiles, options.compilerOptions, host, undefined);
+    program = ts.createProgram(resolvedEntryFiles, {...options.compilerOptions, noEmitOnError: false}, host, undefined);
 
     const { diagnostics } = program.emit();
 
@@ -271,6 +274,13 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
       options.compilerOptions.rootDir = path.resolve(options.compilerOptions.rootDir);
     } else {
       options.compilerOptions.rootDir = commonDir;
+    }
+
+    if (options.compilerOptions.noEmitOnError) {
+      const warning = 'Compiler option \'noEmitOnError\' is the default behavior of ts-runtime.';
+      options.compilerOptions.noEmitOnError = false;
+      emit(bus.events.WARN, warning);
+      if (options.log) console.warn(warning);
     }
 
     if (!options.compilerOptions.preserveConstEnums) {
