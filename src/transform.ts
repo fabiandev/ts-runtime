@@ -134,7 +134,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     }
 
     host = getHostFromTransformationResult(result);
-    program = ts.createProgram(resolvedEntryFiles, {...options.compilerOptions, noEmitOnError: false}, host, undefined);
+    program = ts.createProgram(resolvedEntryFiles, {...options.compilerOptions, noEmitOnError: false}, host, program);
 
     const { diagnostics } = program.emit();
 
@@ -221,6 +221,9 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     }
   }
 
+  // TODO: add source map range in mutators
+  // TODO: infer implicit types and add to global declarations immediately
+  // TODO: support (recursive) opt-in only mode via verify<FooType>(value);
   function transformer(transformationContext: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     const visitor: ts.Visitor = (node: ts.Node): ts.Node => {
       const original = node;
