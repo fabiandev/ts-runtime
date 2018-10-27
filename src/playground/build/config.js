@@ -55,7 +55,12 @@ config.webpack = [{
   },
   output: {
     filename: config.bundleName,
+    chunkFilename: '[chunkhash].[name].js',
     path: path.join(__dirname, config.paths.dest)
+  },
+  performance: {
+    maxEntrypointSize: 250000,
+    maxAssetSize: 2560000
   },
   devtool: 'source-map',
   resolve: {
@@ -98,8 +103,18 @@ config.webpack = [{
     new webpack.DefinePlugin(Object.keys(config.replace).reduce(function(previous, current) {
       previous[current] = JSON.stringify(config.replace[current]);
       return previous;
-    }, {}))
-  ]
+    }, {})),
+    new webpack.ContextReplacementPlugin(
+      /node_modules(\\|\/)typescript(\\|\/)lib/,
+      path.join(__dirname, config.paths.src),
+      {}
+  )
+  ],
+  optimization: {
+    splitChunks: {
+      automaticNameDelimiter: '.'
+    }
+  }
 }, {
   mode: 'production',
   entry: path.normalize(path.join(__dirname, config.paths.root, 'src/lib/index.ts')),
