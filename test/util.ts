@@ -74,7 +74,7 @@ export function expectError(fn: () => any): void {
   });
 }
 
-export function libs(libs?: string[], defaultLib?: string): {name: string, text: string}[] {
+export function libs(libs?: string[]): {name: string, text: string}[] {
   if (!libs) {
     return DEFAULT_LIBS;
   }
@@ -86,19 +86,17 @@ export function libs(libs?: string[], defaultLib?: string): {name: string, text:
   const program = ts.createProgram(rootNames, options, host);
 
   const reflections = program.getSourceFiles().map(sf => ({
-    name: libs.length === 1 || sf.fileName === defaultLib ? 'lib.d.ts' : sf.fileName,
+    name: sf.fileName,
     text: sf.getFullText()
   }));
 
-  if (defaultLib || libs.length === 0) {
-      reflections.push({
-        name: 'lib.d.ts',
-        text: [
-          `/// <reference no-default-lib="true"/>`,
-          `/// <reference lib="${libs.length === 0 ? libs[0] : defaultLib}" />`
-        ].join(ts.sys.newLine)
-      });
-  }
+  reflections.push({
+    name: require.resolve(`typescript/lib/lib.d.ts`),
+    text: [
+      `/// <reference no-default-lib="true"/>`,
+      ...libs.map(lib => `/// <reference lib="${lib}" />`)
+    ].join(ts.sys.newLine)
+  });
 
   return reflections;
 }
