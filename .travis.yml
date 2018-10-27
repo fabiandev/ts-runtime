@@ -14,4 +14,3 @@ script:
   - node lkg/bin/index
 after_success:
   - yarn coveralls
-  
