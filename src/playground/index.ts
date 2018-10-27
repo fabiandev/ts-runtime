@@ -1,13 +1,18 @@
-import * as ts from 'typescript';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
 import { FileReflection } from '../host';
-import { lib_es2015_dts, lib_dom_dts  } from 'monaco-typescript/src/lib/lib';
 import TransformWorker = require('worker-loader!./worker');
 import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
 
-const lib = lib_es2015_dts + "" + lib_dom_dts;
+let lib = '';
+require.ensure(['monaco-typescript/src/lib/lib'], require => {
+  const libs = require('monaco-typescript/src/lib/lib');
+  lib = libs.lib_es2015_dts + "" + libs.lib_dom_dts;
+  bootstrap();
+}, error => {
+  console.error('Could not not load lib declarations:', error);
+}, 'tslibs');
 
 interface PlaygroundOptions {
   [index: string]: any;
@@ -283,7 +288,7 @@ function onMessage(e: MessageEvent) {
 function transform(event?: monaco.editor.IModelContentChangedEvent): void {
   const modules = [
     {
-      name: 'lib.d.ts',
+      name: 'node_modules/typescript/lib/lib.d.ts',
       text: lib
     },
     {
@@ -576,5 +581,3 @@ function find<T>(input: T[], test: (element: T) => boolean): T {
 
   return null;
 }
-
-bootstrap();
