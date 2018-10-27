@@ -1160,7 +1160,7 @@ export class Factory {
 
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
       const body = ts.createBlock([ts.createReturn(node.body)], true)
-      node = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, body);
+      node = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body);
     }
 
     const bodyDeclarations: ts.Statement[] = [];
@@ -1272,7 +1272,7 @@ export class Factory {
         break;
       case ts.SyntaxKind.ArrowFunction:
         method = ts.updateArrowFunction(
-          node, node.modifiers, node.typeParameters, node.parameters, node.type, body
+          node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body
         );
         break;
     }
