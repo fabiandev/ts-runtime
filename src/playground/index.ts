@@ -107,8 +107,6 @@ function init(): void {
 
 
   const defaultValue = hashValue && !!hashValue.editor ? hashValue.editor : [
-    `console.info('ts-runtime v${VERSION}');`,
-    '',
     'interface Foo<T> {',
     '    prop: T;',
     '}',
