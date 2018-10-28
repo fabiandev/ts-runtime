@@ -1,6 +1,6 @@
 {
   "name": "ts-runtime",
-  "version": "0.1.35",
+  "version": "0.2.0",
   "description": "Runtime Type Checks for TypeScript",
   "main": "index.js",
   "bin": {
