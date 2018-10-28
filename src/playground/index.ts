@@ -1,11 +1,18 @@
-import * as ts from 'typescript';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
 import { FileReflection } from '../host';
-import { contents as lib } from 'monaco-typescript/lib/lib-es6-ts.js';
 import TransformWorker = require('worker-loader!./worker');
 import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
+
+let lib = '';
+require.ensure(['monaco-typescript/src/lib/lib'], require => {
+  const libs = require('monaco-typescript/src/lib/lib');
+  lib = libs.lib_es2015_dts + "" + libs.lib_dom_dts;
+  bootstrap();
+}, error => {
+  console.error('Could not not load lib declarations:', error);
+}, 'tslibs');
 
 interface PlaygroundOptions {
   [index: string]: any;
@@ -100,8 +107,6 @@ function init(): void {
 
 
   const defaultValue = hashValue && !!hashValue.editor ? hashValue.editor : [
-    `console.info('ts-runtime v${VERSION}');`,
-    '',
     'interface Foo<T> {',
     '    prop: T;',
     '}',
@@ -221,6 +226,7 @@ function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): 
   } else if (this instanceof HTMLSelectElement) {
     value = (this as HTMLSelectElement).value;
   } else {
+    // @ts-ignore
     value = this.value;
   }
 
@@ -280,7 +286,7 @@ function onMessage(e: MessageEvent) {
 function transform(event?: monaco.editor.IModelContentChangedEvent): void {
   const modules = [
     {
-      name: 'lib.d.ts',
+      name: 'node_modules/typescript/lib/lib.d.ts',
       text: lib
     },
     {
@@ -573,5 +579,3 @@ function find<T>(input: T[], test: (element: T) => boolean): T {
 
   return null;
 }
-
-bootstrap();

@@ -544,12 +544,12 @@ export default () => {
         expect(result).ok();
       });
 
-      // should be removed?
-      it('should reflect named EnumMember', () => {
-        const node = ts.createEnumMember('foo')
-        const result = factory.namedDeclarationReflection('foo.__UID__', node, 'foo');
-        expect(result).ok();
-      });
+      // requires the emitNode
+      // it('should reflect named EnumMember', () => {
+      //   const node = ts.createEnumMember('foo')
+      //   const result = factory.namedDeclarationReflection('foo.__UID__', node, 'foo');
+      //   expect(result).ok();
+      // });
 
       it('should reflect named FunctionDeclaration', () => {
         const node = ts.createFunctionDeclaration(void 0, void 0, void 0, 'foo', void 0, [], void 0, ts.createBlock([]));
@@ -577,33 +577,36 @@ export default () => {
       });
     });
 
-    describe('#enumReflection', () => {
-      it('should reflect EnumDeclaration', () => {
-        const node = ts.createEnumDeclaration(void 0, void 0, 'Foo', [ ts.createEnumMember('foo', ts.createLiteral(0)), ts.createEnumMember('bar') ]);
-        const result = factory.enumReflection(node);
-        expect(result).ok();
-      });
-    });
+    // requires emitNode
+    // describe('#enumReflection', () => {
+    //   it('should reflect EnumDeclaration', () => {
+    //     const node = ts.createEnumDeclaration(void 0, void 0, 'Foo', [ ts.createEnumMember('foo', ts.createLiteral(0)), ts.createEnumMember('bar') ]);
+    //     const result = factory.enumReflection(node);
+    //     expect(result).ok();
+    //   });
+    // });
 
-    describe('#enumMemberReflection', () => {
-      it('should reflect EnumMember', () => {
-        const node = ts.createEnumMember('foo');
-        const result = factory.enumMemberReflection(node);
-        expect(result).ok();
-      });
+    // requires emitNode
+    // describe('#enumMemberReflection', () => {
+    //   it('should reflect EnumMember', () => {
+    //     const node = ts.createEnumMember('foo');
+    //     const result = factory.enumMemberReflection(node);
+    //     expect(result).ok();
+    //   });
 
-      it('should reflect EnumMember with numeric initializer', () => {
-        const node = ts.createEnumMember('foo', ts.createLiteral(0));
-        const result = factory.enumMemberReflection(node);
-        expect(result).ok();
-      });
+    //   it('should reflect EnumMember with numeric initializer', () => {
+    //     const node = ts.createEnumMember('foo', ts.createLiteral(0));
+    //     const result = factory.enumMemberReflection(node);
+    //     expect(result).ok();
+    //   });
 
-      it('should reflect EnumMember with string initializer', () => {
-        const node = ts.createEnumMember('foo', ts.createLiteral('bar'));
-        const result = factory.enumMemberReflection(node);
-        expect(result).ok();
-      });
-    });
+      
+    //   it('should reflect EnumMember with string initializer', () => {
+    //     const node = ts.createEnumMember('foo', ts.createLiteral('bar'));
+    //     const result = factory.enumMemberReflection(node);
+    //     expect(result).ok();
+    //   });
+    // });
 
     describe('#variableReflection', () => {
       it('should reflect VariableDeclaration', () => {

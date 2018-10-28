@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const UglifyJsWebpackPlugin = require('uglifyjs-webpack-plugin');
 
 const config = {};
 
@@ -14,6 +15,7 @@ config.typescript = {
 
 config.webpack = [
   {
+    mode: 'production',
     entry: {
       'ts-runtime.lib': path.normalize(path.join(__dirname, config.paths.src, 'index.ts')),
       'ts-runtime.lib.min': path.normalize(path.join(__dirname, config.paths.src, 'index.ts'))
@@ -50,7 +52,7 @@ config.webpack = [
         }
       ]
     },
-    plugins: [new webpack.optimize.UglifyJsPlugin({include: /\.min\.js$/, sourceMap: true})]
+    plugins: [new UglifyJsWebpackPlugin({include: /\.min\.js$/, sourceMap: true})]
   }
 ];
 

@@ -1,1 +1,2 @@
-/// <reference path="../../../node_modules/monaco-editor/monaco.d.ts" />
+import * as monaco from 'monaco-editor';
+declare var monaco: typeof monaco;

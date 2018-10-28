@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const UglifyJsWebpackPlugin = require('uglifyjs-webpack-plugin');
 const pkg = require('../../../package.json');
 const config = {};
 
@@ -28,7 +29,13 @@ config.monaco = {
 config.bundleName = 'app.js';
 
 config.typescript = {
-  configFile: 'src/playground/tsconfig.json'
+  app: {
+    allowTsInNodeModules: true,
+    configFile: 'src/playground/tsconfig.json'
+  },
+  lib: {
+    configFile: 'src/playground/tsconfig.lib.json' 
+  }
 };
 
 config.replace = {
@@ -42,12 +49,18 @@ config.replace = {
 };
 
 config.webpack = [{
+  mode: 'production',
   entry: {
     bundle: path.normalize(path.join(__dirname, config.paths.src, 'index.ts'))
   },
   output: {
     filename: config.bundleName,
+    chunkFilename: '[chunkhash].[name].js',
     path: path.join(__dirname, config.paths.dest)
+  },
+  performance: {
+    maxEntrypointSize: 250000,
+    maxAssetSize: 2560000
   },
   devtool: 'source-map',
   resolve: {
@@ -56,29 +69,29 @@ config.webpack = [{
   module: {
     rules: [
       {
-        test: /^rimraf$/,
-        use: 'null-loader'
-      }, {
-        test: /^pretty-time$/,
-        use: 'null-loader'
-      }, {
-        test: /\.js$/,
-        use: ["source-map-loader"],
-        enforce: "pre"
-      }, {
-        test: /\.tsx?$/,
-        exclude: /\.d\.ts$/,
-        use: ["source-map-loader"],
-        enforce: "pre"
-      }, {
         test: /\.tsx?$/,
         exclude: /\.d\.ts$/,
         loader: 'ts-loader',
-        options: config.typescript
-      }, {
+        options: config.typescript.app
+      },
+      {
+        test: /\.(js|d\.ts)$/,
+        use: ['source-map-loader'],
+        enforce: 'pre',
+        exclude: /node_modules/
+      },
+      {
         test: /\.html/,
         use: 'raw-loader'
-      }
+      },
+      {
+        test: /^rimraf$/,
+        use: 'null-loader'
+      },
+      {
+        test: /^pretty-time$/,
+        use: 'null-loader'
+      },
     ]
   },
   node: {
@@ -87,13 +100,23 @@ config.webpack = [{
     module: 'empty'
   },
   plugins: [
-    new webpack.optimize.UglifyJsPlugin({sourceMap: true}),
     new webpack.DefinePlugin(Object.keys(config.replace).reduce(function(previous, current) {
       previous[current] = JSON.stringify(config.replace[current]);
       return previous;
-    }, {}))
-  ]
+    }, {})),
+    new webpack.ContextReplacementPlugin(
+      /node_modules(\\|\/)typescript(\\|\/)lib/,
+      path.join(__dirname, config.paths.src),
+      {}
+  )
+  ],
+  optimization: {
+    splitChunks: {
+      automaticNameDelimiter: '.'
+    }
+  }
 }, {
+  mode: 'production',
   entry: path.normalize(path.join(__dirname, config.paths.root, 'src/lib/index.ts')),
   output: {
     filename: 'ts-runtime.lib.js',
@@ -108,24 +131,24 @@ config.webpack = [{
   module: {
     rules: [
       {
-        test: /\.js$/,
-        use: ["source-map-loader"],
-        enforce: "pre"
-      }, {
-        test: /\.tsx?$/,
-        use: ["source-map-loader"],
-        enforce: "pre"
-      }, {
         test: /\.tsx?$/,
         exclude: /\.d\.ts$/,
         loader: 'ts-loader',
-        options: config.typescript
+        options: config.typescript.lib
+      },
+      {
+        test: /\.(js|tsc)$/,
+        use: ['source-map-loader'],
+        enforce: 'pre',
+        exclude: /node_modules/
       }
     ]
   },
-  plugins: [
-    new webpack.optimize.UglifyJsPlugin({sourceMap: true})
-  ]
+  optimization: {
+    minimizer: [
+      new UglifyJsWebpackPlugin({sourceMap: true})
+    ]
+  }
 }];
 
 module.exports = config;

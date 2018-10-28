@@ -414,6 +414,7 @@ export default () => {
       }`;
 
       const expected = `
+      var Foo_1;
       import t from "ts-runtime/lib";
 
       let Foo = Foo_1 = class Foo {
@@ -428,8 +429,7 @@ export default () => {
       };
       Foo = Foo_1 = __decorate([
         t.annotate(t.class("Foo", t.staticProperty("prop", t.string())))
-      ], Foo);
-      var Foo_1;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -443,6 +443,7 @@ export default () => {
       }`;
 
       const expected = `
+      var Foo_1;
       import t from "ts-runtime/lib";
 
       let Foo = Foo_1 = class Foo {
@@ -458,8 +459,7 @@ export default () => {
       Foo._prop__prop = t.string().assert('bar');
       Foo = Foo_1 = __decorate([
         t.annotate(t.class("Foo", t.staticProperty("prop", t.string())))
-      ], Foo);
-      var Foo_1;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -473,6 +473,7 @@ export default () => {
       }`;
 
       const expected = `
+      var Foo_1;
       import t from "ts-runtime/lib";
 
       let Foo = Foo_1 = class Foo {
@@ -482,8 +483,7 @@ export default () => {
       };
       Foo = Foo_1 = __decorate([
         t.annotate(t.class("Foo", t.staticProperty("prop", t.string())))
-      ], Foo);
-      var Foo_1;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -497,6 +497,7 @@ export default () => {
       }`;
 
       const expected = `
+      var Foo_1;
       import t from "ts-runtime/lib";
 
       let Foo = Foo_1 = class Foo {
@@ -507,8 +508,7 @@ export default () => {
       Foo._prop__prop = t.string().assert('bar');
       Foo = Foo_1 = __decorate([
         t.annotate(t.class("Foo", t.staticProperty("prop", t.string())))
-      ], Foo);
-      var Foo_1;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -519,6 +519,7 @@ export default () => {
       const input = `class Foo<T> { }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -537,8 +538,7 @@ export default () => {
               const T = Foo.typeParameter("T");
               return [];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -552,6 +552,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -570,8 +571,7 @@ export default () => {
               const T = Foo.typeParameter("T");
               return [t.property("constructor", t.function(t.return(t.any())))];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -582,6 +582,7 @@ export default () => {
       const input = `class Foo<T extends boolean> { }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -600,8 +601,7 @@ export default () => {
               const T = Foo.typeParameter("T", t.boolean());
               return [];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -615,6 +615,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -633,8 +634,7 @@ export default () => {
               const T = Foo.typeParameter("T", t.boolean());
               return [t.property("constructor", t.function(t.return(t.any())))];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -645,6 +645,7 @@ export default () => {
       const input = `class Foo<T = true> { }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -663,8 +664,7 @@ export default () => {
               const T = Foo.typeParameter("T", void 0, t.boolean(true));
               return [];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -678,6 +678,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -696,8 +697,7 @@ export default () => {
               const T = Foo.typeParameter("T", void 0, t.boolean(true));
               return [t.property("constructor", t.function(t.return(t.any())))];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -708,6 +708,7 @@ export default () => {
       const input = `class Foo<T extends boolean = true> { }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -726,8 +727,7 @@ export default () => {
               const T = Foo.typeParameter("T", t.boolean(), t.boolean(true));
               return [];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -741,6 +741,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -759,8 +760,7 @@ export default () => {
               const T = Foo.typeParameter("T", t.boolean(), t.boolean(true));
               return [t.property("constructor", t.function(t.return(t.any())))];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -777,6 +777,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -809,8 +810,7 @@ export default () => {
               const T = Foo.typeParameter("T");
               return [t.property("prop", T), t.property("method", t.function(t.param("param", T), t.return(T)))];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -828,6 +828,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _FooTypeParametersSymbol = Symbol("FooTypeParameters");
@@ -860,8 +861,7 @@ export default () => {
               const T = Foo.typeParameter("T");
               return [t.property("constructor", t.function(t.return(t.any()))), t.property("prop", T), t.property("method", t.function(t.param("param", T), t.return(T)))];
           }))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -874,6 +874,7 @@ export default () => {
       class Foo extends Bar<string> { }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _BarTypeParametersSymbol = Symbol("BarTypeParameters");
@@ -901,8 +902,7 @@ export default () => {
       };
       Foo = __decorate([
           t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string()))))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 
@@ -921,6 +921,7 @@ export default () => {
       }`;
 
       const expected = `
+      var _a;
       import t from "ts-runtime/lib";
 
       const _BarTypeParametersSymbol = Symbol("BarTypeParameters");
@@ -948,8 +949,7 @@ export default () => {
       };
       Foo = __decorate([
           t.annotate(t.class("Foo", t.extends(t.ref(Bar, t.string())), t.property("constructor", t.function(t.return(t.any())))))
-      ], Foo);
-      var _a;`;
+      ], Foo);`;
 
       const result = util.transform(input);
 

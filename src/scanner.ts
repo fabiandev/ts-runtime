@@ -148,6 +148,10 @@ export class Scanner {
     return this.declarations;
   }
 
+  public getSymbols(): Map<ts.Node, ts.Symbol> {
+    return this.symbols;
+  }
+
   public getIdentifiers(sf: ts.SourceFile): Set<string> {
     return this.identifiers.get(this.getAliasedNode(sf) as ts.SourceFile);
   }
@@ -208,6 +212,11 @@ export class Scanner {
   }
 
   private scanNode(node: ts.Node): ts.Node {
+    if (ts.isParameter(node) && node.name) {
+      this.mapNode(node, node.name);
+      return this.scanNode(node.name)
+    }
+
     if (ts.isIdentifier(node)) {
       const sf = node.getSourceFile();
 
@@ -224,7 +233,7 @@ export class Scanner {
     // );
     //
 
-    let nodeSymbol = this.checker.getSymbolAtLocation((node as any).name || node);
+    let nodeSymbol = this.checker.getSymbolAtLocation(node);
 
     if (nodeSymbol) {
       this.symbols.set(node, nodeSymbol);
@@ -238,7 +247,8 @@ export class Scanner {
     node = this.getMappedNode(node);
     const typeInfo = new TypeInfo(this, node);
 
-    if (typeInfo.isTsrDeclaration()) {
+    // TODO: improve check if a declaration should be added
+    if (typeInfo.isTsrDeclaration() && !ts.isParameter(node.parent)) {
       this.addDeclaration(typeInfo.symbol, typeInfo.fileNames[0]);
     }
 

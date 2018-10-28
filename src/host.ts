@@ -11,8 +11,8 @@ export class Host implements ts.CompilerHost {
   private fileMap: Map<string, ts.SourceFile> = new Map();
   private outputs: Map<string, string> = new Map();
 
-  private defaultLibFileName = 'lib.d.ts';
-  private defaultLibLocation = '';
+  private defaultLibFileName = 'node_modules/typescript/lib/lib.d.ts';
+  private defaultLibLocation = 'node_modules/typescript/lib/';
   private currentDirectory = '';
   private caseSensitiveFileNames = false;
   private newLine = '\n';

@@ -5,7 +5,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2016", "dom", "webworker", "scripthost"],
+    "lib": ["es6"],
     "moduleResolution": "node",
     "target": "es5",
     "noImplicitAny": true,
@@ -18,5 +18,9 @@
   "exclude": [
     "src/playground",
     "src/play"
+  ],
+  "typeRoots": [
+    "node_modules/@types",
+    "src/types"
   ]
 }
