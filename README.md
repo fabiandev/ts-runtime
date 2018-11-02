@@ -458,7 +458,7 @@ have a look at the options.
 - Types with self references and generics are not asserted correctly.
 - No class expressions (`const A = class { }`), only class declarations (`class A { }`) can be used.
 - `ExpressionWithTypeArguments` can only contain `PropertyAccessExpression`s as expression with an `Identifier` as name, recursively.
-- Function signatures are only type checked on arguments. Return types are not typechecked.
+- Function signatures are only typechecked on arguments. Return types are not typechecked.
 - No JSX support.
 
 ## Options
