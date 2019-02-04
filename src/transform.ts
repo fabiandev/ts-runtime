@@ -217,7 +217,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
   function createMutationContext(node: ts.Node, transformationContext: ts.TransformationContext): void {
     if (ts.isSourceFile(node) && currentSourceFile !== node) {
       currentSourceFile = node;
-      context = new MutationContext(node, options, program, host, scanner, resolvedEntryFiles, commonDir, transformationContext);
+      context = new MutationContext(node, options, program, host, scanner, resolvedEntryFiles, getOutDir(), transformationContext);
     }
   }
 
