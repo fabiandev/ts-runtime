@@ -215,7 +215,7 @@ export class ClassDeclarationMutator extends Mutator {
       setAccessor = this.factory.mutateFunctionBody(ts.createSetAccessor(undefined, node.modifiers, node.name, [
         ts.createParameter(undefined, undefined, undefined, node.name.text, undefined, node.type)
       ], ts.createBlock([ts.createStatement(
-        ts.createBinary(ts.createPropertyAccess(isStatic ? ts.createIdentifier(className) : ts.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name)
+        ts.createBinary(ts.createPropertyAccess(isStatic ? ts.createIdentifier(className) : ts.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name as ts.Expression)
       )], true
       ))) as ts.SetAccessorDeclaration;
     }

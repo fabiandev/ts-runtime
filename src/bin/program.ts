@@ -1,6 +1,6 @@
 import * as cp from 'child_process';
 import * as path from 'path';
-import * as ora from 'ora';
+import ora from 'ora';
 import chalk from 'chalk';
 import * as util from './util';
 import { Options } from '../options';

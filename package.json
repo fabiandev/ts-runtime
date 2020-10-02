@@ -15,14 +15,14 @@
   "scripts": {
     "test": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/mocha/bin/_mocha",
     "cover": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/.bin/nyc npm test",
-    "ci": "npm run build && node lkg/bin/index && npm run build:lkg && node lkg/bin/index && npm run cover",
+    "ci": "npm run build && npm run build:lkg && node lkg/bin/index && node lkg/bin/index && npm run cover",
     "coveralls": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
     "build": "npm run build:tsr && npm run build:lib",
     "build:dist": "npm run build:tsr && npm run build:lib && npm run build:playground",
     "build:tsr": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:lib": "node_modules/.bin/webpack --config src/lib/build/webpack.config.js",
     "build:playground": "node_modules/.bin/gulp --gulpfile src/playground/build/gulpfile.js build",
-    "build:lkg": "ts-node --no-cache ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias -c tsconfig-lkg.json"
+    "build:lkg": "ts-node --no-cache ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias -c tsconfig-lkg.json -s 10"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"
@@ -74,6 +74,7 @@
     "ts-loader": "^5.0.0",
     "ts-node": "^6.0.0",
     "uglify-js": "^3.0.28",
+    "uglifyjs-webpack-plugin": "^2.1.2",
     "webpack": "^4.17.2",
     "webpack-cli": "^3.1.0",
     "worker-loader": "^2.0.0"
