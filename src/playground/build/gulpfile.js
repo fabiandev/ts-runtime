@@ -23,11 +23,7 @@ function copy() {
   ])
     .pipe(sourcemaps.init())
     .pipe(preprocess({ context: config.replace }))
-    .pipe(babel({ presets: [['env', {
-        uglify: true,
-        forceAllTransforms: true
-      }]]
-    }))
+    .pipe(babel({ presets: ['@babel/preset-env'] }))
     .pipe(uglify({ mangle: false }))
     .pipe(sourcemaps.write('.'))
     .pipe(preprocess({ context: config.replace }))
