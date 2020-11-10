@@ -9,9 +9,10 @@ import runWindowHtmlPlain = require('./run-plain.html');
 let lib = '';
 require.ensure(['monaco-typescript/src/lib/lib'], require => {
   const libs = require('monaco-typescript/src/lib/lib').libFileMap;
+  // lib = Object.values(libs).join('');
   
   const keys = Object.keys(libs).filter(key => {
-    return key.startsWith('lib.es2015') || key.startsWith('lib.es5') || key.startsWith('lib.dom');
+    return key.startsWith('lib.es') || key.startsWith('lib.dom');
   });
 
   for (const key of keys) {
