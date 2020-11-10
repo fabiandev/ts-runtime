@@ -10,7 +10,7 @@
   "author": "Fabian Leutgeb <hi@fabiandev.io>",
   "license": "MIT",
   "engines": {
-    "node": ">=6"
+    "node": ">=8"
   },
   "scripts": {
     "test": "NODE_ENV=test TS_NODE_CACHE=false ./node_modules/mocha/bin/_mocha",
