@@ -3,7 +3,7 @@ export default () => {
     it('should remain empty if containing whitespaces only', () => {
       const input = ` `;
 
-      const expected = ``;
+      const expected = `export {};`;
 
       const result = util.transform(input);
 
@@ -13,7 +13,9 @@ export default () => {
     it('should not import lib if not required', () => {
       const input = `let foo = "bar";`;
 
-      const expected = `let foo = "bar";`;
+      const expected = `let foo = "bar";
+
+      export {};`;
 
       const result = util.transform(input);
 

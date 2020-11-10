@@ -246,7 +246,9 @@ export default () => {
 
       const expected = `
       let foo;
-      foo = 1;`;
+      foo = 1;
+
+      export {};`;
 
       const result = util.transform(input);
 

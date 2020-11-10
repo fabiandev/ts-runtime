@@ -23,7 +23,9 @@ export default () => {
       const expected = `
       () => {
         return void 0;
-      };`;
+      };
+
+      export {};`;
 
       const result = util.transform(input, { noAnnotate: true });
 

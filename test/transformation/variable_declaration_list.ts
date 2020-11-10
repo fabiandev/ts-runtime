@@ -9,7 +9,9 @@ export default () => {
       const expected = `
       for (let foo of []) {
 
-      }`;
+      }
+
+      export {};`;
 
       const result = util.transform(input);
 
@@ -25,7 +27,9 @@ export default () => {
       const expected = `
       for (let foo in {}) {
 
-      }`;
+      }
+
+      export {};`;
 
       const result = util.transform(input);
 
@@ -43,7 +47,9 @@ export default () => {
 
       } catch (e) {
 
-      }`;
+      }
+
+      export {};`;
 
       const result = util.transform(input);
 

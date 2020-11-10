@@ -16,7 +16,9 @@ export default () => {
     it('should not be asserted if any', () => {
       const input = `10 as any`;
 
-      const expected = `10;`;
+      const expected = `10;
+
+      export {};`;
 
       const result = util.transform(input);
 

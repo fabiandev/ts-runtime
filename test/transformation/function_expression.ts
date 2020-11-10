@@ -18,7 +18,9 @@ export default () => {
     it('should not be annotated with noAnnotate', () => {
       const input = `let foo = function() { };`;
 
-      const expected = `let foo = function () { };`;
+      const expected = `let foo = function () { };
+
+      export {};`;
 
       const result = util.transform(input, { noAnnotate: true });
 
