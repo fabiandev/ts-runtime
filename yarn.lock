@@ -4401,14 +4401,14 @@ module-alias@^2.0.0:
   resolved "https://registry.yarnpkg.com/module-alias/-/module-alias-2.2.0.tgz#a2e32275381642252bf0c51405f7a09a367479b5"
   integrity sha512-O4bbvlZkHj2LUQhieQWWCr486ddc8X+WwRqi3QGnFKfknaxdHTOB7+xRgeyWHc6arpjgtT5SLLMMTFwUM3/x5w==
 
-monaco-editor@^0.10.0:
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.10.1.tgz#8c96c4f15b6b5258bf92cbde93cad8a7e3007e14"
-  integrity sha1-jJbE8VtrUli/ksvek8rYp+MAfhQ=
+monaco-editor@^0.21.2:
+  version "0.21.2"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.21.2.tgz#37054e63e480d51a2dd17d609dcfb192304d5605"
+  integrity sha512-jS51RLuzMaoJpYbu7F6TPuWpnWTLD4kjRW0+AZzcryvbxrTwhNy1KC9yboyKpgMTahpUbDUsuQULoo0GV1EPqg==
 
-"monaco-typescript@git+https://git@github.com/Microsoft/monaco-typescript":
-  version "3.4.1"
-  resolved "git+https://git@github.com/Microsoft/monaco-typescript#76253915904f7ceae3d2dd02969ad43e3fc07bd6"
+monaco-typescript@Microsoft/monaco-typescript:
+  version "4.1.1"
+  resolved "https://codeload.github.com/Microsoft/monaco-typescript/tar.gz/2dcf85a5e8a63cb3a39a09a317fa99642a892088"
 
 move-concurrently@^1.0.1:
   version "1.0.1"

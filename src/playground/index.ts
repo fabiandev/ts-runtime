@@ -1,3 +1,4 @@
+import type * as monaco from 'monaco-editor';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
 import { FileReflection } from '../host';
@@ -7,11 +8,20 @@ import runWindowHtmlPlain = require('./run-plain.html');
 
 let lib = '';
 require.ensure(['monaco-typescript/src/lib/lib'], require => {
-  const libs = require('monaco-typescript/src/lib/lib');
-  lib = libs.lib_es2015_dts + "" + libs.lib_dom_dts;
+  const libs = require('monaco-typescript/src/lib/lib').libFileMap;
+  
+  const keys = Object.keys(libs).filter(key => {
+    return key.startsWith('lib.es2015') || key.startsWith('lib.es5') || key.startsWith('lib.dom');
+  });
+
+  for (const key of keys) {
+    lib += libs[key];
+  }
+
   bootstrap();
 }, error => {
   console.error('Could not not load lib declarations:', error);
+  window.alert('Could not not load lib declarations. Please try to refresh the page.');
 }, 'tslibs');
 
 interface PlaygroundOptions {
@@ -75,8 +85,8 @@ function setDefaultOptions(): void {
       experimentalDecorators: true,
       emitDecoratorMetadata: false,
       allowNonTsExtensions: true,
-      module: monaco.languages.typescript.ModuleKind.ES2015,
-      target: monaco.languages.typescript.ScriptTarget.ES2015
+      module: window.monaco.languages.typescript.ModuleKind.ES2015,
+      target: window.monaco.languages.typescript.ScriptTarget.ES2015
     },
     windowOptions: {
       console: true
@@ -123,7 +133,7 @@ function init(): void {
 
   updateCompilerOptions();
 
-  tsEditor = monaco.editor.create(_editorTs, {
+  tsEditor = window.monaco.editor.create(_editorTs, {
     value: defaultValue,
     language: 'typescript',
     automaticLayout: true,
@@ -133,7 +143,7 @@ function init(): void {
     selectionClipboard: false
   });
 
-  jsEditor = monaco.editor.create(_editorJs, {
+  jsEditor = window.monaco.editor.create(_editorJs, {
     value: [
       '',
     ].join('\n'),
@@ -145,8 +155,8 @@ function init(): void {
     },
     // contextmenu: false,
     quickSuggestions: false,
-    parameterHints: false,
-    autoClosingBrackets: false,
+    parameterHints: { enabled: false },
+    autoClosingBrackets: 'never',
     suggestOnTriggerCharacters: false,
     snippetSuggestions: 'none',
     wordBasedSuggestions: false,
@@ -368,7 +378,7 @@ function updateCompilerOptions(): void {
   const compilerOptions = getCompilerOptions();
   compilerOptions.allowNonTsExtensions = true;
   compilerOptions.noEmit = true;
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
+  window.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
 }
 
 function setOptions(opts: { [index: string]: any }, base = (window as any).tsp.options) {
