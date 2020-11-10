@@ -70,20 +70,14 @@ export default () => {
         expect(result).ok();
       });
 
-      it('should reflect KeywordTypeNode NullKeywords', () => {
-        const type = ts.createKeywordTypeNode(ts.SyntaxKind.NullKeyword);
+      it('should reflect LiteralTypeNode NullLiteral', () => {
+        const type = ts.createLiteralTypeNode(ts.createLiteral(null));
         const result = factory.typeReflection(type);
         expect(result).ok();
       });
 
       it('should reflect KeywordTypeNode UndefinedKeyword', () => {
         const type = ts.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword);
-        const result = factory.typeReflection(type);
-        expect(result).ok();
-      });
-
-      it('should reflect KeywordTypeNode ThisKeyword', () => {
-        const type = ts.createKeywordTypeNode(ts.SyntaxKind.ThisKeyword);
         const result = factory.typeReflection(type);
         expect(result).ok();
       });
