@@ -22,7 +22,7 @@
     "build:tsr": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:lib": "node_modules/.bin/webpack --config src/lib/build/webpack.config.js",
     "build:playground": "node_modules/.bin/gulp --gulpfile src/playground/build/gulpfile.js build",
-    "build:lkg": "ts-node --no-cache ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias -c tsconfig-lkg.json -s 10"
+    "build:lkg": "ts-node --no-cache ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias -c tsconfig-lkg.json --stackTraceOutput 50"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"
@@ -36,7 +36,7 @@
     "pretty-time": "^1.1.0",
     "regenerator-runtime": "^0.12.1",
     "rimraf": "^2.6.1",
-    "typescript": "^3.0.3"
+    "typescript": "^4.0.3"
   },
   "devDependencies": {
     "@types/expect.js": "^0.3.29",
@@ -53,11 +53,11 @@
     "del": "^3.0.0",
     "expect.js": "^0.3.1",
     "gulp": "^4.0.0",
-    "gulp-babel": "^7.0.0",
-    "gulp-clean-css": "^3.7.0",
-    "gulp-less": "^3.3.2",
-    "gulp-preprocess": "^2.0.0",
-    "gulp-rename": "^1.2.2",
+    "gulp-babel": "^8.0.0",
+    "gulp-clean-css": "^4.3.0",
+    "gulp-less": "^4.0.1",
+    "gulp-preprocess": "^3.0.3",
+    "gulp-rename": "^2.0.0",
     "gulp-sourcemaps": "^2.6.0",
     "gulp-uglify": "^3.0.0",
     "lodash.debounce": "^4.0.8",
