@@ -7,7 +7,7 @@ import { Scanner, TypeInfo } from './scanner';
 import { MutationContext } from './context';
 
 export type FunctionDeclarationLikeNode = ts.ArrowFunction | ts.FunctionDeclaration |
-  ts.FunctionExpression | ts.ArrowFunction | ts.ConstructorDeclaration | ts.MethodDeclaration |
+  ts.FunctionExpression | ts.ConstructorDeclaration | ts.MethodDeclaration |
   ts.SetAccessorDeclaration | ts.GetAccessorDeclaration;
 
 export type FunctionLikeNode = ts.FunctionExpression | ts.ArrowFunction | ts.FunctionDeclaration |
