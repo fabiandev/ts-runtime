@@ -762,6 +762,11 @@ export class Factory {
   }
 
   public methodSignatureReflection(node: MethodLikeNode): ts.CallExpression {
+    if (!node.name) {
+      this.warn(`Unnamed method signature reflections not supported:\n${node.getText()}`);
+      return this.anyTypeReflection();
+    }
+
     return this.libCall(util.isStatic(node) ? 'staticProperty' : 'property', [
       this.propertyNameToLiteralOrExpression(node.name),
       this.nullable(this.functionReflection(node))
