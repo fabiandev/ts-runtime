@@ -41,7 +41,9 @@ export function context(program: ts.Program, host: Host, opts = options(), entry
     host,
     scanner(program, options),
     resolveEntryFiles(entryFiles),
-    commonDir(resolvedEntryFiles)
+    commonDir(resolvedEntryFiles),
+    // TODO: fix any cast
+    (ts as any).nullTransformationContext
     );
 }
 
