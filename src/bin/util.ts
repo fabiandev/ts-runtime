@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 import { Options } from '../options';
 import { ProgramError } from '../errors';
 
