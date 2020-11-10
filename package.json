@@ -7,7 +7,7 @@
     "tsr": "bin/index.js"
   },
   "repository": "https://github.com/fabiandev/ts-runtime.git",
-  "author": "Fabian Pirklbauer <hi@fabiandev.io>",
+  "author": "Fabian Leutgeb <hi@fabiandev.io>",
   "license": "MIT",
   "engines": {
     "node": ">=6"
