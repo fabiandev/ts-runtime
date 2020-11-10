@@ -53,6 +53,7 @@ export class Scanner {
     ts.SyntaxKind.PropertyDeclaration,
     ts.SyntaxKind.ConstructSignature,
     ts.SyntaxKind.TypeAliasDeclaration,
+    ts.SyntaxKind.ClassDeclaration
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
