@@ -220,12 +220,16 @@ export class Factory {
       case ts.SyntaxKind.TrueKeyword:
       case ts.SyntaxKind.FalseKeyword:
         return this.booleanLiteralTypeReflection(node.literal as ts.BooleanLiteral);
+      case ts.SyntaxKind.NullKeyword:
+        return this.nullLiteralTypeReflection(node.literal as ts.NullLiteral);
       case ts.SyntaxKind.StringLiteral:
         return this.stringLiteralTypeReflection(node.literal as ts.StringLiteral);
       case ts.SyntaxKind.NumericLiteral:
         return this.numericLiteralTypeReflection(node.literal as ts.NumericLiteral);
       default:
-        throw new ProgramError(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
+        this.warn(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
+        return this.anyTypeReflection();
+        // throw new ProgramError(`No literal type reflection for syntax kind '${ts.SyntaxKind[node.literal.kind]}' found.`);
     }
   }
 
@@ -233,6 +237,10 @@ export class Factory {
     return this.libCall('boolean', ts.createLiteral(
       node.kind === ts.SyntaxKind.TrueKeyword ? true : false
     ));
+  }
+
+  public nullLiteralTypeReflection(node: ts.NullLiteral): ts.CallExpression {
+    return this.nullTypeReflection();
   }
 
   public numericLiteralTypeReflection(node: ts.NumericLiteral): ts.CallExpression {
