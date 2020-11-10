@@ -153,8 +153,9 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
     const printHandlers: ts.PrintHandlers = {
       substituteNode(hint: ts.EmitHint, node: ts.Node): ts.Node {
-        node.parent = undefined;
-        node.flags |= ts.NodeFlags.Synthesized;
+        // TODO: fix any cast
+        (node.parent as any) = undefined;
+        (node.flags as any) |= ts.NodeFlags.Synthesized;
         return node;
       }
     };
@@ -241,7 +242,8 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
       }
 
       if (node && !node.parent) {
-        node.parent = original.parent;
+        // TODO: fix any cast
+        (node.parent as any) = original.parent;
         util.setParent(node);
       }
 
@@ -255,7 +257,8 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
         }
 
         if (node && !node.parent) {
-          node.parent = previous.parent;
+          // TODO: fix any cast
+          (node.parent as any) = previous.parent;
           util.setParent(node);
         }
       }

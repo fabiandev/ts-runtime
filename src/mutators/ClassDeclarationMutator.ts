@@ -229,7 +229,8 @@ export class ClassDeclarationMutator extends Mutator {
       )], true
     ));
 
-    node.name = ts.createIdentifier(name);
+    // TODO: fix any cast
+    (node.name as any) = ts.createIdentifier(name);
 
     return [property, getAccessor, setAccessor].filter(val => !!val);
   }

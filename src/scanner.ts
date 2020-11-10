@@ -195,7 +195,8 @@ export class Scanner {
       return (node as any).type as ts.TypeNode;
     }
 
-    return this.checker.typeToTypeNode(type, enclosing);
+    // TODO: check flags parameter
+    return this.checker.typeToTypeNode(type, enclosing, undefined);
   }
 
   public getBaseType(type: ts.Type): ts.Type {
@@ -233,7 +234,8 @@ export class Scanner {
     // );
     //
 
-    let nodeSymbol = this.checker.getSymbolAtLocation(node);
+
+    const nodeSymbol = this.checker.getSymbolAtLocation(node);
 
     if (nodeSymbol) {
       this.symbols.set(node, nodeSymbol);
@@ -498,7 +500,8 @@ export class TypeInfo {
 
   get baseTypeNode(): ts.TypeNode {
     if (this.isLiteral && !this._baseTypeNode) {
-      this._baseTypeNode = this.scanner.checker.typeToTypeNode(this.baseType, this.enclosing);
+      // TODO: check flags parameter
+      this._baseTypeNode = this.scanner.checker.typeToTypeNode(this.baseType, this.enclosing, undefined);
     }
 
     return this._baseTypeNode;

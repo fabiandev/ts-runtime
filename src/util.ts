@@ -72,7 +72,8 @@ export function setParent(node: ts.Node): ts.Node {
   if (!node) return node;
 
   ts.forEachChild(node, n => {
-    n.parent = node;
+    // TODO: fix any cast
+    (n.parent as any) = node;
     setParent(n);
   });
 

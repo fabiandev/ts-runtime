@@ -250,7 +250,7 @@ export class Factory {
   }
 
   public tupleTypeReflection(node: ts.TupleTypeNode): ts.CallExpression {
-    return this.libCall('tuple', node.elementTypes.map(n => this.typeReflection(n)));
+    return this.libCall('tuple', node.elements.map(n => this.typeReflection(n)));
   }
 
   public unionTypeReflection(node: ts.UnionTypeNode): ts.CallExpression {
@@ -952,7 +952,8 @@ export class Factory {
         returnTypeNode = returnTypes[0];
       } else if (returnTypes.length > 1) {
         returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-        (returnTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(returnTypes);
+        // TODO: fix any cast
+        (returnTypeNode as ts.UnionTypeNode as any).types = ts.createNodeArray(returnTypes);
       } else {
         returnTypeNode = ts.createNode(ts.SyntaxKind.AnyKeyword) as ts.TypeNode;
       }
@@ -967,7 +968,8 @@ export class Factory {
           parameterTypeNode = paramTypes[0];
         } else if (paramTypes.length > 0) {
           parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-          (parameterTypeNode as ts.UnionTypeNode).types = ts.createNodeArray(paramTypes);
+          // TODO: fix any cast
+          ((parameterTypeNode as ts.UnionTypeNode).types as any) = ts.createNodeArray(paramTypes);
         } else {
           parameterTypeNode = ts.createNode(ts.SyntaxKind.AnyKeyword) as ts.TypeNode;
         }
