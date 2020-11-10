@@ -53,7 +53,8 @@ export class Scanner {
     ts.SyntaxKind.PropertyDeclaration,
     ts.SyntaxKind.ConstructSignature,
     ts.SyntaxKind.TypeAliasDeclaration,
-    ts.SyntaxKind.ClassDeclaration
+    ts.SyntaxKind.ClassDeclaration,
+    ts.SyntaxKind.InterfaceDeclaration
   ];
 
   private AllowedDeclarations = ts.SymbolFlags.Interface | ts.SymbolFlags.Class |
@@ -233,8 +234,6 @@ export class Scanner {
     //   (node as any).name || (node as any).typeName ||
     //   (node as any).exprName || (node as any).tagName
     // );
-    //
-
 
     const nodeSymbol = this.checker.getSymbolAtLocation(node);
 
@@ -365,8 +364,8 @@ export class TypeInfo {
   private _TSR_DECLARATION: boolean;
   private _isTsrDeclaration: boolean;
   private _enclosing?: ts.Node;
-  private _fileName?: string;
-  private _declarations: ts.Declaration[];
+  // private _fileName?: string;
+  // private _declarations: ts.Declaration[];
   private _type: ts.Type;
 
   private _typeText: string;
@@ -387,6 +386,12 @@ export class TypeInfo {
 
   constructor(private scanner: Scanner, enclosing: ts.Node) {
     this._enclosing = enclosing;
+
+    this._symbol = this.symbol;
+    this._type = this.type;
+    // TODO: check why this cannot be lazy loaded
+    this._typeText = this.typeText;
+    this._typeNode = this.typeNode;
   }
 
   public isTsrDeclaration(): boolean {
