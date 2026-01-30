@@ -164,7 +164,7 @@ export class Factory {
   }
 
   public typeDeclaration(name: string | ts.Identifier/* | ts.ObjectBindingPattern | ts.ArrayBindingPattern*/, node: ts.TypeNode): ts.VariableDeclaration {
-    return ts.createVariableDeclaration(name, undefined, this.typeReflection(node));
+    return ts.factory.createVariableDeclaration(name, undefined, undefined, this.typeReflection(node));
   }
 
   public typeAssertion(id: string | ts.Expression, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
@@ -212,7 +212,7 @@ export class Factory {
   }
 
   public thisTypeReflection(): ts.CallExpression {
-    return this.libCall('this', ts.createThis());
+    return this.libCall('this', ts.factory.createThis());
   }
 
   public literalTypeReflection(node: ts.LiteralTypeNode): ts.CallExpression {
@@ -234,9 +234,9 @@ export class Factory {
   }
 
   public booleanLiteralTypeReflection(node: ts.BooleanLiteral): ts.CallExpression {
-    return this.libCall('boolean', ts.createLiteral(
-      node.kind === ts.SyntaxKind.TrueKeyword ? true : false
-    ));
+    return this.libCall('boolean',
+      node.kind === ts.SyntaxKind.TrueKeyword ? ts.factory.createTrue() : ts.factory.createFalse()
+    );
   }
 
   public nullLiteralTypeReflection(node: ts.NullLiteral): ts.CallExpression {
@@ -244,11 +244,11 @@ export class Factory {
   }
 
   public numericLiteralTypeReflection(node: ts.NumericLiteral): ts.CallExpression {
-    return this.libCall('number', ts.createNumericLiteral(node.text));
+    return this.libCall('number', ts.factory.createNumericLiteral(node.text));
   }
 
   public stringLiteralTypeReflection(node: ts.StringLiteral): ts.CallExpression {
-    return this.libCall('string', ts.createLiteral(node.text));
+    return this.libCall('string', ts.factory.createStringLiteral(node.text));
   }
 
   public arrayTypeReflection(node: ts.ArrayTypeNode): ts.CallExpression {
@@ -300,19 +300,19 @@ export class Factory {
     }
 
     if (isClassTypeParameter && !this.rule(FactoryRule.NoClassTypeParameterReflection)) {
-      result = ts.createPropertyAccess(
-        ts.createElementAccess(
+      result = ts.factory.createPropertyAccessExpression(
+        ts.factory.createElementAccessExpression(
           // Static members cannot reference class type parameters
           // util.isInStaticContext(node) ?
-          // ts.createElementAccess(
-          //   ts.createIdentifier(parentClass.name.text),
-          //   ts.createPropertyAccess(
-          //     ts.createIdentifier(this.lib),
-          //     ts.createIdentifier(this.context.getLibTypeParameterSymbolName())
+          // ts.factory.createElementAccessExpression(
+          //   ts.factory.createIdentifier(parentClass.name.text),
+          //   ts.factory.createPropertyAccessExpression(
+          //     ts.factory.createIdentifier(this.lib),
+          //     ts.factory.createIdentifier(this.context.getLibTypeParameterSymbolName())
           //   )
           // ) :
-          ts.createThis(),
-          ts.createIdentifier(
+          ts.factory.createThis(),
+          ts.factory.createIdentifier(
             this.context.getTypeSymbolDeclarationName(parentClass.name.text)
           )
         ),
@@ -338,9 +338,9 @@ export class Factory {
       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
       name = name || typeNameText;
       name = `${name}.${hash}`;
-      identifier = ts.createLiteral(name);
+      identifier = ts.factory.createStringLiteral(name);
     } else {
-      identifier = ts.createIdentifier(typeNameText);
+      identifier = ts.factory.createIdentifier(typeNameText);
     }
 
     let tdz = !isSelfReference && !asLiteral && !isTypeParameter &&
@@ -370,11 +370,11 @@ export class Factory {
   public typeQueryReflection(node: ts.TypeQueryNode): ts.CallExpression {
     const typeInfo = this.scanner.getTypeInfo(node.exprName);
     let text = util.getEntityNameText(node.exprName);
-    let ref: ts.Expression | ts.Expression[] = ts.createIdentifier(text);
+    let ref: ts.Expression | ts.Expression[] = ts.factory.createIdentifier(text);
 
     if (typeInfo.isTsrDeclaration()) {
       text = util.getHashedDeclarationName(text, typeInfo.sourceFiles[0].fileName);
-      ref = [ts.createLiteral(text), ts.createTrue()];
+      ref = [ts.factory.createStringLiteral(text), ts.factory.createTrue()];
     }
 
     return this.libCall('typeOf', ref);
@@ -412,13 +412,13 @@ export class Factory {
     if (asLiteral) {
       let fileName = typeInfo.declarations[0].getSourceFile().fileName;
       let name = this.context.checker.getFullyQualifiedName(typeInfo.symbol);
-      id = ts.createLiteral(util.getHashedDeclarationName(name, fileName));
+      id = ts.factory.createStringLiteral(util.getHashedDeclarationName(name, fileName));
     } else {
       const typeNameText = ts.isIdentifier(node.expression) ?
         node.expression.text :
         util.getPropertyAccessExpressionTextOrFail(node.expression as ts.PropertyAccessExpression);
 
-      id = ts.createIdentifier(typeNameText);
+      id = ts.factory.createIdentifier(typeNameText);
     }
 
     let tdz = !asLiteral && !this.context.wasDeclared(identifier) && this.context.isDeclared(identifier);
@@ -453,8 +453,8 @@ export class Factory {
 
       result = this.selfReference(
         typeNameText,
-        ts.createBlock(
-          [...typeParameterDeclarations, ts.createReturn(result)],
+        ts.factory.createBlock(
+          [...typeParameterDeclarations, ts.factory.createReturnStatement(result)],
           true
         )
       );
@@ -466,12 +466,13 @@ export class Factory {
   }
 
   public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.VariableStatement {
-    return ts.createVariableStatement(
+    return ts.factory.createVariableStatement(
       node.modifiers,
-      ts.createVariableDeclarationList(
+      ts.factory.createVariableDeclarationList(
         [
-          ts.createVariableDeclaration(
+          ts.factory.createVariableDeclaration(
             node.name,
+            undefined,
             undefined,
             this.typeAliasReflection(node)
           )
@@ -511,8 +512,8 @@ export class Factory {
 
       result = this.selfReference(
         typeNameText,
-        ts.createBlock(
-          [...typeParameterDeclarations, ts.createReturn(result)],
+        ts.factory.createBlock(
+          [...typeParameterDeclarations, ts.factory.createReturnStatement(result)],
           true
         )
       );
@@ -527,12 +528,13 @@ export class Factory {
     const typeNameText = util.getEntityNameText(node.name);
     const interfaceReflection = this.interfaceReflection(node);
 
-    return ts.createVariableStatement(
+    return ts.factory.createVariableStatement(
       node.modifiers,
-      ts.createVariableDeclarationList(
+      ts.factory.createVariableDeclarationList(
         [
-          ts.createVariableDeclaration(
+          ts.factory.createVariableDeclaration(
             typeNameText,
+            undefined,
             undefined,
             interfaceReflection
           )
@@ -597,13 +599,13 @@ export class Factory {
 
       result = this.selfReference(
         typeNameText,
-        ts.createBlock(
-          [...typeParameterDeclarations, ts.createReturn(ts.createArrayLiteral(util.asArray(reflection)))],
+        ts.factory.createBlock(
+          [...typeParameterDeclarations, ts.factory.createReturnStatement(ts.factory.createArrayLiteralExpression(util.asArray(reflection)))],
           true
         )
       );
     } else if (hasSelfReference) {
-      result = this.selfReference(typeNameText, ts.createArrayLiteral(reflection));
+      result = this.selfReference(typeNameText, ts.factory.createArrayLiteralExpression(reflection));
     }
 
     const arg = !result && !reflection.length ? this.libCall('object') : result || reflection;
@@ -630,23 +632,23 @@ export class Factory {
 
     switch (declaration.kind) {
       case ts.SyntaxKind.InterfaceDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.interfaceReflection(declaration as ts.InterfaceDeclaration, typeName)]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.interfaceReflection(declaration as ts.InterfaceDeclaration, typeName)]);
       case ts.SyntaxKind.ClassDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.classReflection(declaration as ts.ClassDeclaration, typeName)]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.classReflection(declaration as ts.ClassDeclaration, typeName)]);
       case ts.SyntaxKind.TypeLiteral: // remove?
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.typeLiteralReflection(declaration as ts.TypeLiteralNode))]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.asType(typeName, this.typeLiteralReflection(declaration as ts.TypeLiteralNode))]);
       case ts.SyntaxKind.EnumDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.enumReflection(declaration as ts.EnumDeclaration))]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.asType(typeName, this.enumReflection(declaration as ts.EnumDeclaration))]);
       case ts.SyntaxKind.EnumMember: // remove?
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.enumMemberReflection(declaration as ts.EnumMember))]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.asType(typeName, this.enumMemberReflection(declaration as ts.EnumMember))]);
       case ts.SyntaxKind.FunctionDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.asType(typeName, this.functionReflection(declaration as ts.FunctionDeclaration))]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.asType(typeName, this.functionReflection(declaration as ts.FunctionDeclaration))]);
       case ts.SyntaxKind.VariableDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.asVar(typeName, this.variableReflection(declaration as ts.VariableDeclaration))]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.asVar(typeName, this.variableReflection(declaration as ts.VariableDeclaration))]);
       case ts.SyntaxKind.TypeAliasDeclaration:
-        return this.libCall('declare', [ts.createLiteral(name), this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, typeName)]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.typeAliasReflection(declaration as ts.TypeAliasDeclaration, typeName)]);
       case ts.SyntaxKind.FunctionType: // remove?
-        return this.libCall('declare', [ts.createLiteral(name), this.functionTypeReflection(declaration as ts.FunctionTypeNode)]);
+        return this.libCall('declare', [ts.factory.createStringLiteral(name), this.functionTypeReflection(declaration as ts.FunctionTypeNode)]);
       default:
         throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
     }
@@ -659,7 +661,11 @@ export class Factory {
   }
 
   public enumMemberReflection(node: ts.EnumMember): ts.CallExpression {
-    return this.libCall('enumMember', ts.createLiteral(this.context.checker.getConstantValue(node)));
+    const value = this.context.checker.getConstantValue(node);
+    const literal = typeof value === 'number'
+      ? ts.factory.createNumericLiteral(value)
+      : ts.factory.createStringLiteral(String(value));
+    return this.libCall('enumMember', literal);
   }
 
   public variableReflection(node: ts.VariableDeclaration): ts.Expression {
@@ -682,9 +688,9 @@ export class Factory {
         statements.push(this.typeParameterDeclaration(typeParameter, `${this.namespace}fn`));
       }
 
-      statements.push(ts.createReturn(ts.createArrayLiteral(args)));
+      statements.push(ts.factory.createReturnStatement(ts.factory.createArrayLiteralExpression(args)));
 
-      const block = ts.createBlock(statements, true);
+      const block = ts.factory.createBlock(statements, true);
 
       args = [this.selfReference(`${this.namespace}fn`, block)];
     }
@@ -698,7 +704,7 @@ export class Factory {
 
   public typeParameterReflection(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.CallExpression {
     const args: ts.Expression[] = [
-      ts.createLiteral(typeParameter.name.text)
+      ts.factory.createStringLiteral(typeParameter.name.text)
     ];
 
     if (typeParameter.constraint) {
@@ -707,7 +713,7 @@ export class Factory {
 
     if (typeParameter.default) {
       if (!typeParameter.constraint) {
-        args.push(ts.createVoidZero());
+        args.push(ts.factory.createVoidExpression(ts.factory.createNumericLiteral("0")));
       }
 
       args.push(this.typeReflection(typeParameter.default))
@@ -732,7 +738,7 @@ export class Factory {
 
 
     if (node.questionToken) {
-      args.push(ts.createTrue());
+      args.push(ts.factory.createTrue());
     }
 
     return this.libCall(util.isStatic(node as ts.PropertyDeclaration) ? 'staticProperty' : 'property', args);
@@ -752,7 +758,7 @@ export class Factory {
 
   public constructorReflection(node: ts.ConstructorDeclaration): ts.CallExpression {
     return this.libCall('property', [
-      ts.createLiteral('constructor'),
+      ts.factory.createStringLiteral('constructor'),
       this.nullable(this.functionReflection(node))
     ]);
   }
@@ -786,11 +792,11 @@ export class Factory {
       this.declarationNameToLiteralOrExpression(param.name),
       reflectType ?
         this.typeReflection(param.type) :
-        ts.createIdentifier(this.context.getTypeDeclarationName((param.name as ts.Identifier).text))
+        ts.factory.createIdentifier(this.context.getTypeDeclarationName((param.name as ts.Identifier).text))
     ];
 
     if (param.questionToken) {
-      parameter.push(ts.createTrue());
+      parameter.push(ts.factory.createTrue());
     }
 
     return this.libCall(param.dotDotDotToken ? 'rest' : 'param', parameter);
@@ -962,11 +968,9 @@ export class Factory {
       if (returnTypes.length === 1) {
         returnTypeNode = returnTypes[0];
       } else if (returnTypes.length > 1) {
-        returnTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-        // TODO: fix any cast
-        (returnTypeNode as ts.UnionTypeNode as any).types = ts.createNodeArray(returnTypes);
+        returnTypeNode = ts.factory.createUnionTypeNode(returnTypes);
       } else {
-        returnTypeNode = ts.createNode(ts.SyntaxKind.AnyKeyword) as ts.TypeNode;
+        returnTypeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
       }
 
       let parameterDeclarations: ts.ParameterDeclaration[] = [];
@@ -978,16 +982,14 @@ export class Factory {
         if (paramTypes.length === 1) {
           parameterTypeNode = paramTypes[0];
         } else if (paramTypes.length > 0) {
-          parameterTypeNode = ts.createNode(ts.SyntaxKind.UnionType) as ts.TypeNode;
-          // TODO: fix any cast
-          ((parameterTypeNode as ts.UnionTypeNode).types as any) = ts.createNodeArray(paramTypes);
+          parameterTypeNode = ts.factory.createUnionTypeNode(paramTypes);
         } else {
-          parameterTypeNode = ts.createNode(ts.SyntaxKind.AnyKeyword) as ts.TypeNode;
+          parameterTypeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
         }
 
-        const questionToken = index + 1 > minParameters ? ts.createToken(ts.SyntaxKind.QuestionToken) : undefined;
+        const questionToken = index + 1 > minParameters ? ts.factory.createToken(ts.SyntaxKind.QuestionToken) : undefined;
 
-        const parameterDeclaration = ts.createParameter(
+        const parameterDeclaration = ts.factory.createParameterDeclaration(
           undefined, undefined, undefined, param.name,
           questionToken, parameterTypeNode, undefined
         );
@@ -999,20 +1001,20 @@ export class Factory {
 
       switch (lastSignature.kind) {
         case ts.SyntaxKind.MethodSignature:
-          mergedSignature = ts.createMethodSignature(
-            typeParameters, parameterDeclarations, returnTypeNode, lastSignature.name, undefined
+          mergedSignature = ts.factory.createMethodSignature(
+            undefined, lastSignature.name, undefined, typeParameters, parameterDeclarations, returnTypeNode
           );
           break;
         case ts.SyntaxKind.MethodDeclaration:
-          mergedSignature = ts.createMethod(
-            undefined, lastSignature.modifiers, (lastSignature as ts.MethodDeclaration).asteriskToken,
+          mergedSignature = ts.factory.createMethodDeclaration(
+            undefined, ts.canHaveModifiers(lastSignature) ? ts.getModifiers(lastSignature) : undefined, (lastSignature as ts.MethodDeclaration).asteriskToken,
             lastSignature.name, undefined, typeParameters, parameterDeclarations,
             returnTypeNode, undefined
           );
           break;
         case ts.SyntaxKind.CallSignature:
         case ts.SyntaxKind.ConstructSignature:
-          mergedSignature = ts.createCallSignature(typeParameters, parameterDeclarations, returnTypeNode);
+          mergedSignature = ts.factory.createCallSignature(typeParameters, parameterDeclarations, returnTypeNode);
           break;
         default:
           throw new ProgramError(`Could not merge ${ts.SyntaxKind[(lastSignature as Signature).kind]}.`);
@@ -1037,73 +1039,75 @@ export class Factory {
   }
 
   public classTypeParameterSymbolDeclaration(name: string | ts.Identifier): ts.VariableDeclarationList {
-    return ts.createVariableDeclarationList([ts.createVariableDeclaration(
+    return ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration(
       this.context.getTypeSymbolDeclarationName(name),
       undefined,
-      ts.createCall(
-        ts.createIdentifier('Symbol'),
+      undefined,
+      ts.factory.createCallExpression(
+        ts.factory.createIdentifier('Symbol'),
         undefined,
-        [ts.createLiteral(this.context.getTypeSymbolDeclarationInitializer(name))]
+        [ts.factory.createStringLiteral(this.context.getTypeSymbolDeclarationInitializer(name))]
       )
     )], ts.NodeFlags.Const);
   }
 
   public classTypeParameterSymbolConstructorDeclaration(name: string | ts.Identifier): ts.ExpressionStatement {
-    return ts.createStatement(
-      ts.createBinary(
-        ts.createElementAccess(
-          ts.createThis(),
-          ts.createIdentifier(this.context.getTypeSymbolDeclarationName(name))
+    return ts.factory.createExpressionStatement(
+      ts.factory.createBinaryExpression(
+        ts.factory.createElementAccessExpression(
+          ts.factory.createThis(),
+          ts.factory.createIdentifier(this.context.getTypeSymbolDeclarationName(name))
         ),
         ts.SyntaxKind.EqualsToken,
-        ts.createIdentifier(this.context.getTypeParametersDeclarationName())
+        ts.factory.createIdentifier(this.context.getTypeParametersDeclarationName())
       )
     );
   }
 
   public classTypeParameterSymbolPropertyDeclaration(name: string | ts.Identifier): ts.PropertyDeclaration {
-    return ts.createProperty(
+    return ts.factory.createPropertyDeclaration(
       undefined,
-      [ts.createToken(ts.SyntaxKind.StaticKeyword)],
-      ts.createComputedPropertyName(
-        ts.createPropertyAccess(
-          ts.createIdentifier(this.context.getLibDeclarationName()),
-          ts.createIdentifier('TypeParametersSymbol')
+      [ts.factory.createToken(ts.SyntaxKind.StaticKeyword)],
+      ts.factory.createComputedPropertyName(
+        ts.factory.createPropertyAccessExpression(
+          ts.factory.createIdentifier(this.context.getLibDeclarationName()),
+          ts.factory.createIdentifier('TypeParametersSymbol')
         )
       ),
       undefined,
       undefined,
-      ts.createIdentifier(this.context.getTypeSymbolDeclarationName(name))
+      ts.factory.createIdentifier(this.context.getTypeSymbolDeclarationName(name))
     );
   }
 
   public typeParameterDeclaration(typeParameter: ts.TypeParameterDeclaration, prop = this.lib): ts.VariableStatement {
     const callExpression = this.typeParameterReflection(typeParameter, prop);
-    return ts.createVariableStatement(
+    return ts.factory.createVariableStatement(
       undefined,
-      ts.createVariableDeclarationList(
-        [ts.createVariableDeclaration(typeParameter.name.text, undefined, callExpression)],
+      ts.factory.createVariableDeclarationList(
+        [ts.factory.createVariableDeclaration(typeParameter.name.text, undefined, undefined, callExpression)],
         ts.NodeFlags.Const
       )
     );
   }
 
   public typeParametersLiteral(typeParameters: ts.TypeParameterDeclaration[], asStatement = false): ts.Expression {
-    return ts.createObjectLiteral(
+    return ts.factory.createObjectLiteralExpression(
       typeParameters.map(param => {
-        return ts.createPropertyAssignment(param.name, this.typeParameterReflection(param));
+        return ts.factory.createPropertyAssignment(param.name, this.typeParameterReflection(param));
       }),
       true
     );
   }
 
   public typeParametersLiteralDeclaration(typeParameters: ts.TypeParameterDeclaration[]): ts.VariableStatement {
-    return ts.createVariableStatement(
+    return ts.factory.createVariableStatement(
       undefined,
-      ts.createVariableDeclarationList(
+      ts.factory.createVariableDeclarationList(
         [
-          ts.createVariableDeclaration(
+          ts.factory.createVariableDeclaration(
             this.context.getTypeParametersDeclarationName(),
+            undefined,
             undefined,
             this.typeParametersLiteral(typeParameters)
           )
@@ -1116,15 +1120,15 @@ export class Factory {
   public typeParameterBindingDeclaration(typeArguments: ts.TypeNode[]): ts.ExpressionStatement {
     // this.setGlobalFlags(FactoryFlags.NoFlowInto);
 
-    return ts.createStatement(
-      ts.createCall(
-        ts.createPropertyAccess(
-          ts.createIdentifier(this.context.getLibDeclarationName()),
-          ts.createIdentifier('bindTypeParameters')
+    return ts.factory.createExpressionStatement(
+      ts.factory.createCallExpression(
+        ts.factory.createPropertyAccessExpression(
+          ts.factory.createIdentifier(this.context.getLibDeclarationName()),
+          ts.factory.createIdentifier('bindTypeParameters')
         ),
         undefined,
         [
-          ts.createThis(),
+          ts.factory.createThis(),
           ...typeArguments.map(arg => this.typeReflection(arg))
         ]
       )
@@ -1155,7 +1159,7 @@ export class Factory {
           node.expression
         );
 
-        return ts.updateReturn(node, assertion);
+        return ts.factory.updateReturnStatement(node, assertion);
       }
 
       return ts.visitEachChild(node, visitor, this.context.transformationContext);
@@ -1172,8 +1176,8 @@ export class Factory {
     }
 
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
-      const body = ts.createBlock([ts.createReturn(node.body)], true)
-      node = ts.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body);
+      const body = ts.factory.createBlock([ts.factory.createReturnStatement(node.body)], true)
+      node = ts.factory.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body);
     }
 
     const bodyDeclarations: ts.Statement[] = [];
@@ -1197,11 +1201,11 @@ export class Factory {
       const paramNameDeclaration = this.context.getTypeDeclarationName(param.name.text);
 
       bodyDeclarations.push(
-        ts.createVariableStatement(
-          [], ts.createVariableDeclarationList(
+        ts.factory.createVariableStatement(
+          [], ts.factory.createVariableDeclarationList(
             [
-              ts.createVariableDeclaration(
-                paramNameDeclaration, undefined, this.typeReflection(param.type)
+              ts.factory.createVariableDeclaration(
+                paramNameDeclaration, undefined, undefined, this.typeReflection(param.type)
               )
             ], ts.NodeFlags.Let
           )
@@ -1209,10 +1213,10 @@ export class Factory {
       );
 
       bodyAssertions.push(
-        ts.createStatement(
+        ts.factory.createExpressionStatement(
           this.typeAssertion(
             this.parameterReflection(param, false),
-            ts.createIdentifier(param.name.text)
+            ts.factory.createIdentifier(param.name.text)
           )
         )
       );
@@ -1220,11 +1224,12 @@ export class Factory {
 
     if (node.type && !util.isAnyKeyword(node.type)) {
       bodyDeclarations.push(
-        ts.createVariableStatement(
-          [], ts.createVariableDeclarationList(
+        ts.factory.createVariableStatement(
+          [], ts.factory.createVariableDeclarationList(
             [
-              ts.createVariableDeclaration(
+              ts.factory.createVariableDeclaration(
                 this.context.getReturnTypeDeclarationName(),
+                undefined,
                 undefined,
                 this.returnTypeReflection(node.type)
               )
@@ -1235,7 +1240,7 @@ export class Factory {
     }
 
 
-    let body = ts.updateBlock(
+    let body = ts.factory.updateBlock(
       node.body as ts.Block,
       this.assertReturnStatements(node.body as ts.Block, node.type).statements
     );
@@ -1245,46 +1250,46 @@ export class Factory {
     bodyStatements.unshift(...bodyAssertions);
     bodyStatements.unshift(...bodyDeclarations);
 
-    body = ts.updateBlock(body, bodyStatements);
+    body = ts.factory.updateBlock(body, bodyStatements);
 
     let method: any;
 
     switch (node.kind) {
       case ts.SyntaxKind.Constructor:
-        method = ts.updateConstructor(
+        method = ts.factory.updateConstructorDeclaration(
           node, node.decorators, node.modifiers, node.parameters, body
         );
         break;
       case ts.SyntaxKind.MethodDeclaration:
-        method = ts.updateMethod(
+        method = ts.factory.updateMethodDeclaration(
           node, node.decorators, node.modifiers, node.asteriskToken, node.name,
           node.questionToken, node.typeParameters, node.parameters, node.type, body
         );
         break;
       case ts.SyntaxKind.GetAccessor:
-        method = ts.updateGetAccessor(
+        method = ts.factory.updateGetAccessorDeclaration(
           node, node.decorators, node.modifiers, node.name, node.parameters, node.type, body
         );
         break;
       case ts.SyntaxKind.SetAccessor:
-        method = ts.updateSetAccessor(
+        method = ts.factory.updateSetAccessorDeclaration(
           node, node.decorators, node.modifiers, node.name, node.parameters, body
         );
         break;
       case ts.SyntaxKind.FunctionExpression:
-        method = ts.updateFunctionExpression(
+        method = ts.factory.updateFunctionExpression(
           node, node.modifiers, node.asteriskToken, node.name as ts.Identifier,
           node.typeParameters, node.parameters, node.type, body
         );
         break;
       case ts.SyntaxKind.FunctionDeclaration:
-        method = ts.updateFunctionDeclaration(
+        method = ts.factory.updateFunctionDeclaration(
           node, node.decorators, node.modifiers, node.asteriskToken, node.name as ts.Identifier,
           node.typeParameters, node.parameters, node.type, body
         );
         break;
       case ts.SyntaxKind.ArrowFunction:
-        method = ts.updateArrowFunction(
+        method = ts.factory.updateArrowFunction(
           node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body
         );
         break;
@@ -1296,12 +1301,12 @@ export class Factory {
   public propertyNameToLiteralOrExpression(node: ts.PropertyName): ts.Expression | ts.StringLiteral | ts.NumericLiteral {
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
-        return ts.createLiteral(node.text);
+        return ts.factory.createStringLiteral(node.text);
       case ts.SyntaxKind.StringLiteral:
         let str = node.text;
-        return ts.createLiteral(str.substring(1, str.length - 1));
+        return ts.factory.createStringLiteral(str.substring(1, str.length - 1));
       case ts.SyntaxKind.NumericLiteral:
-        return ts.createNumericLiteral(node.text);
+        return ts.factory.createNumericLiteral(node.text);
       case ts.SyntaxKind.ComputedPropertyName:
         return node.expression;
       default:
@@ -1324,16 +1329,23 @@ export class Factory {
   }
 
   public importLibStatement(): ts.ImportDeclaration {
-    return ts.createImportDeclaration(
-      undefined, undefined, ts.createImportClause(
-        ts.createIdentifier(this.context.factory.lib), undefined),
-      ts.createLiteral(this.context.factory.package)
+    return ts.factory.createImportDeclaration(
+      undefined,
+      undefined,
+      ts.factory.createImportClause(
+        false,
+        ts.factory.createIdentifier(this.context.factory.lib),
+        undefined
+      ),
+      ts.factory.createStringLiteral(this.context.factory.package)
     );
   }
 
   public importDeclarationsStatement(): ts.ImportDeclaration {
-    return ts.createImportDeclaration(
-      undefined, undefined, undefined, ts.createLiteral(`./${this.context.options.declarationFileName}`)
+    return ts.factory.createImportDeclaration(
+      undefined,
+      undefined,
+      ts.factory.createStringLiteral(`./${this.context.options.declarationFileName}`)
     );
   }
 
@@ -1363,16 +1375,16 @@ export class Factory {
 
   public tdz(body: ts.Identifier, name?: string): ts.CallExpression {
     const args = [
-      ts.createArrowFunction(
+      ts.factory.createArrowFunction(
         undefined, undefined, [], undefined,
-        ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+        ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
         body
       ),
-      ts.createLiteral(body)
+      ts.factory.createStringLiteral(body.text)
     ];
 
     if (name) {
-      args.push(ts.createLiteral(name));
+      args.push(ts.factory.createStringLiteral(name));
     }
 
     return this.libCall(
@@ -1381,9 +1393,9 @@ export class Factory {
   }
 
   public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.ConciseBody): ts.ArrowFunction {
-    return ts.createArrowFunction(
-      undefined, undefined, [ts.createParameter(undefined, undefined, undefined, name)], undefined,
-      ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+    return ts.factory.createArrowFunction(
+      undefined, undefined, [ts.factory.createParameterDeclaration(undefined, undefined, undefined, name)], undefined,
+      ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
       body
     );
   }
@@ -1398,7 +1410,7 @@ export class Factory {
 
   public asType(name: string | ts.Identifier, args: ts.Expression | ts.Expression[], keyword = 'type'): ts.CallExpression {
     args = util.asArray(args);
-    args.unshift(ts.createLiteral(name as any));
+    args.unshift(ts.factory.createStringLiteral(name as any));
     return this.libCall(keyword, args);
   }
 
@@ -1407,11 +1419,11 @@ export class Factory {
   }
 
   public asVar(name: string, expression: ts.Expression): ts.CallExpression {
-    return this.libCall('var', [ts.createLiteral(name), expression]);
+    return this.libCall('var', [ts.factory.createStringLiteral(name), expression]);
   }
 
   public asStatement(expression: ts.Expression): ts.ExpressionStatement {
-    return ts.createStatement(expression);
+    return ts.factory.createExpressionStatement(expression);
   }
 
   public libCall(prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
@@ -1419,10 +1431,10 @@ export class Factory {
   }
 
   public propertyAccessCall(id: string | ts.Expression, prop: string | ts.Identifier, args: ts.Expression | ts.Expression[] = []): ts.CallExpression {
-    id = typeof id === 'string' ? ts.createIdentifier(id) : id;
+    id = typeof id === 'string' ? ts.factory.createIdentifier(id) : id;
     args = util.asArray(args);
 
-    return ts.createCall(ts.createPropertyAccess(id, prop), [], args);
+    return ts.factory.createCallExpression(ts.factory.createPropertyAccessExpression(id, prop), [], args);
   }
 
   private addState(state: FactoryState): void {

@@ -1,7 +1,7 @@
 import * as path from 'path';
-import * as format from 'pretty-time';
-import * as rimraf from 'rimraf';
-import * as commondir from 'commondir';
+import format from 'pretty-time';
+import { rimrafSync } from 'rimraf';
+import commondir from 'commondir';
 import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
@@ -145,7 +145,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
     const filename = `${options.declarationFileName}.js`;
     const outDir = getOutDir();
     const location = path.join(outDir, filename);
-    if (!reflections) rimraf.sync(location);
+    if (!reflections) rimrafSync(location);
 
     const printerOptions: ts.PrinterOptions = {
       removeComments: false
@@ -201,10 +201,10 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
       return;
     }
 
-    sourceFile = ts.updateSourceFileNode(sourceFile, [
+    sourceFile = ts.factory.updateSourceFile(sourceFile, [
       context.factory.importLibStatement(),
       ...expressions.map(exp => {
-        return ts.createStatement(exp);
+        return ts.factory.createExpressionStatement(exp);
       })
     ]);
 

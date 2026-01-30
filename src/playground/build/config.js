@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const UglifyJsWebpackPlugin = require('uglifyjs-webpack-plugin');
 const pkg = require('../../../package.json');
 const config = {};
 
@@ -94,10 +93,12 @@ config.webpack = [{
       },
     ]
   },
-  node: {
-    path: true,
-    fs: 'empty',
-    module: 'empty'
+  resolve: {
+    fallback: {
+      path: require.resolve('path-browserify'),
+      fs: false,
+      module: false
+    }
   },
   plugins: [
     new webpack.DefinePlugin(Object.keys(config.replace).reduce(function(previous, current) {
@@ -142,11 +143,6 @@ config.webpack = [{
         enforce: 'pre',
         exclude: /node_modules/
       }
-    ]
-  },
-  optimization: {
-    minimizer: [
-      new UglifyJsWebpackPlugin({sourceMap: true})
     ]
   }
 }];

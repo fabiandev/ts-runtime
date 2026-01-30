@@ -4,16 +4,8 @@ import tsrLib = require('../../src/index');
 import utilLib = require('../util');
 
 declare global {
-  const assert: typeof assertLib;
-  const tsr: typeof tsrLib;
-  const util: typeof utilLib;
-
-  namespace NodeJS {
-    interface Global {
-      expect: typeof expect;
-      assert: typeof assert;
-      tsr: typeof tsr;
-      util: typeof util;
-    }
-  }
+  var expect: typeof expectLib;
+  var assert: typeof assertLib;
+  var tsr: typeof tsrLib;
+  var util: typeof utilLib;
 }

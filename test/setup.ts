@@ -6,6 +6,6 @@ import * as tsr from '../src/index';
 import * as util from './util';
 
 global.expect = expect;
-global.assert = assert;
-global.tsr = tsr;
-global.util = util;
+(global as any).assert = assert;
+(global as any).tsr = tsr;
+(global as any).util = util;

@@ -10,7 +10,9 @@
     "target": "es5",
     "noImplicitAny": true,
     "preserveConstEnums": true,
-    "removeComments": false
+    "removeComments": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*"

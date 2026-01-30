@@ -17,7 +17,7 @@ export default () => {
       const type = ts.createConstructorTypeNode(
         [],
         [],
-        ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
       );
 
       util.expectError(() => factory.typeReflection(type));

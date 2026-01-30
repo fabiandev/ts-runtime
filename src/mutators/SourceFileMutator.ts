@@ -12,9 +12,10 @@ export class SourceFileMutator extends Mutator {
     const declarations: ts.Statement[] = [];
 
     if (this.options.moduleAlias) {
-      declarations.push(ts.createImportDeclaration(
-        undefined, undefined, undefined,
-        ts.createLiteral('module-alias/register')
+      declarations.push(ts.factory.createImportDeclaration(
+        undefined,
+        undefined,
+        ts.factory.createStringLiteral('module-alias/register')
       ));
     }
 
@@ -23,9 +24,10 @@ export class SourceFileMutator extends Mutator {
       const filePath = path.join(relativePath, this.context.options.declarationFileName);
       const prefix = !relativePath ? './' : '';
 
-      declarations.push(ts.createImportDeclaration(
-        undefined, undefined, undefined,
-        ts.createLiteral(`${prefix}${filePath}`)
+      declarations.push(ts.factory.createImportDeclaration(
+        undefined,
+        undefined,
+        ts.factory.createStringLiteral(`${prefix}${filePath}`)
       ));
     }
 
@@ -35,7 +37,7 @@ export class SourceFileMutator extends Mutator {
 
     statements.unshift(...declarations);
 
-    return declarations.length > 0 ? ts.updateSourceFileNode(node, statements) : node;
+    return declarations.length > 0 ? ts.factory.updateSourceFile(node, statements) : node;
   }
 
 }

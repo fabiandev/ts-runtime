@@ -49,15 +49,15 @@ export class BlockLikeMutator extends Mutator {
   private updateBlock(node: ts.BlockLike, statements: ts.Statement[]): ts.BlockLike {
     switch (node.kind) {
       case this.kind[0]:
-        return this.map(ts.updateSourceFileNode(node as ts.SourceFile, statements), node);
+        return this.map(ts.factory.updateSourceFile(node as ts.SourceFile, statements), node);
       case this.kind[1]:
-        return this.map(ts.updateBlock(node as ts.Block, statements), node);
+        return this.map(ts.factory.updateBlock(node as ts.Block, statements), node);
       case this.kind[2]:
-        return this.map(ts.updateModuleBlock(node as ts.ModuleBlock, statements), node);
+        return this.map(ts.factory.updateModuleBlock(node as ts.ModuleBlock, statements), node);
       case this.kind[3]:
-        return this.map(ts.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements), node);
+        return this.map(ts.factory.updateCaseClause(node as ts.CaseClause, (node as ts.CaseClause).expression, statements), node);
       case this.kind[4]:
-        return this.map(ts.updateDefaultClause(node as ts.DefaultClause, statements), node);
+        return this.map(ts.factory.updateDefaultClause(node as ts.DefaultClause, statements), node);
       default:
         return node;
     }
@@ -68,7 +68,7 @@ export class BlockLikeMutator extends Mutator {
       return [node];
     }
 
-    const annotation = ts.createStatement(
+    const annotation = ts.factory.createExpressionStatement(
       this.factory.annotate([
         node.name,
         this.factory.functionReflection(node)
@@ -79,7 +79,7 @@ export class BlockLikeMutator extends Mutator {
   }
 
   private annotateClassDeclaration(node: ts.ClassDeclaration): ts.Statement[] {
-    const annotation = ts.createVariableStatement(
+    const annotation = ts.factory.createVariableStatement(
       undefined,
       this.factory.classTypeParameterSymbolDeclaration(node.name)
     );
@@ -88,7 +88,7 @@ export class BlockLikeMutator extends Mutator {
   }
 
   private annotateEnumDeclaration(node: ts.EnumDeclaration): ts.Statement[] {
-    const annotation = ts.createStatement(
+    const annotation = ts.factory.createExpressionStatement(
       this.factory.annotate([
         node.name,
         this.factory.enumReflection(node)

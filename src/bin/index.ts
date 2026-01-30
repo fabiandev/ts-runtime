@@ -2,7 +2,7 @@
 
 import * as path from 'path';
 import * as ts from 'typescript';
-import * as commander from 'commander';
+import { Command } from 'commander';
 import * as util from './util';
 import * as program from './program';
 import { transform } from '../transform';
@@ -14,6 +14,7 @@ const pkgDir = ts.sys.fileExists(path.join(__dirname, '../package.json')) ?
 
 const pkg = require(pkgDir);
 const options: Options = Object.assign({}, defaultOptions);
+const commander = new Command();
 
 let compilerOptions: string = '{}';
 let parsedCompilerOptions: any;

@@ -363,6 +363,16 @@ export class MutationContext {
       }
     });
 
+    // Also include members that might not be in the symbol table (e.g., computed property names)
+    // Only add members that aren't already in the merged set
+    for (let member of util.arrayFromNodeArray(node.members as ts.NodeArray<ts.TypeElement | ts.ClassElement>)) {
+      // Check if this member is already in the set
+      // Members with computed property names typically don't have symbols, so they won't be in merged yet
+      if (member.name && ts.isComputedPropertyName(member.name)) {
+        merged.add(member);
+      }
+    }
+
     return Array.from(merged);
   }
 

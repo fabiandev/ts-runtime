@@ -400,7 +400,7 @@ export function annotateWithAny(node: ts.Node): boolean {
     case ts.SyntaxKind.FunctionExpression:
     case ts.SyntaxKind.ArrowFunction:
     case ts.SyntaxKind.FunctionDeclaration:
-      (node as any).type = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+      (node as any).type = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
       (node as any).type.parent = node;
       return true;
   }

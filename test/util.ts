@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ts from 'typescript';
-import * as commondir from 'commondir';
+import commondir from 'commondir';
 import { getOptions } from '../src/transform';
 import { ProgramError } from '../src/errors';
 import { Scanner } from '../src/scanner';

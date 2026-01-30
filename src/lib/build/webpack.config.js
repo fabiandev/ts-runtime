@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const UglifyJsWebpackPlugin = require('uglifyjs-webpack-plugin');
 
 const config = {};
 
@@ -51,8 +50,7 @@ config.webpack = [
           options: config.typescript
         }
       ]
-    },
-    plugins: [new UglifyJsWebpackPlugin({include: /\.min\.js$/, sourceMap: true})]
+    }
   }
 ];
 

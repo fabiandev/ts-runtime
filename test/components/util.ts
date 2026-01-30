@@ -35,7 +35,7 @@ export default () => {
 
     describe('#arrayFromNodeArray', () => {
       it('should return an array from a NodeArray', () => {
-        const input = ts.createNodeArray([ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)]) as any;
+        const input = ts.createNodeArray([ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)]) as any;
         const result = u.arrayFromNodeArray(input) as any;
         expect(Array.isArray(result)).ok();
         expect(input !== result).ok();
@@ -44,13 +44,13 @@ export default () => {
 
     describe('#hasTypeParameters', () => {
       it('should be true if node has type parameters', () => {
-        const input = ts.createInterfaceDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration('T') ], void 0, []);
         const result = u.hasTypeParameters(input) as any;
         expect(result).to.be(true);
       });
 
       it('should be false if node has no type parameters', () => {
-        const input = ts.createInterfaceDeclaration(void 0, void 0, 'Foo', void 0, void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, void 0, []);
         const result = u.hasTypeParameters(input) as any;
         expect(result).to.be(false);
       });
@@ -118,30 +118,30 @@ export default () => {
 
     describe('#hasKind', () => {
       it('should be false if node does not include kind', () => {
-        const result = u.hasKind(ts.createThis(), ts.SyntaxKind.AnyKeyword);
+        const result = u.hasKind(ts.factory.createThis(), ts.SyntaxKind.AnyKeyword);
         expect(result).to.be(false);
       });
 
       it('should be true if node is of kind', () => {
-        const result = u.hasKind(ts.createThis(), ts.SyntaxKind.ThisKeyword);
+        const result = u.hasKind(ts.factory.createThis(), ts.SyntaxKind.ThisKeyword);
         expect(result).to.be(true);
       });
 
       it('should be true if node includes kind', () => {
-        const result = u.hasKind(ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), ts.SyntaxKind.AnyKeyword);
+        const result = u.hasKind(ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), ts.SyntaxKind.AnyKeyword);
         expect(result).to.be(true);
       });
     });
 
     describe('#hasModifier', () => {
       it('should be true if node has modifier flag', () => {
-        const input = ts.createInterfaceDeclaration(void 0, [ts.createToken(ts.SyntaxKind.AbstractKeyword)], 'Foo', void 0, void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, [ts.factory.createToken(ts.SyntaxKind.AbstractKeyword)], 'Foo', void 0, void 0, []);
         const result = u.hasModifier(input, ts.SyntaxKind.AbstractKeyword);
         expect(result).to.be(true);
       });
 
       it('should be false if node does not have modifier flag', () => {
-        const input = ts.createInterfaceDeclaration(void 0, void 0, 'Foo', void 0, void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, void 0, []);
         const result = u.hasModifier(input, ts.SyntaxKind.AbstractKeyword);
         expect(result).to.be(false);
       });
@@ -149,13 +149,13 @@ export default () => {
 
     describe('#hasFlag', () => {
       it('should be true if node has flag', () => {
-        const input = ts.createInterfaceDeclaration(void 0, [ts.createToken(ts.SyntaxKind.AbstractKeyword)], 'Foo', void 0, void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, [ts.factory.createToken(ts.SyntaxKind.AbstractKeyword)], 'Foo', void 0, void 0, []);
         const result = u.hasFlag(input, ts.NodeFlags.Synthesized);
         expect(result).to.be(true);
       });
 
       it('should be false if node does not have flag', () => {
-        const input = ts.createInterfaceDeclaration(void 0, void 0, 'Foo', void 0, void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, void 0, []);
         const result = u.hasFlag(input, ts.NodeFlags.Const);
         expect(result).to.be(false);
       });
@@ -163,7 +163,7 @@ export default () => {
 
     describe('#setParent', () => {
       it('should set parent nodes recursively', () => {
-        const input = ts.createThis();
+        const input = ts.factory.createThis();
         const result = u.setParent(input);
         expect(result).ok();
       });
@@ -171,13 +171,13 @@ export default () => {
 
     describe('#isAnyKeyword', () => {
       it('should be true if node kind is AnyKeyword', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
         const result = u.isAnyKeyword(input);
         expect(result).to.be(true);
       });
 
       it('should be false if node kind is not AnyKeyword', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
         const result = u.isAnyKeyword(input);
         expect(result).to.be(false);
       });
@@ -185,7 +185,7 @@ export default () => {
 
     describe('#isSynthesized', () => {
       it('should be true if node is synthesized', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
         const result = u.isSynthesized(input);
         expect(result).to.be(true);
       });
@@ -193,19 +193,19 @@ export default () => {
 
     describe('#isAmbient', () => {
       it('should be true for interface declarations', () => {
-        const input = ts.createInterfaceDeclaration(void 0, void 0, 'Foo', void 0, void 0, []);
+        const input = ts.factory.createInterfaceDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, void 0, []);
         const result = u.isAmbient(input);
         expect(result).to.be(true);
       });
 
       it('should be true for type alias declarations', () => {
-        const input = ts.createTypeAliasDeclaration(void 0, void 0, 'Foo', void 0, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        const input = ts.factory.createTypeAliasDeclaration(void 0, void 0, 'Foo', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = u.isAmbient(input);
         expect(result).to.be(true);
       });
 
       it('should be false for other declarations', () => {
-        const input = ts.createClassDeclaration(void 0, void 0, 'Foo', void 0, void 0, []);
+        const input = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, void 0, []);
         const result = u.isAmbient(input);
         expect(result).to.be(false);
       });
@@ -213,13 +213,13 @@ export default () => {
 
     describe('#isAmbientDeclaration', () => {
       it('should be true for declaration with declare keyword', () => {
-        const input = ts.createClassDeclaration(void 0, [ts.createToken(ts.SyntaxKind.DeclareKeyword)], 'Foo', void 0, void 0, []);
+        const input = ts.factory.createClassDeclaration(void 0, [ts.factory.createToken(ts.SyntaxKind.DeclareKeyword)], 'Foo', void 0, void 0, []);
         const result = u.isAmbientDeclaration(input);
         expect(result).to.be(true);
       });
 
       it('should be false for other declarations', () => {
-        const input = ts.createClassDeclaration(void 0, void 0, 'Foo', void 0, void 0, []);
+        const input = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, void 0, []);
         const result = u.isAmbientDeclaration(input);
         expect(result).to.be(false);
       });
@@ -227,13 +227,13 @@ export default () => {
 
     describe('#isPartOfTypeNode', () => {
       it('should be false if node has no parent', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
         const result = u.isPartOfTypeNode(input);
         expect(result).to.be(false);
       });
 
       it('should be true if node is child of a type node', () => {
-        const input = ts.createArrayTypeNode(ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        const input = ts.createArrayTypeNode(ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         u.setParent(input);
         const result = u.isPartOfTypeNode(input.elementType);
         expect(result).to.be(true);
@@ -242,19 +242,19 @@ export default () => {
 
     describe('#isBindingPattern', () => {
       it('should be true for array binding patterns', () => {
-        const input = ts.createArrayBindingPattern([]);
+        const input = ts.factory.createArrayBindingPattern([]);
         const result = u.isBindingPattern(input);
         expect(result).to.be(true);
       });
 
       it('should be true for object binding patterns', () => {
-        const input = ts.createObjectBindingPattern([]);
+        const input = ts.factory.createObjectBindingPattern([]);
         const result = u.isBindingPattern(input);
         expect(result).to.be(true);
       });
 
       it('should be false if it is no binding pattern', () => {
-        const input = ts.createThis();
+        const input = ts.factory.createThis();
         const result = u.isBindingPattern(input);
         expect(result).to.be(false);
       });
@@ -262,13 +262,13 @@ export default () => {
 
     describe('#isStatic', () => {
       it('should be true if it has a static modifier', () => {
-        const input = ts.createMethod(void 0, [ts.createToken(ts.SyntaxKind.StaticKeyword)], void 0, 'foo', void 0, void 0, [], void 0, ts.createBlock([]));
+        const input = ts.factory.createMethodDeclaration(void 0, [ts.factory.createToken(ts.SyntaxKind.StaticKeyword)], void 0, 'foo', void 0, void 0, [], void 0, ts.factory.createBlock([]));
         const result = u.isStatic(input);
         expect(result).to.be(true);
       });
 
       it('should be false if it has no static modifier', () => {
-        const input = ts.createMethod(void 0, void 0, void 0, 'foo', void 0, void 0, [], void 0, ts.createBlock([]));
+        const input = ts.factory.createMethodDeclaration(void 0, void 0, void 0, 'foo', void 0, void 0, [], void 0, ts.factory.createBlock([]));
         const result = u.isStatic(input);
         expect(result).to.be(false);
       });
@@ -276,8 +276,8 @@ export default () => {
 
     describe('#isTypeParameter', () => {
       it('should be true if type reference is a type parameter', () => {
-        const node = ts.createClassDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, [
-          ts.createProperty(void 0, void 0, 'foo', void 0, ts.createTypeReferenceNode('T', void 0), void 0)
+        const node = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration('T') ], void 0, [
+          ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createTypeReferenceNode('T', void 0), void 0)
         ]);
         const input = (node.members[0] as ts.PropertyDeclaration).type as ts.TypeReferenceNode;
         u.setParent(node);
@@ -286,8 +286,8 @@ export default () => {
       });
 
       it('should be false if type reference is not a type parameter', () => {
-        const node = ts.createClassDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, [
-          ts.createProperty(void 0, void 0, 'foo', void 0, ts.createTypeReferenceNode('Bar', void 0), void 0)
+        const node = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration('T') ], void 0, [
+          ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createTypeReferenceNode('Bar', void 0), void 0)
         ]);
         const input = (node.members[0] as ts.PropertyDeclaration).type as ts.TypeReferenceNode;
         u.setParent(node);
@@ -298,8 +298,8 @@ export default () => {
 
     describe('#isTypeParameterOf', () => {
       it('should be true if type reference is a type parameter', () => {
-        const node = ts.createClassDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, [
-          ts.createProperty(void 0, void 0, 'foo', void 0, ts.createTypeReferenceNode('T', void 0), void 0)
+        const node = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration('T') ], void 0, [
+          ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createTypeReferenceNode('T', void 0), void 0)
         ]);
         const input = (node.members[0] as ts.PropertyDeclaration).type as ts.TypeReferenceNode;
         u.setParent(node);
@@ -308,8 +308,8 @@ export default () => {
       });
 
       it('should be false if type reference is not a type parameter', () => {
-        const node = ts.createClassDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, [
-          ts.createProperty(void 0, void 0, 'foo', void 0, ts.createTypeReferenceNode('Bar', void 0), void 0)
+        const node = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration('T') ], void 0, [
+          ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createTypeReferenceNode('Bar', void 0), void 0)
         ]);
         const input = (node.members[0] as ts.PropertyDeclaration).type as ts.TypeReferenceNode;
         u.setParent(node);
@@ -320,8 +320,8 @@ export default () => {
 
     describe('#isTypeParameterOfClass', () => {
       it('should return the class node if it is a class type parameter', () => {
-        const node = ts.createClassDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, [
-          ts.createProperty(void 0, void 0, 'foo', void 0, ts.createTypeReferenceNode('T', void 0), void 0)
+        const node = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration('T') ], void 0, [
+          ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createTypeReferenceNode('T', void 0), void 0)
         ]);
         const input = (node.members[0] as ts.PropertyDeclaration).type as ts.TypeReferenceNode;
         u.setParent(node);
@@ -330,8 +330,8 @@ export default () => {
       });
 
       it('should return null if it is not a class type parameter', () => {
-        const node = ts.createInterfaceDeclaration(void 0, void 0, 'Foo', [ ts.createTypeParameterDeclaration('T') ], void 0, [
-          ts.createPropertySignature(void 0, 'foo', void 0, ts.createTypeReferenceNode('Bar', void 0), void 0)
+        const node = ts.factory.createInterfaceDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.factory.createTypeParameterDeclaration(void 0, ts.factory.createIdentifier('T')) ], void 0, [
+          ts.factory.createPropertySignature(void 0, ts.factory.createIdentifier('foo'), void 0, ts.factory.createTypeReferenceNode(ts.factory.createIdentifier('Bar'), void 0))
         ]);
         const input = (node.members[0] as ts.PropertySignature).type as ts.TypeReferenceNode;
         u.setParent(node);
@@ -342,16 +342,16 @@ export default () => {
 
     describe('#isInStaticContext', () => {
       it('should be true if node is in a static context', () => {
-        const input = ts.createMethod(void 0, [
-          ts.createToken(ts.SyntaxKind.StaticKeyword)
-        ], void 0, 'foo', void 0, void 0, [], ts.createTypeReferenceNode('Bar', void 0), ts.createBlock([]));
+        const input = ts.factory.createMethodDeclaration(void 0, [
+          ts.factory.createToken(ts.SyntaxKind.StaticKeyword)
+        ], void 0, 'foo', void 0, void 0, [], ts.factory.createTypeReferenceNode('Bar', void 0), ts.factory.createBlock([]));
         u.setParent(input);
         const result = u.isInStaticContext(input.type as ts.TypeReferenceNode);
         expect(result).to.be(true);
       });
 
       it('should be false if node is not in a static context', () => {
-        const input = ts.createMethod(void 0, void 0, void 0, 'foo', void 0, void 0, [], ts.createTypeReferenceNode('Bar', void 0), ts.createBlock([]));
+        const input = ts.factory.createMethodDeclaration(void 0, void 0, void 0, 'foo', void 0, void 0, [], ts.factory.createTypeReferenceNode('Bar', void 0), ts.factory.createBlock([]));
         u.setParent(input);
         const result = u.isInStaticContext(input.type as ts.TypeReferenceNode);
         expect(result).to.be(false);
@@ -360,13 +360,13 @@ export default () => {
 
     describe('#isSuperStatement', () => {
       it('should be true if node is a super call expression statement', () => {
-        const input = ts.createStatement(ts.createCall(ts.createSuper(), void 0, void 0))
+        const input = ts.factory.createExpressionStatement(ts.factory.createCallExpression(ts.factory.createSuper(), void 0, void 0))
         const result = u.isSuperStatement(input);
         expect(result).to.be(true);
       });
 
       it('should be false if node is not a super call expression statement', () => {
-        const input = ts.createSuper();
+        const input = ts.factory.createSuper();
         const result = u.isSuperStatement(input);
         expect(result).to.be(false);
       });
@@ -374,13 +374,13 @@ export default () => {
 
     describe('#isKind', () => {
       it('should be true if node is of kind', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
         const result = u.isKind(input, ts.SyntaxKind.AnyKeyword);
         expect(result).to.be(true);
       });
 
       it('should be false if node is not of kind', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
         const result = u.isKind(input, ts.SyntaxKind.NumberKeyword);
         expect(result).to.be(false);
       });
@@ -388,25 +388,25 @@ export default () => {
 
     describe('#isBindingName', () => {
       it('should be true for identifiers', () => {
-        const input = ts.createIdentifier('foo');
+        const input = ts.factory.createIdentifier('foo');
         const result = u.isBindingName(input);
         expect(result).to.be(true);
       });
 
       it('should be true for array binding patterns', () => {
-        const input = ts.createArrayBindingPattern([]);
+        const input = ts.factory.createArrayBindingPattern([]);
         const result = u.isBindingName(input);
         expect(result).to.be(true);
       });
 
       it('should be true for object binding patterns', () => {
-        const input = ts.createObjectBindingPattern([]);
+        const input = ts.factory.createObjectBindingPattern([]);
         const result = u.isBindingName(input);
         expect(result).to.be(true);
       });
 
       it('should be false for other syntax kinds', () => {
-        const input = ts.createThis();
+        const input = ts.factory.createThis();
         const result = u.isBindingName(input);
         expect(result).to.be(false);
       });
@@ -414,37 +414,37 @@ export default () => {
 
     describe('#isLiteral', () => {
       it('should be true for LiteralTypenNode', () => {
-        const input = ts.createLiteralTypeNode(ts.createLiteral('foo'));
+        const input = ts.createLiteralTypeNode(ts.factory.createStringLiteral('foo'));
         const result = u.isLiteral(input);
         expect(result).to.be(true);
       });
 
       it('should be true for NumericLiteral', () => {
-        const input = ts.createLiteral(1);
+        const input = ts.factory.createNumericLiteral('1');
         const result = u.isLiteral(input);
         expect(result).to.be(true);
       });
 
       it('should be true for StringLiteral', () => {
-        const input = ts.createLiteral('foo');
+        const input = ts.factory.createStringLiteral('foo');
         const result = u.isLiteral(input);
         expect(result).to.be(true);
       });
 
       it('should be true for TrueKeyword', () => {
-        const input = ts.createLiteral(true);
+        const input = ts.factory.createTrue();
         const result = u.isLiteral(input);
         expect(result).to.be(true);
       });
 
       it('should be true for FalseKeyword', () => {
-        const input = ts.createLiteral(false);
+        const input = ts.factory.createFalse();
         const result = u.isLiteral(input);
         expect(result).to.be(true);
       });
 
       it('should be false for other types', () => {
-        const input = ts.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
+        const input = ts.factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
         const result = u.isLiteral(input);
         expect(result).to.be(false);
       });
@@ -466,13 +466,13 @@ export default () => {
 
     describe('#getIdentifierOfEntityName', () => {
       it('should return the identifier', () => {
-        const input = ts.createIdentifier('foo');
+        const input = ts.factory.createIdentifier('foo');
         const result = u.getIdentifierOfEntityName(input);
         expect(ts.isIdentifier(result)).to.be(true);
       });
 
       it('should return the right hand identifier side of a qualified name', () => {
-        const input = ts.createQualifiedName(ts.createIdentifier('foo'), ts.createIdentifier('bar'));
+        const input = ts.factory.createQualifiedName(ts.factory.createIdentifier('foo'), ts.factory.createIdentifier('bar'));
         const result = u.getIdentifierOfEntityName(input);
         expect(ts.isIdentifier(result)).to.be(true);
         expect(result.text).to.eql('bar');
@@ -481,13 +481,13 @@ export default () => {
 
     describe('#getBaseIdentifierOfEntityName', () => {
       it('should return the identifier', () => {
-        const input = ts.createIdentifier('foo');
+        const input = ts.factory.createIdentifier('foo');
         const result = u.getBaseIdentifierOfEntityName(input);
         expect(ts.isIdentifier(result)).to.be(true);
       });
 
       it('should return the left hand side identifier of a qualified name', () => {
-        const input = ts.createQualifiedName(ts.createIdentifier('foo'), ts.createIdentifier('bar'));
+        const input = ts.factory.createQualifiedName(ts.factory.createIdentifier('foo'), ts.factory.createIdentifier('bar'));
         const result = u.getBaseIdentifierOfEntityName(input);
         expect(ts.isIdentifier(result)).to.be(true);
         expect(result.text).to.eql('foo');
@@ -496,9 +496,9 @@ export default () => {
 
     describe('#getExtendsClause', () => {
       it('should return the extends heritage clause', () => {
-        const input = ts.createClassDeclaration(void 0, void 0, 'Foo', void 0, [
-          ts.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [ts.createExpressionWithTypeArguments(void 0, ts.createIdentifier('Bar'))]),
-          ts.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.createExpressionWithTypeArguments(void 0, ts.createIdentifier('IFoo'))])
+        const input = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, [
+          ts.factory.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('Bar'), void 0)]),
+          ts.factory.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('IFoo'), void 0)])
         ], []);
         const clause = input.heritageClauses[0];
         u.setParent(input);
@@ -509,9 +509,9 @@ export default () => {
 
     describe('#getImplementsClause', () => {
       it('should return the implements heritage clause', () => {
-        const input = ts.createClassDeclaration(void 0, void 0, 'Foo', void 0, [
-          ts.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [ts.createExpressionWithTypeArguments(void 0, ts.createIdentifier('Bar'))]),
-          ts.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.createExpressionWithTypeArguments(void 0, ts.createIdentifier('IFoo'))])
+        const input = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, [
+          ts.factory.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('Bar'), void 0)]),
+          ts.factory.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('IFoo'), void 0)])
         ], []);
         const clause = input.heritageClauses[1];
         u.setParent(input);
@@ -522,7 +522,7 @@ export default () => {
 
     describe('#getExpression', () => {
       it('should return the first expression of a node', () => {
-        const input = ts.createExpressionWithTypeArguments(void 0, ts.createIdentifier('Bar'));
+        const input = ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('Bar'), void 0);
         const result = u.getExpression(input);
         expect(ts.isIdentifier(result)).to.be(true);
       });
@@ -530,39 +530,39 @@ export default () => {
 
     describe('#getPropertyAccessExpressionTextOrFail', () => {
       it('should return the text of a property access expression', () => {
-        const input = ts.createPropertyAccess(ts.createIdentifier('foo'), ts.createIdentifier('bar'));
+        const input = ts.createPropertyAccess(ts.factory.createIdentifier('foo'), ts.factory.createIdentifier('bar'));
         const result = u.getPropertyAccessExpressionTextOrFail(input);
         expect(result).to.eql('foo.bar');
       });
 
       it('should fail if property access expression does not consist of identifiers', () => {
-        const input = ts.createPropertyAccess(ts.createCall(ts.createIdentifier('foo'), void 0, void 0), ts.createIdentifier('bar'));
+        const input = ts.createPropertyAccess(ts.factory.createCallExpression(ts.factory.createIdentifier('foo'), void 0, void 0), ts.factory.createIdentifier('bar'));
         util.expectProgramError(() => u.getPropertyAccessExpressionTextOrFail(input));
       });
     });
 
     describe('#getIdentifierOfPropertyAccessExpressionOrFail', () => {
       it('should return the text of a property access expression', () => {
-        const input = ts.createPropertyAccess(ts.createIdentifier('foo'), ts.createIdentifier('bar'));
+        const input = ts.createPropertyAccess(ts.factory.createIdentifier('foo'), ts.factory.createIdentifier('bar'));
         const result = u.getIdentifierOfPropertyAccessExpressionOrFail(input);
         expect(result.text).to.eql('foo');
       });
 
       it('should fail if property access expression does not consist of identifiers', () => {
-        const input = ts.createPropertyAccess(ts.createCall(ts.createIdentifier('foo'), void 0, void 0), ts.createIdentifier('bar'));
+        const input = ts.createPropertyAccess(ts.factory.createCallExpression(ts.factory.createIdentifier('foo'), void 0, void 0), ts.factory.createIdentifier('bar'));
         util.expectProgramError(() => u.getIdentifierOfPropertyAccessExpressionOrFail(input));
       });
     });
 
     describe('#getEntityNameText', () => {
       it('should return the identifier text if the entity name is an identifier', () => {
-        const input = ts.createIdentifier('foo');
+        const input = ts.factory.createIdentifier('foo');
         const result = u.getEntityNameText(input);
         expect(result).to.eql('foo');
       });
 
       it('should return the text of a qualified name', () => {
-        const input = ts.createQualifiedName(ts.createIdentifier('foo'), ts.createIdentifier('bar'));
+        const input = ts.factory.createQualifiedName(ts.factory.createIdentifier('foo'), ts.factory.createIdentifier('bar'));
         const result = u.getEntityNameText(input);
         expect(result).to.eql('foo.bar');
       });
@@ -570,8 +570,8 @@ export default () => {
 
     describe('#insertBeforeSuper', () => {
       it('should insert a statement before the super call', () => {
-        const statements = [ts.createStatement(ts.createCall(ts.createSuper(), void 0, void 0))];
-        const insert = ts.createStatement(ts.createIdentifier('foo'));
+        const statements = [ts.factory.createExpressionStatement(ts.factory.createCallExpression(ts.factory.createSuper(), void 0, void 0))];
+        const insert = ts.factory.createExpressionStatement(ts.factory.createIdentifier('foo'));
         const result = u.insertBeforeSuper(statements, insert);
         expect(result[0]).to.equal(insert);
       });
@@ -579,8 +579,8 @@ export default () => {
 
     describe('#insertAfterSuper', () => {
       it('should insert a statement after the super call', () => {
-        const statements = [ts.createStatement(ts.createCall(ts.createSuper(), void 0, void 0))];
-        const insert = ts.createStatement(ts.createIdentifier('foo'));
+        const statements = [ts.factory.createExpressionStatement(ts.factory.createCallExpression(ts.factory.createSuper(), void 0, void 0))];
+        const insert = ts.factory.createExpressionStatement(ts.factory.createIdentifier('foo'));
         const result = u.insertAfterSuper(statements, insert);
         expect(result[1]).to.equal(insert);
       });
@@ -588,35 +588,35 @@ export default () => {
 
     describe('#declarationCanHaveTypeAnnotation', () => {
       it('should return false for nodes in for-of statements', () => {
-        const input = ts.createForOf(void 0, ts.createVariableDeclarationList([ts.createVariableDeclaration('foo')]), ts.createArrayLiteral(), ts.createStatement(ts.createIdentifier('bar')));
+        const input = ts.createForOf(void 0, ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration('foo')]), ts.createArrayLiteral(), ts.factory.createExpressionStatement(ts.factory.createIdentifier('bar')));
         u.setParent(input);
         const result = u.declarationCanHaveTypeAnnotation(input.initializer);
         expect(result).to.be(false);
       });
 
       it('should return false for nodes in for-in statements', () => {
-        const input = ts.createForIn(ts.createVariableDeclarationList([ts.createVariableDeclaration('foo')]), ts.createObjectLiteral(), ts.createStatement(ts.createIdentifier('bar')));
+        const input = ts.createForIn(ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration('foo')]), ts.createObjectLiteral(), ts.factory.createExpressionStatement(ts.factory.createIdentifier('bar')));
         u.setParent(input);
         const result = u.declarationCanHaveTypeAnnotation((input.initializer as ts.VariableDeclarationList).declarations[0]);
         expect(result).to.be(false);
       });
 
       it('should return false for nodes in catch clauses', () => {
-        const input = ts.createTry(ts.createBlock([]), ts.createCatchClause('e', ts.createBlock([])), void 0);
+        const input = ts.factory.createTryStatement(ts.factory.createBlock([]), ts.factory.createCatchClause('e', ts.factory.createBlock([])), void 0);
         u.setParent(input);
         const result = u.declarationCanHaveTypeAnnotation(input.catchClause.variableDeclaration);
         expect(result).to.be(false);
       });
 
       it('should return false for import clauses', () => {
-        const input = ts.createImportDeclaration(void 0, void 0, ts.createImportClause(ts.createIdentifier('foo'), void 0), ts.createLiteral('foo'))
+        const input = ts.factory.createImportDeclaration(void 0, ts.factory.createImportClause(false, ts.factory.createIdentifier('foo'), void 0), ts.factory.createStringLiteral('foo'))
         u.setParent(input);
         const result = u.declarationCanHaveTypeAnnotation(input.importClause);
         expect(result).to.be(false);
       });
 
       it('should return true for other declarations', () => {
-        const input = ts.createVariableDeclarationList([ts.createVariableDeclaration('foo')])
+        const input = ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration('foo')])
         const result = u.declarationCanHaveTypeAnnotation(input);
         expect(result).to.be(true);
       });
@@ -624,9 +624,9 @@ export default () => {
 
     describe('#extendsClauseHasTypeArguments', () => {
       it('should return true if the extends clause has type arguments', () => {
-        const input = ts.createClassDeclaration(void 0, void 0, 'Foo', void 0, [
-          ts.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [ts.createExpressionWithTypeArguments([ts.createKeywordTypeNode(ts.SyntaxKind.StringKeyword)], ts.createIdentifier('Bar'))]),
-          ts.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.createExpressionWithTypeArguments(void 0, ts.createIdentifier('IFoo'))])
+        const input = ts.factory.createClassDeclaration(void 0, ts.factory.createIdentifier('Foo'), void 0, [
+          ts.factory.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('Bar'), [ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword)])]),
+          ts.factory.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.factory.createExpressionWithTypeArguments(ts.factory.createIdentifier('IFoo'), void 0)])
         ], []);
         const clause = input.heritageClauses[0];
         u.setParent(input);

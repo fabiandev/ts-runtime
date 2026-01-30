@@ -41,8 +41,8 @@ export class ClassDeclarationMutator extends Mutator {
     this.assertImplementing(node, members);
     this.setMerged(node);
 
-    return ts.updateClassDeclaration(
-      node, decorators, node.modifiers, node.name,
+    return ts.factory.updateClassDeclaration(
+      node, decorators, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name,
       node.typeParameters, node.heritageClauses, members
     );
   }
@@ -54,8 +54,9 @@ export class ClassDeclarationMutator extends Mutator {
 
   private reflectClass(node: ts.ClassDeclaration): ts.Decorator[] {
     const classReflection = this.factory.classReflection(node);
-    const decorators = util.arrayFromNodeArray(node.decorators);
-    const decorator = ts.createDecorator(this.factory.annotate(classReflection));
+    const existingDecorators = ts.canHaveDecorators(node) ? ts.getDecorators(node) : undefined;
+    const decorators = existingDecorators ? Array.from(existingDecorators) : [];
+    const decorator = ts.factory.createDecorator(this.factory.annotate(classReflection));
 
     decorators.unshift(decorator);
 
@@ -88,10 +89,10 @@ export class ClassDeclarationMutator extends Mutator {
     let statements = util.arrayFromNodeArray(constructor.body.statements);
 
     for (let impl of implementsClause.types || []) {
-      const assertion = ts.createStatement(
+      const assertion = ts.factory.createExpressionStatement(
         this.factory.typeAssertion(
           this.factory.expressionWithTypeArgumentsReflection(impl),
-          ts.createThis()
+          ts.factory.createThis()
         )
       );
 
@@ -170,19 +171,19 @@ export class ClassDeclarationMutator extends Mutator {
     //     let decorator: ts.Decorator;
     //
     //     if (util.hasKind(typeReflection, ts.SyntaxKind.ThisKeyword)) {
-    //       decorator = ts.createDecorator(this.factory.decorate(
-    //         ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
-    //           ts.createBlock([ts.createReturn(typeReflection)], true)
+    //       decorator = ts.factory.createDecorator(this.factory.decorate(
+    //         ts.factory.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined,
+    //           ts.factory.createBlock([ts.factory.createReturn(typeReflection)], true)
     //         )
     //       ));
     //     } else {
-    //       decorator = ts.createDecorator(this.factory.decorate(typeReflection));
+    //       decorator = ts.factory.createDecorator(this.factory.decorate(typeReflection));
     //     }
     //
     //     decorators.unshift(decorator);
     //   }
     //
-    //   return ts.updateProperty(node, decorators, node.modifiers, node.name, node.type, node.initializer);
+    //   return ts.factory.updatePropertyDeclaration(node, decorators, node.modifiers, node.name, node.type, node.initializer);
     // }
 
     let name = node.name.text;
@@ -197,9 +198,9 @@ export class ClassDeclarationMutator extends Mutator {
     }
 
     if (!isStatic && initializer) {
-      this.initializers.push(ts.createStatement(
-        ts.createBinary(
-          ts.createPropertyAccess(isStatic ? ts.createIdentifier(className) : ts.createThis(), name),
+      this.initializers.push(ts.factory.createExpressionStatement(
+        ts.factory.createBinaryExpression(
+          ts.factory.createPropertyAccessExpression(isStatic ? ts.factory.createIdentifier(className) : ts.factory.createThis(), name),
           ts.SyntaxKind.FirstAssignment,
           initializer
         )
@@ -207,30 +208,30 @@ export class ClassDeclarationMutator extends Mutator {
     }
 
     const property = this.map(
-      ts.updateProperty(node, node.decorators, node.modifiers, ts.createIdentifier(name), node.questionToken, node.type, isStatic ? initializer : undefined),
+      ts.factory.updatePropertyDeclaration(node, ts.canHaveDecorators(node) ? ts.getDecorators(node) : undefined, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, ts.factory.createIdentifier(name), node.questionToken, node.type, isStatic ? initializer : undefined),
       node);
 
     let setAccessor: ts.SetAccessorDeclaration;
     if (!util.hasModifier(node, ts.SyntaxKind.ReadonlyKeyword)) {
-      setAccessor = this.factory.mutateFunctionBody(ts.createSetAccessor(undefined, node.modifiers, node.name, [
-        ts.createParameter(undefined, undefined, undefined, node.name.text, undefined, node.type)
-      ], ts.createBlock([ts.createStatement(
-        ts.createBinary(ts.createPropertyAccess(isStatic ? ts.createIdentifier(className) : ts.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name as ts.Expression)
+      setAccessor = this.factory.mutateFunctionBody(ts.factory.createSetAccessorDeclaration(undefined, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name, [
+        ts.factory.createParameterDeclaration(undefined, undefined, undefined, node.name.text, undefined, node.type)
+      ], ts.factory.createBlock([ts.factory.createExpressionStatement(
+        ts.factory.createBinaryExpression(ts.factory.createPropertyAccessExpression(isStatic ? ts.factory.createIdentifier(className) : ts.factory.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name as ts.Expression)
       )], true
       ))) as ts.SetAccessorDeclaration;
     }
 
-    const getAccessor = ts.createGetAccessor(undefined, node.modifiers, node.name, undefined, node.type, ts.createBlock(
-      [ts.createReturn(
-        ts.createPropertyAccess(
-          isStatic ? ts.createIdentifier(className) : ts.createThis(),
+    const getAccessor = ts.factory.createGetAccessorDeclaration(undefined, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name, undefined, node.type, ts.factory.createBlock(
+      [ts.factory.createReturnStatement(
+        ts.factory.createPropertyAccessExpression(
+          isStatic ? ts.factory.createIdentifier(className) : ts.factory.createThis(),
           name
         )
       )], true
     ));
 
     // TODO: fix any cast
-    (node.name as any) = ts.createIdentifier(name);
+    (node.name as any) = ts.factory.createIdentifier(name);
 
     return [property, getAccessor, setAccessor].filter(val => !!val);
   }
@@ -255,15 +256,15 @@ export class ClassDeclarationMutator extends Mutator {
     const extendsClause = util.getExtendsClause(this.node as ts.ClassDeclaration);
     const isExtending = !!extendsClause;
 
-    const constructor = ts.createConstructor(
+    const constructor = ts.factory.createConstructorDeclaration(
       undefined, undefined,
       isExtending
-        ? [ts.createParameter(undefined, undefined, ts.createToken(ts.SyntaxKind.DotDotDotToken), 'args')]
+        ? [ts.factory.createParameterDeclaration(undefined, undefined, ts.factory.createToken(ts.SyntaxKind.DotDotDotToken), 'args')]
         : undefined,
-      ts.createBlock(
+      ts.factory.createBlock(
         isExtending
-          ? [ts.createStatement(
-            ts.createCall(ts.createSuper(), undefined, [ts.createSpread(ts.createIdentifier('args'))])
+          ? [ts.factory.createExpressionStatement(
+            ts.factory.createCallExpression(ts.factory.createSuper(), undefined, [ts.factory.createSpreadElement(ts.factory.createIdentifier('args'))])
           )] : [],
         true
       )
@@ -276,12 +277,12 @@ export class ClassDeclarationMutator extends Mutator {
     const index = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
     const exists = index !== -1;
 
-    constructor = this.map(ts.updateConstructor(
+    constructor = this.map(ts.factory.updateConstructorDeclaration(
       constructor,
-      constructor.decorators,
-      constructor.modifiers,
+      ts.canHaveDecorators(constructor) ? ts.getDecorators(constructor) : undefined,
+      ts.canHaveModifiers(constructor) ? ts.getModifiers(constructor) : undefined,
       constructor.parameters,
-      this.map(ts.updateBlock(constructor.body, statements), constructor.body)
+      this.map(ts.factory.updateBlock(constructor.body, statements), constructor.body)
     ), constructor);
 
     if (exists) {

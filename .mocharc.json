@@ -1,0 +1,16 @@
+{
+  "node-option": [
+    "no-experimental-strip-types"
+  ],
+  "require": [
+    "source-map-support/register",
+    "ts-node/register",
+    "./test/setup.ts"
+  ],
+  "ui": "bdd",
+  "timeout": 3000,
+  "slow": 1000,
+  "inline-diffs": true,
+  "recursive": true,
+  "spec": "./test/**/*.test.ts"
+}
