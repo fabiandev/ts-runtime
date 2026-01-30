@@ -41,8 +41,15 @@ export class ClassDeclarationMutator extends Mutator {
     this.assertImplementing(node, members);
     this.setMerged(node);
 
+    // Combine decorators and modifiers for TypeScript 4.8+
+    // In TS 4.8+, decorators are passed as modifiers
+    const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
+    const allModifiers = decorators && modifiers
+      ? [...(decorators as any), ...modifiers]
+      : decorators as any || modifiers;
+
     return ts.factory.updateClassDeclaration(
-      node, decorators, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name,
+      node, allModifiers, node.name,
       node.typeParameters, node.heritageClauses, members
     );
   }
@@ -207,21 +214,28 @@ export class ClassDeclarationMutator extends Mutator {
       ));
     }
 
+    // Combine decorators and modifiers for TypeScript 4.8+
+    const decorators = ts.canHaveDecorators(node) ? ts.getDecorators(node) : undefined;
+    const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
+    const allModifiers = decorators && modifiers
+      ? [...(decorators as any), ...modifiers]
+      : decorators as any || modifiers;
+
     const property = this.map(
-      ts.factory.updatePropertyDeclaration(node, ts.canHaveDecorators(node) ? ts.getDecorators(node) : undefined, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, ts.factory.createIdentifier(name), node.questionToken, node.type, isStatic ? initializer : undefined),
+      ts.factory.updatePropertyDeclaration(node, allModifiers, ts.factory.createIdentifier(name), node.questionToken, node.type, isStatic ? initializer : undefined),
       node);
 
     let setAccessor: ts.SetAccessorDeclaration;
     if (!util.hasModifier(node, ts.SyntaxKind.ReadonlyKeyword)) {
-      setAccessor = this.factory.mutateFunctionBody(ts.factory.createSetAccessorDeclaration(undefined, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name, [
-        ts.factory.createParameterDeclaration(undefined, undefined, undefined, node.name.text, undefined, node.type)
+      setAccessor = this.factory.mutateFunctionBody(ts.factory.createSetAccessorDeclaration(ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name, [
+        ts.factory.createParameterDeclaration(undefined, undefined, node.name.text, undefined, node.type)
       ], ts.factory.createBlock([ts.factory.createExpressionStatement(
         ts.factory.createBinaryExpression(ts.factory.createPropertyAccessExpression(isStatic ? ts.factory.createIdentifier(className) : ts.factory.createThis(), name), ts.SyntaxKind.FirstAssignment, node.name as ts.Expression)
       )], true
       ))) as ts.SetAccessorDeclaration;
     }
 
-    const getAccessor = ts.factory.createGetAccessorDeclaration(undefined, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name, undefined, node.type, ts.factory.createBlock(
+    const getAccessor = ts.factory.createGetAccessorDeclaration(ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.name, undefined, node.type, ts.factory.createBlock(
       [ts.factory.createReturnStatement(
         ts.factory.createPropertyAccessExpression(
           isStatic ? ts.factory.createIdentifier(className) : ts.factory.createThis(),
@@ -257,9 +271,9 @@ export class ClassDeclarationMutator extends Mutator {
     const isExtending = !!extendsClause;
 
     const constructor = ts.factory.createConstructorDeclaration(
-      undefined, undefined,
+      undefined,
       isExtending
-        ? [ts.factory.createParameterDeclaration(undefined, undefined, ts.factory.createToken(ts.SyntaxKind.DotDotDotToken), 'args')]
+        ? [ts.factory.createParameterDeclaration(undefined, ts.factory.createToken(ts.SyntaxKind.DotDotDotToken), 'args')]
         : undefined,
       ts.factory.createBlock(
         isExtending
@@ -277,10 +291,16 @@ export class ClassDeclarationMutator extends Mutator {
     const index = members.findIndex(member => member.kind === ts.SyntaxKind.Constructor);
     const exists = index !== -1;
 
+    // Combine decorators and modifiers for TypeScript 4.8+
+    const constructorDecorators = ts.canHaveDecorators(constructor) ? ts.getDecorators(constructor) : undefined;
+    const constructorModifiers = ts.canHaveModifiers(constructor) ? ts.getModifiers(constructor) : undefined;
+    const constructorAllModifiers = constructorDecorators && constructorModifiers
+      ? [...(constructorDecorators as any), ...constructorModifiers]
+      : constructorDecorators as any || constructorModifiers;
+
     constructor = this.map(ts.factory.updateConstructorDeclaration(
       constructor,
-      ts.canHaveDecorators(constructor) ? ts.getDecorators(constructor) : undefined,
-      ts.canHaveModifiers(constructor) ? ts.getModifiers(constructor) : undefined,
+      constructorAllModifiers,
       constructor.parameters,
       this.map(ts.factory.updateBlock(constructor.body, statements), constructor.body)
     ), constructor);

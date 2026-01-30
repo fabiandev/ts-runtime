@@ -539,7 +539,7 @@ export default () => {
       });
 
       it('should reflect named EnumDeclaration', () => {
-        const node = ts.factory.createEnumDeclaration(void 0, void 0, 'Foo', []);
+        const node = ts.factory.createEnumDeclaration(void 0, ts.factory.createIdentifier('Foo'), []);
         const result = factory.namedDeclarationReflection('Foo.__UID__', node, 'Foo');
         expect(result).ok();
       });
@@ -580,7 +580,7 @@ export default () => {
     // requires emitNode
     // describe('#enumReflection', () => {
     //   it('should reflect EnumDeclaration', () => {
-    //     const node = ts.factory.createEnumDeclaration(void 0, void 0, 'Foo', [ ts.createEnumMember('foo', ts.factory.createStringLiteral(0)), ts.createEnumMember('bar') ]);
+    //     const node = ts.factory.createEnumDeclaration(void 0, ts.factory.createIdentifier('Foo'), [ ts.createEnumMember('foo', ts.factory.createStringLiteral(0)), ts.createEnumMember('bar') ]);
     //     const result = factory.enumReflection(node);
     //     expect(result).ok();
     //   });
@@ -634,7 +634,7 @@ export default () => {
 
     describe('#typeParameterReflection', () => {
       it('should reflect a TypeParameterDeclaration', () => {
-        const node = ts.factory.createTypeParameterDeclaration('foo')
+        const node = ts.factory.createTypeParameterDeclaration(void 0, ts.factory.createIdentifier('foo'))
         const result = factory.typeParameterReflection(node);
         expect(result).ok();
       });
@@ -644,9 +644,8 @@ export default () => {
       it('should reflect IndexSignatureDeclaration', () => {
         const node = ts.factory.createIndexSignature(
           void 0,
-          void 0,
           [
-            ts.factory.createParameterDeclaration(void 0, void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
+            ts.factory.createParameterDeclaration(void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
           ],
           ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
         );
@@ -665,7 +664,7 @@ export default () => {
 
     describe('#propertyReflection', () => {
       it('should reflect PropertyDeclaration', () => {
-        const node = ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword), ts.factory.createStringLiteral(''));
+        const node = ts.factory.createPropertyDeclaration(void 0, 'foo', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword), ts.factory.createStringLiteral(''));
         const result = factory.propertyReflection(node);
         expect(result).ok();
       });
@@ -673,7 +672,7 @@ export default () => {
 
     describe('#callSignatureReflection', () => {
       it('should reflect CallSignatureDeclaration', () => {
-        const node = ts.createCallSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        const node = ts.factory.createCallSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = factory.callSignatureReflection(node);
         expect(result).ok();
       });
@@ -681,7 +680,7 @@ export default () => {
 
     describe('#constructSignatureReflection', () => {
       it('should reflect ConstructSignatureDeclaration', () => {
-        const node = ts.createConstructSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        const node = ts.factory.createConstructSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = factory.constructSignatureReflection(node);
         expect(result).ok();
       });
@@ -689,7 +688,7 @@ export default () => {
 
     describe('#constructorReflection', () => {
       it('should reflect ConstructorDeclaration', () => {
-        const node = ts.createConstructor(void 0, void 0, [], ts.factory.createBlock([]));
+        const node = ts.factory.createConstructorDeclaration(void 0, [], ts.factory.createBlock([]));
         const result = factory.constructorReflection(node);
         expect(result).ok();
       });
@@ -697,7 +696,7 @@ export default () => {
 
     describe('#methodReflection', () => {
       it('should reflect MethodDeclaration', () => {
-        const node = ts.factory.createMethodDeclaration(void 0, void 0, void 0, 'foo', void 0, void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), ts.factory.createBlock([]));
+        const node = ts.factory.createMethodDeclaration(void 0, void 0, 'foo', void 0, void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), ts.factory.createBlock([]));
         const result = factory.methodReflection(node);
         expect(result).ok();
       });
@@ -705,7 +704,7 @@ export default () => {
 
     describe('#methodSignatureReflection', () => {
       it('should reflect MethodSignatureDeclaration', () => {
-        const node = ts.createMethodSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), 'foo', void 0);
+        const node = ts.factory.createMethodSignature(void 0, 'foo', void 0, void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = factory.methodSignatureReflection(node);
         expect(result).ok();
       });
@@ -729,7 +728,7 @@ export default () => {
 
     describe('#parameterReflection', () => {
       it('should reflect ParameterDeclaration', () => {
-        const node = ts.factory.createParameterDeclaration(void 0, void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword));
+        const node = ts.factory.createParameterDeclaration(void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword));
         const result = factory.parameterReflection(node);
         expect(result).ok();
       });
@@ -737,13 +736,13 @@ export default () => {
 
     describe('#elementReflection', () => {
       it('should reflect element ConstructorDeclaration', () => {
-        const node = ts.createConstructor(void 0, void 0, [], ts.factory.createBlock([]));
+        const node = ts.factory.createConstructorDeclaration(void 0, [], ts.factory.createBlock([]));
         const result = factory.elementReflection(node);
         expect(result).ok();
       });
 
       it('should reflect element ConstructSignatureDeclaration', () => {
-        const node = ts.createConstructSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        const node = ts.factory.createConstructSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = factory.elementReflection(node);
         expect(result).ok();
       });
@@ -751,9 +750,8 @@ export default () => {
       it('should reflect element IndexSignatureDeclaration', () => {
         const node = ts.factory.createIndexSignature(
           void 0,
-          void 0,
           [
-            ts.factory.createParameterDeclaration(void 0, void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
+            ts.factory.createParameterDeclaration(void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
           ],
           ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
         );
@@ -762,25 +760,25 @@ export default () => {
       });
 
       it('should reflect element PropertyDeclaration', () => {
-        const node = ts.factory.createPropertyDeclaration(void 0, void 0, 'foo', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword), ts.factory.createStringLiteral(''));
+        const node = ts.factory.createPropertyDeclaration(void 0, 'foo', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword), ts.factory.createStringLiteral(''));
         const result = factory.elementReflection(node);
         expect(result).ok();
       });
 
       it('should reflect element CallSignatureDeclaration', () => {
-        const node = ts.createCallSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        const node = ts.factory.createCallSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = factory.elementReflection(node);
         expect(result).ok();
       });
 
       it('should reflect element MethodSignatureDeclaration', () => {
-        const node = ts.createMethodSignature(void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), 'foo', void 0);
+        const node = ts.factory.createMethodSignature(void 0, 'foo', void 0, void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
         const result = factory.elementReflection(node);
         expect(result).ok();
       });
 
       it('should reflect element MethodDeclaration', () => {
-        const node = ts.factory.createMethodDeclaration(void 0, void 0, void 0, 'foo', void 0, void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), ts.factory.createBlock([]));
+        const node = ts.factory.createMethodDeclaration(void 0, void 0, 'foo', void 0, void 0, [], ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword), ts.factory.createBlock([]));
         const result = factory.elementReflection(node);
         expect(result).ok();
       });
@@ -798,7 +796,7 @@ export default () => {
       });
 
       it('should not reflect element Parameter', () => {
-        const node = ts.factory.createParameterDeclaration(void 0, void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword));
+        const node = ts.factory.createParameterDeclaration(void 0, void 0, 'index', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword));
         const result = factory.elementReflection(node as any);
         expect(result).to.equal(null);
       });
@@ -811,7 +809,7 @@ export default () => {
 
     describe('#elementsReflection', () => {
       it('should reflect an array of elements', () => {
-        const node = ts.createConstructor(void 0, void 0, [], ts.factory.createBlock([]));
+        const node = ts.factory.createConstructorDeclaration(void 0, [], ts.factory.createBlock([]));
         const result = factory.elementsReflection([node]);
         expect(result).ok();
       });
@@ -840,7 +838,7 @@ export default () => {
 
     describe('#typeParameterDeclaration', () => {
       it('should reflect TypeParameterDeclaration', () => {
-        const node = ts.factory.createTypeParameterDeclaration('foo');
+        const node = ts.factory.createTypeParameterDeclaration(void 0, ts.factory.createIdentifier('foo'));
         const result = factory.typeParameterDeclaration(node);
         expect(result).ok();
       });
@@ -848,7 +846,7 @@ export default () => {
 
     describe('#typeParametersLiteral', () => {
       it('should return a declaration for a TypeParameterDeclaration', () => {
-        const node = ts.factory.createTypeParameterDeclaration('foo');
+        const node = ts.factory.createTypeParameterDeclaration(void 0, ts.factory.createIdentifier('foo'));
         const result = factory.typeParameterDeclaration(node);
         expect(result).ok();
       });
@@ -856,7 +854,7 @@ export default () => {
 
     describe('#typeParametersLiteralDeclaration', () => {
       it('should return a declaration for multiple TypeParameterDeclarations as an object literal', () => {
-        const node = ts.factory.createTypeParameterDeclaration('foo');
+        const node = ts.factory.createTypeParameterDeclaration(void 0, ts.factory.createIdentifier('foo'));
         const result = factory.typeParametersLiteralDeclaration([node]);
         expect(result).ok();
       });
@@ -881,7 +879,7 @@ export default () => {
     describe('#mutateFunctionBody', () => {
       it('should transform a function body', () => {
         const node = ts.factory.createFunctionDeclaration(void 0, void 0, ts.factory.createIdentifier('foo'), void 0, [
-          ts.factory.createParameterDeclaration(void 0, void 0, void 0, 'param', void 0, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
+          ts.factory.createParameterDeclaration(undefined, undefined, 'param', undefined, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
         ],
         ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
         ts.factory.createBlock([
@@ -912,7 +910,7 @@ export default () => {
       });
 
       it('should return the expression of a computed property name', () => {
-        const node = ts.createComputedPropertyName(ts.factory.createIdentifier('foo'));
+        const node = ts.factory.createComputedPropertyName(ts.factory.createIdentifier('foo'));
         const result = factory.propertyNameToLiteralOrExpression(node);
         expect(result).ok();
       });
@@ -943,18 +941,18 @@ export default () => {
       });
 
       it('should return the expression of a computed property name', () => {
-        const node = ts.createComputedPropertyName(ts.factory.createIdentifier('foo'));
+        const node = ts.factory.createComputedPropertyName(ts.factory.createIdentifier('foo'));
         const result = factory.declarationNameToLiteralOrExpression(node);
         expect(result).ok();
       });
 
       it('should throw on object binding patterns', () => {
-        const node = ts.createObjectBindingPattern([]);
+        const node = ts.factory.createObjectBindingPattern([]);
         util.expectProgramError(() => factory.declarationNameToLiteralOrExpression(node))
       });
 
       it('should throw on array binding patterns', () => {
-        const node = ts.createArrayBindingPattern([]);
+        const node = ts.factory.createArrayBindingPattern([]);
         util.expectProgramError(() => factory.declarationNameToLiteralOrExpression(node))
       });
 

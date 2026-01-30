@@ -14,8 +14,9 @@ export default () => {
     });
 
     it('should reflect ConstructorTypeNode', () => {
-      const type = ts.createConstructorTypeNode(
-        [],
+      const type = ts.factory.createConstructorTypeNode(
+        void 0,
+        void 0,
         [],
         ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
       );

@@ -600,12 +600,12 @@ export class Factory {
       result = this.selfReference(
         typeNameText,
         ts.factory.createBlock(
-          [...typeParameterDeclarations, ts.factory.createReturnStatement(ts.factory.createArrayLiteralExpression(util.asArray(reflection)))],
+          [...typeParameterDeclarations, ts.factory.createReturnStatement(ts.factory.createArrayLiteralExpression(util.asArray(reflection), undefined))],
           true
         )
       );
     } else if (hasSelfReference) {
-      result = this.selfReference(typeNameText, ts.factory.createArrayLiteralExpression(reflection));
+      result = this.selfReference(typeNameText, ts.factory.createArrayLiteralExpression(reflection, undefined));
     }
 
     const arg = !result && !reflection.length ? this.libCall('object') : result || reflection;
@@ -688,7 +688,7 @@ export class Factory {
         statements.push(this.typeParameterDeclaration(typeParameter, `${this.namespace}fn`));
       }
 
-      statements.push(ts.factory.createReturnStatement(ts.factory.createArrayLiteralExpression(args)));
+      statements.push(ts.factory.createReturnStatement(ts.factory.createArrayLiteralExpression(args, undefined)));
 
       const block = ts.factory.createBlock(statements, true);
 
@@ -990,7 +990,7 @@ export class Factory {
         const questionToken = index + 1 > minParameters ? ts.factory.createToken(ts.SyntaxKind.QuestionToken) : undefined;
 
         const parameterDeclaration = ts.factory.createParameterDeclaration(
-          undefined, undefined, undefined, param.name,
+          undefined, undefined, param.name,
           questionToken, parameterTypeNode, undefined
         );
 
@@ -1007,7 +1007,7 @@ export class Factory {
           break;
         case ts.SyntaxKind.MethodDeclaration:
           mergedSignature = ts.factory.createMethodDeclaration(
-            undefined, ts.canHaveModifiers(lastSignature) ? ts.getModifiers(lastSignature) : undefined, (lastSignature as ts.MethodDeclaration).asteriskToken,
+            ts.canHaveModifiers(lastSignature) ? ts.getModifiers(lastSignature) : undefined, (lastSignature as ts.MethodDeclaration).asteriskToken,
             lastSignature.name, undefined, typeParameters, parameterDeclarations,
             returnTypeNode, undefined
           );
@@ -1066,7 +1066,6 @@ export class Factory {
 
   public classTypeParameterSymbolPropertyDeclaration(name: string | ts.Identifier): ts.PropertyDeclaration {
     return ts.factory.createPropertyDeclaration(
-      undefined,
       [ts.factory.createToken(ts.SyntaxKind.StaticKeyword)],
       ts.factory.createComputedPropertyName(
         ts.factory.createPropertyAccessExpression(
@@ -1257,23 +1256,42 @@ export class Factory {
     switch (node.kind) {
       case ts.SyntaxKind.Constructor:
         method = ts.factory.updateConstructorDeclaration(
-          node, node.decorators, node.modifiers, node.parameters, body
+          node,
+          ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
+          node.parameters,
+          body
         );
         break;
       case ts.SyntaxKind.MethodDeclaration:
         method = ts.factory.updateMethodDeclaration(
-          node, node.decorators, node.modifiers, node.asteriskToken, node.name,
-          node.questionToken, node.typeParameters, node.parameters, node.type, body
+          node,
+          ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
+          node.asteriskToken,
+          node.name,
+          node.questionToken,
+          node.typeParameters,
+          node.parameters,
+          node.type,
+          body
         );
         break;
       case ts.SyntaxKind.GetAccessor:
         method = ts.factory.updateGetAccessorDeclaration(
-          node, node.decorators, node.modifiers, node.name, node.parameters, node.type, body
+          node,
+          ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
+          node.name,
+          node.parameters,
+          node.type,
+          body
         );
         break;
       case ts.SyntaxKind.SetAccessor:
         method = ts.factory.updateSetAccessorDeclaration(
-          node, node.decorators, node.modifiers, node.name, node.parameters, body
+          node,
+          ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
+          node.name,
+          node.parameters,
+          body
         );
         break;
       case ts.SyntaxKind.FunctionExpression:
@@ -1284,8 +1302,14 @@ export class Factory {
         break;
       case ts.SyntaxKind.FunctionDeclaration:
         method = ts.factory.updateFunctionDeclaration(
-          node, node.decorators, node.modifiers, node.asteriskToken, node.name as ts.Identifier,
-          node.typeParameters, node.parameters, node.type, body
+          node,
+          ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
+          node.asteriskToken,
+          node.name as ts.Identifier,
+          node.typeParameters,
+          node.parameters,
+          node.type,
+          body
         );
         break;
       case ts.SyntaxKind.ArrowFunction:
@@ -1330,7 +1354,6 @@ export class Factory {
 
   public importLibStatement(): ts.ImportDeclaration {
     return ts.factory.createImportDeclaration(
-      undefined,
       undefined,
       ts.factory.createImportClause(
         false,
@@ -1394,7 +1417,7 @@ export class Factory {
 
   public selfReference(name: string | ts.Identifier | ts.ObjectBindingPattern | ts.ArrayBindingPattern, body: ts.ConciseBody): ts.ArrowFunction {
     return ts.factory.createArrowFunction(
-      undefined, undefined, [ts.factory.createParameterDeclaration(undefined, undefined, undefined, name)], undefined,
+      undefined, undefined, [ts.factory.createParameterDeclaration(undefined, undefined, name)], undefined,
       ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
       body
     );
