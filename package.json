@@ -64,7 +64,6 @@
     "mocha": "^11.7.5",
     "module-alias": "^2.2.3",
     "monaco-editor": "^0.52.0",
-    "monaco-typescript": "^4.10.0",
     "normalize.css": "^8.0.1",
     "nyc": "^17.1.0",
     "path-browserify": "^1.0.1",

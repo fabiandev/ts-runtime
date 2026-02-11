@@ -8,20 +8,8 @@ import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
 
 let lib = '';
-import(/* webpackChunkName: "tslibs" */ 'monaco-typescript/release/esm/lib/lib').then(({ libFileMap: libs }) => {
-  const keys = Object.keys(libs).filter(key => {
-    return key.startsWith('lib.es') || key.startsWith('lib.dom');
-  });
 
-  for (const key of keys) {
-    lib += libs[key];
-  }
-
-  bootstrap();
-}).catch(error => {
-  console.error('Could not not load lib declarations:', error);
-  window.alert('Could not not load lib declarations. Please try to refresh the page.');
-});
+bootstrap();
 
 interface PlaygroundOptions {
   [index: string]: any;
@@ -108,7 +96,7 @@ function bootstrap(): void {
   win.require([MONACO_ENTRY], init);
 }
 
-function init(): void {
+async function init(): Promise<void> {
   const hashValue = getHash();
 
   setDefaultOptions();
@@ -165,6 +153,26 @@ function init(): void {
     //   autoFindInSelection: false
     // }
   });
+
+  // Fetch lib declarations from Monaco's TypeScript worker
+  // (must happen after creating a TypeScript editor so the worker is registered)
+  try {
+    const tsModel = tsEditor.getModel();
+    const getWorker = await window.monaco.languages.typescript.getTypeScriptWorker();
+    const proxy = await getWorker(tsModel.uri);
+    const libs: Record<string, string> = await (proxy as any).getLibFiles();
+
+    const keys = Object.keys(libs).filter(key =>
+      key.startsWith('lib.es') || key.startsWith('lib.dom')
+    );
+    for (const key of keys) {
+      lib += libs[key];
+    }
+  } catch (error) {
+    console.error('Could not load lib declarations:', error);
+    window.alert('Could not load lib declarations. Please try to refresh the page.');
+    return;
+  }
 
   ready();
 }

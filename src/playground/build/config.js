@@ -115,11 +115,6 @@ config.webpack = [{
       {}
   )
   ],
-  optimization: {
-    splitChunks: {
-      automaticNameDelimiter: '.'
-    }
-  }
 }, {
   mode: 'production',
   stats: {
