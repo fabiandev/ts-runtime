@@ -17,7 +17,7 @@ export class ClassDeclarationMutator extends Mutator {
     const members: ts.ClassElement[] = [];
 
     const decorators = this.options.noAnnotate ?
-      node.decorators : this.reflectClass(node);
+      (ts.canHaveDecorators(node) ? ts.getDecorators(node) : undefined) : this.reflectClass(node);
 
     for (let member of node.members) {
       switch (member.kind) {

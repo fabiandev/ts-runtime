@@ -22,7 +22,7 @@
     "build:tsr": "./node_modules/.bin/tsc --rootDir src --outDir dist --module CommonJS --target es5 --skipLibCheck && cp package.json dist/package.json && cp README.md dist/README.md && cp LICENSE dist/LICENSE",
     "build:lib": "node_modules/.bin/webpack --config src/lib/build/webpack.config.js",
     "build:playground": "node_modules/.bin/gulp --gulpfile src/playground/build/gulpfile.js build",
-    "build:lkg": "ts-node --no-cache ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias -c tsconfig-lkg.json --stackTraceOutput 50"
+    "build:lkg": "TS_NODE_CACHE=false ts-node ./src/bin/index src/index src/lib/index src/bin/index src/bin/process --libDeclarations --moduleAlias -c tsconfig-lkg.json --stackTraceOutput 50"
   },
   "_moduleAliases": {
     "ts-runtime": "dist"
@@ -36,7 +36,7 @@
     "pretty-time": "^1.1.0",
     "regenerator-runtime": "^0.14.1",
     "rimraf": "^6.1.2",
-    "typescript": "~4.9.5"
+    "typescript": "~5.9.3"
   },
   "devDependencies": {
     "@babel/core": "^7.28.6",

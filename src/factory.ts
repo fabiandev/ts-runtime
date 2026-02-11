@@ -467,7 +467,7 @@ export class Factory {
 
   public typeAliasSubstitution(node: ts.TypeAliasDeclaration): ts.VariableStatement {
     return ts.factory.createVariableStatement(
-      node.modifiers,
+      ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
       ts.factory.createVariableDeclarationList(
         [
           ts.factory.createVariableDeclaration(
@@ -529,7 +529,7 @@ export class Factory {
     const interfaceReflection = this.interfaceReflection(node);
 
     return ts.factory.createVariableStatement(
-      node.modifiers,
+      ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined,
       ts.factory.createVariableDeclarationList(
         [
           ts.factory.createVariableDeclaration(
@@ -1176,7 +1176,7 @@ export class Factory {
 
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
       const body = ts.factory.createBlock([ts.factory.createReturnStatement(node.body)], true)
-      node = ts.factory.updateArrowFunction(node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body);
+      node = ts.factory.updateArrowFunction(node, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body);
     }
 
     const bodyDeclarations: ts.Statement[] = [];
@@ -1296,7 +1296,7 @@ export class Factory {
         break;
       case ts.SyntaxKind.FunctionExpression:
         method = ts.factory.updateFunctionExpression(
-          node, node.modifiers, node.asteriskToken, node.name as ts.Identifier,
+          node, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.asteriskToken, node.name as ts.Identifier,
           node.typeParameters, node.parameters, node.type, body
         );
         break;
@@ -1314,7 +1314,7 @@ export class Factory {
         break;
       case ts.SyntaxKind.ArrowFunction:
         method = ts.factory.updateArrowFunction(
-          node, node.modifiers, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body
+          node, ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined, node.typeParameters, node.parameters, node.type, node.equalsGreaterThanToken, body
         );
         break;
     }

@@ -55,7 +55,8 @@ export function hasKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
 }
 
 export function hasModifier(node: ts.Node, modifier: ts.SyntaxKind): boolean {
-  for (let flag of node.modifiers || []) {
+  const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
+  for (let flag of modifiers || []) {
     if (flag.kind === modifier) {
       return true;
     }
@@ -133,7 +134,8 @@ export function isBindingPattern(node: ts.Node): node is ts.BindingPattern {
 }
 
 export function isStatic(node: ts.Node): boolean {
-  return !Array.isArray(node.modifiers) ? false : node.modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
+  const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
+  return !modifiers ? false : modifiers.findIndex((el: any) => el.kind === ts.SyntaxKind.StaticKeyword) !== -1;
 }
 
 export function isTypeParameter(node: ts.TypeReferenceNode): boolean {

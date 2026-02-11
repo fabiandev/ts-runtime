@@ -1,7 +1,7 @@
 import * as path from 'path';
-import format from 'pretty-time';
+import format = require('pretty-time');
 import { rimrafSync } from 'rimraf';
-import commondir from 'commondir';
+import commondir = require('commondir');
 import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
@@ -272,7 +272,7 @@ function transformProgram(rootNames: string | string[], options?: Options, refle
 
     return (sf: ts.SourceFile) => {
       createMutationContext(sf, transformationContext);
-      return ts.visitNode(sf, visitor);
+      return ts.visitNode(sf, visitor) as ts.SourceFile;
     }
   }
 
