@@ -7,6 +7,7 @@
     "rootDir": "../",
     "declaration": false,
     "module": "commonjs",
+    "esModuleInterop": true,
     "target": "es5",
     "moduleResolution": "node",
     "lib": [
@@ -18,9 +19,6 @@
   },
   "include": [
     "**/*"
-  ],
-  "files": [
-    "../../node_modules/monaco-typescript/src/lib/lib.ts"
   ],
   "typeRoots": [
     "../../node_modules/@types",

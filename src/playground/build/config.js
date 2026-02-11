@@ -30,10 +30,12 @@ config.bundleName = 'app.js';
 config.typescript = {
   app: {
     allowTsInNodeModules: true,
-    configFile: 'src/playground/tsconfig.json'
+    configFile: path.resolve(__dirname, '../tsconfig.json'),
+    transpileOnly: true
   },
   lib: {
-    configFile: 'src/playground/tsconfig.lib.json' 
+    configFile: path.resolve(__dirname, '../tsconfig.lib.json'),
+    transpileOnly: true
   }
 };
 
@@ -49,6 +51,9 @@ config.replace = {
 
 config.webpack = [{
   mode: 'production',
+  stats: {
+    children: true
+  },
   entry: {
     bundle: path.normalize(path.join(__dirname, config.paths.src, 'index.ts'))
   },
@@ -63,7 +68,18 @@ config.webpack = [{
   },
   devtool: 'source-map',
   resolve: {
-    extensions: ['.ts', '.js', '.tsx']
+    extensions: ['.ts', '.js', '.tsx'],
+    alias: {
+      'rimraf': false,
+      'pretty-time': false,
+      'commondir': path.resolve(__dirname, '../shims/commondir.js'),
+    },
+    fallback: {
+      path: require.resolve('path-browserify'),
+      fs: false,
+      module: false,
+      events: require.resolve('events/'),
+    }
   },
   module: {
     rules: [
@@ -81,26 +97,14 @@ config.webpack = [{
       },
       {
         test: /\.html/,
-        use: 'raw-loader'
-      },
-      {
-        test: /^rimraf$/,
-        use: 'null-loader'
-      },
-      {
-        test: /^pretty-time$/,
-        use: 'null-loader'
+        type: 'asset/source'
       },
     ]
   },
-  resolve: {
-    fallback: {
-      path: require.resolve('path-browserify'),
-      fs: false,
-      module: false
-    }
-  },
   plugins: [
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+    }),
     new webpack.DefinePlugin(Object.keys(config.replace).reduce(function(previous, current) {
       previous[current] = JSON.stringify(config.replace[current]);
       return previous;
@@ -118,6 +122,9 @@ config.webpack = [{
   }
 }, {
   mode: 'production',
+  stats: {
+    children: true
+  },
   entry: path.normalize(path.join(__dirname, config.paths.root, 'src/lib/index.ts')),
   output: {
     filename: 'ts-runtime.lib.js',

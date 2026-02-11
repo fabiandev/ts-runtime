@@ -2,15 +2,13 @@ import type * as monaco from 'monaco-editor';
 import debounce = require('lodash.debounce');
 import { Options } from '../options';
 import { FileReflection } from '../host';
-import TransformWorker = require('worker-loader!./worker');
+// @ts-ignore
+import createWorker from './create-worker.js';
 import runWindowHtmlConsole = require('./run-console.html');
 import runWindowHtmlPlain = require('./run-plain.html');
 
 let lib = '';
-require.ensure(['monaco-typescript/src/lib/lib'], require => {
-  const libs = require('monaco-typescript/src/lib/lib').libFileMap;
-  // lib = Object.values(libs).join('');
-  
+import(/* webpackChunkName: "tslibs" */ 'monaco-typescript/release/esm/lib/lib').then(({ libFileMap: libs }) => {
   const keys = Object.keys(libs).filter(key => {
     return key.startsWith('lib.es') || key.startsWith('lib.dom');
   });
@@ -20,10 +18,10 @@ require.ensure(['monaco-typescript/src/lib/lib'], require => {
   }
 
   bootstrap();
-}, error => {
+}).catch(error => {
   console.error('Could not not load lib declarations:', error);
   window.alert('Could not not load lib declarations. Please try to refresh the page.');
-}, 'tslibs');
+});
 
 interface PlaygroundOptions {
   [index: string]: any;
@@ -41,7 +39,7 @@ interface HashValue {
   options?: PlaygroundOptions;
 }
 
-const worker: Worker = new TransformWorker();
+const worker: Worker = createWorker();
 worker.onmessage = onMessage;
 
 const runWindowCodeConsole = prepareWindowCode(runWindowHtmlConsole);
@@ -160,7 +158,7 @@ function init(): void {
     autoClosingBrackets: 'never',
     suggestOnTriggerCharacters: false,
     snippetSuggestions: 'none',
-    wordBasedSuggestions: false,
+    wordBasedSuggestions: 'off',
     selectionClipboard: false,
     // find: {
     //   seedSearchStringFromSelection: false,
@@ -239,6 +237,10 @@ function onOptionChange(this: HTMLInputElement | HTMLSelectElement, ev: Event): 
   } else {
     // @ts-ignore
     value = this.value;
+  }
+
+  if (!isNaN(value)) {
+    value = parseInt(value);
   }
 
   options()[option][this.name] = value;

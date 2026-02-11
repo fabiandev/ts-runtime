@@ -31,7 +31,7 @@ function copy() {
 }
 
 function clean(done) {
-  del([
+  del.deleteAsync([
     `${config.paths.dest}/**/*`,
     `!${config.paths.dest}/README.md`
   ], { force: true })

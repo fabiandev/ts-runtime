@@ -66,16 +66,14 @@
     "monaco-editor": "^0.52.0",
     "monaco-typescript": "^4.10.0",
     "normalize.css": "^8.0.1",
-    "null-loader": "^4.0.1",
     "nyc": "^17.1.0",
     "path-browserify": "^1.0.1",
-    "raw-loader": "^4.0.2",
+    "process": "^0.11.10",
     "source-map-loader": "^5.0.0",
     "source-map-support": "^0.5.21",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
     "webpack": "^5.104.1",
-    "webpack-cli": "^5.1.4",
-    "worker-loader": "^3.0.8"
+    "webpack-cli": "^5.1.4"
   }
 }
