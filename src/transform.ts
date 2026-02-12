@@ -1,7 +1,7 @@
 import * as path from 'path';
-import format = require('pretty-time');
+import format from 'pretty-time';
 import { rimrafSync } from 'rimraf';
-import commondir = require('commondir');
+import commondir from 'commondir';
 import * as ts from 'typescript';
 import * as util from './util';
 import * as bus from './bus';
