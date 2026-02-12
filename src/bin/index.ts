@@ -170,6 +170,7 @@ commander
   --> into runtime type checks <--
   --------------------------------`)
   .usage('<file...> [options]')
+  .argument('<files...>')
   .option('-a, --noAnnotate', 'do not annotate classes and functions', setNoAnnotate)
   .option('-c, --tsConfig <path>', 'use the compiler options of the given tsconfig.json', useTsConfig)
   .option('-C, --compilerOptions <compilerOptions>', 'set TypeScript compiler options. defaults to "{}"', setCompilerOptions)
