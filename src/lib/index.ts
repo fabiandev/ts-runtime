@@ -1,4 +1,4 @@
-import * as t from 'flow-runtime';
+import t from 'flow-runtime';
 
 const voidType = t.void;
 const typeOf = t.typeOf;

@@ -650,7 +650,8 @@ export class Factory {
       case ts.SyntaxKind.FunctionType: // remove?
         return this.libCall('declare', [ts.factory.createStringLiteral(name), this.functionTypeReflection(declaration as ts.FunctionTypeNode)]);
       default:
-        throw new ProgramError(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
+        this.warn(`Could not reflect declaration for ${ts.SyntaxKind[declaration.kind]}`);
+        return this.anyTypeReflection();
     }
   }
 
@@ -662,9 +663,21 @@ export class Factory {
 
   public enumMemberReflection(node: ts.EnumMember): ts.CallExpression {
     const value = this.context.checker.getConstantValue(node);
-    const literal = typeof value === 'number'
-      ? ts.factory.createNumericLiteral(value)
-      : ts.factory.createStringLiteral(String(value));
+
+    let literal: ts.NumericLiteral | ts.StringLiteral | ts.PrefixUnaryExpression;
+    if (typeof value === 'number') {
+      if (value < 0) {
+        literal = ts.factory.createPrefixUnaryExpression(
+          ts.SyntaxKind.MinusToken,
+          ts.factory.createNumericLiteral(Math.abs(value))
+        )
+      } else {
+        literal = ts.factory.createNumericLiteral(value);
+      }
+    } else {
+      literal = ts.factory.createStringLiteral(String(value));
+    }
+
     return this.libCall('enumMember', literal);
   }
 
@@ -942,8 +955,13 @@ export class Factory {
         // parameters
         let parameterIndex = 0;
         for (let parameter of node.parameters) {
-
           const typeInfo = this.scanner.getTypeInfo(parameter);
+
+          if (typeInfo == null) {
+            this.warn(`Could not get type info for parameter ${node.getText()}`);
+            continue;
+          }
+
           const parameterTypeText = typeInfo.typeText;
 
           if (!parameterTypesMap.has(parameterIndex)) {
